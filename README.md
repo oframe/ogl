@@ -16,7 +16,7 @@ Ideally, the framework does the minimum abstraction necessary, so that devs shou
 For an example, the way to set a clear color is to use the native call `gl.clearColor(r, g, b, a)`.
 This hopefully makes it easier to extend, and to use as a WebGL learning resource.
 
-[Go to the examples](https://github.com/oframe/ogl)
+[Go to the examples](https://oframe.github.io/ogl/)
 
 The core of the framework is made up of the following
  - Geometry.js
