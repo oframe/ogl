@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+
+    <title>OGL WebGL Framework</title>
+    <link href="https://fonts.googleapis.com/css?family=Raleway:400,700" rel="stylesheet">
+    <link href="examples/assets/main.css" rel="stylesheet">
+
+</head>
+<body>
+    <div class="Side">
+        <a class="Title" href="" target="_blank">O-GL</a>
+        <div class="SubTitle">Examples</div>
+
+        <div class="Section">Geometry</div>
+        <a class="Example" href="examples/triangle-screen-shader.html">Triangle Screen Shader</a>
+        <div class="Example">Points, Lines, Triangles, TriangleStrip, TriangleFan</div>
+        <div class="Example">Indexed vs Non-Indexed</div>
+        <div class="Example">Wireframe</div>
+        <div class="Example">Load JSON (Javascript Object Notation)</div>
+        <div class="Example">Base Primitives - Plane, Cube, Sphere</div>
+        <div class="Example">Particles</div>
+        <div class="Example">Instancing</div>
+        <div class="Example">Billboard Depth Test (instances and points)</div>
+        <div class="Example">Frustum culling</div>
+        <div class="Example">LODs (Level Of Detail)</div>
+        <div class="Example">Thick Lines</div>
+        <div class="Example">Load GLTF (Graphics Language Transmission Format)</div>
+
+        <div class="Section">Scene</div>
+        <div class="Example">Scene Graph hierarchy</div>
+        <div class="Example">Render Hierarchy With Transparency</div>
+
+        <div class="Section">Interaction</div>
+        <div class="Example">Orbit controls</div>
+        <div class="Example">Raycasting</div>
+        <div class="Example">Projection (Mouse, clip space)</div>
+
+        <div class="Section">Shading</div>
+        <div class="Example">Fog</div>
+        <div class="Example">Textures</div>
+        <div class="Example">Skydome</div>
+        <div class="Example">Normal Maps</div>
+        <div class="Example">SDF Alpha test/clip (Signed Distance Fields)</div>
+        <div class="Example">MSDF Text Glyphs (Multichannel Signed Distance Fields)</div>
+        <div class="Example">Point lighting with specular highlights</div>
+        <div class="Example">PBR (Physically Based Rendering)</div>
+
+        <div class="Section">Frame Buffer</div>
+        <div class="Example">Render to texture</div>
+        <div class="Example">MRT (Multiple Render Targets)</div>
+        <div class="Example">Reflections</div>
+        <div class="Example">Shadow maps</div>
+        <div class="Example">Distortion (refraction)</div>
+        <div class="Example">Effects - DOF (Depth Of Field) + light rays + tone mapping</div>
+
+        <div class="Section">Animation</div>
+        <div class="Example">Skinning</div>
+        <div class="Example">Blendshapes</div>
+
+        <div class="Section">Stencil</div>
+        <div class="Example">Stencil Shadows and Mirror</div>
+
+    </div>
+
+    <iframe class="Iframe" src=""></iframe>
+
+    <a class="CodeIcon" href="" target="_blank">&lt;&#47;&gt;</a>
+
+    <script>
+        const sourceLink = document.querySelectorAll('.CodeIcon')[0];
+        const exampleLinks = document.querySelectorAll('a.Example');
+        const iFrame = document.querySelectorAll('.Iframe')[0];
+
+        // Load query example in iFrame if linked
+         let loadQuery = location.search.split('src=');
+         if (loadQuery[1]) {
+            iFrame.src = loadQuery[1];
+            sourceLink.href = `https://github.com/oframe/ogl/${loadQuery[1]}`;
+         }
+
+        exampleLinks.forEach(link => {
+            link.addEventListener('click', updateExample, false);
+        });
+
+        function updateExample(e) {
+            let src = 'examples/' + e.target.href.split('examples/')[1];
+
+            // Allow user to cmd/ctrl + click to open in new tab
+            if (e.metaKey) {
+                window.open(`${location.origin}${location.pathname}?src=${src}`, '_blank');
+                return;
+            }
+
+            iFrame.src = e.target.href;
+            sourceLink.href = `https://github.com/oframe/ogl/${src}`;
+            location.search = `?src=${src}`;
+            e.preventDefault();
+        }
+    </script>
+</body>
+</html>
