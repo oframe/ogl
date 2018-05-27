@@ -7,7 +7,7 @@
 
     <title>OGL WebGL Framework</title>
     <link href="https://fonts.googleapis.com/css?family=Raleway:400,700" rel="stylesheet">
-    <link href="examples/assets/main.css" rel="stylesheet">
+    <link href="assets/main.css" rel="stylesheet">
 
 </head>
 <body>
@@ -16,11 +16,11 @@
         <div class="SubTitle">Examples</div>
 
         <div class="Section">Geometry</div>
-        <a class="Example" href="examples/triangle-screen-shader.html">Triangle Screen Shader</a>
-        <div class="Example">Points, Lines, Triangles, TriangleStrip, TriangleFan</div>
-        <div class="Example">Indexed vs Non-Indexed</div>
-        <div class="Example">Wireframe</div>
-        <div class="Example">Load JSON (Javascript Object Notation)</div>
+        <a class="Example" href="triangle-screen-shader.html">Triangle Screen Shader</a>
+        <a class="Example" href="draw-modes.html">Draw Modes</a>
+        <a class="Example" href="indexed-vs-non-indexed.html">Indexed vs Non-Indexed</a>
+        <a class="Example" href="load-json.html">Load JSON (Javascript Object Notation)</a>
+        <a class="Example" href="wireframe.html">Wireframe</a>
         <div class="Example">Base Primitives - Plane, Cube, Sphere</div>
         <div class="Example">Particles</div>
         <div class="Example">Instancing</div>
@@ -74,12 +74,13 @@
         const sourceLink = document.querySelectorAll('.CodeIcon')[0];
         const exampleLinks = document.querySelectorAll('a.Example');
         const iFrame = document.querySelectorAll('.Iframe')[0];
+        const sourcePath = 'https://github.com/oframe/ogl/tree/master/examples/';
 
         // Load query example in iFrame if linked
          let loadQuery = location.search.split('src=');
          if (loadQuery[1]) {
             iFrame.src = loadQuery[1];
-            sourceLink.href = `https://github.com/oframe/ogl/${loadQuery[1]}`;
+            sourceLink.href = sourcePath + loadQuery[1];
          }
 
         exampleLinks.forEach(link => {
@@ -87,7 +88,7 @@
         });
 
         function updateExample(e) {
-            let src = 'examples/' + e.target.href.split('examples/')[1];
+            let src = e.target.href.split('examples/')[1];
 
             // Allow user to cmd/ctrl + click to open in new tab
             if (e.metaKey) {
@@ -96,7 +97,7 @@
             }
 
             iFrame.src = e.target.href;
-            sourceLink.href = `https://github.com/oframe/ogl/${src}`;
+            sourceLink.href = sourcePath + src;
             location.search = `?src=${src}`;
             e.preventDefault();
         }

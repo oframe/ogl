@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+
+    <title>O-GL • Indexed vs Non-Indexed</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info">Indexed vs Non-Indexed</div>
+    <script type="module">
+        import {Renderer, Geometry, Program, Mesh, Transform, Camera} from '../src/OGL.js';
+        import BasicShader from './shaders/BasicShader.js';
+
+        {
+            const renderer = new Renderer({
+                width: window.innerWidth,
+                height: window.innerHeight,
+            });
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+            gl.clearColor(1, 1, 1, 1);
+
+            const scene = new Transform(gl);
+
+            const camera = new Camera(gl, {
+                fov: 15,
+                aspect: gl.canvas.width / gl.canvas.height,
+            });
+            camera.position.z = 15;
+
+            // Example using the same position and uv attributes for each to help demonstrate difference.
+
+            // 4 vertices, using 6 indices to illustrate 2 triangles using the default gl.TRIANGLES draw mode
+            const indexedGeometry = new Geometry(gl, {
+                position: {size: 3, data: new Float32Array([-0.5, 0.5, 0, -0.5, -0.5, 0, 0.5, 0.5, 0, 0.5, -0.5, 0])},
+                uv: {size: 2, data: new Float32Array([0, 1, 1, 1, 0, 0, 1, 0])},
+
+                // indices attribute must use the name 'index' to be treated as an ELEMENT_ARRAY_BUFFER
+                index: {data: new Uint16Array([0, 1, 2, 1, 3, 2])},
+            });
+
+            // 4 vertices without the indices - when drawing the default gl.TRIANGLES, only one triangle will be drawn.
+            // To create same square shape, would need 6 vertices, including two repeated.
+            const nonIndexedGeometry = new Geometry(gl, {
+                position: {size: 3, data: new Float32Array([-0.5, 0.5, 0, -0.5, -0.5, 0, 0.5, 0.5, 0, 0.5, -0.5, 0])},
+                uv: {size: 2, data: new Float32Array([0, 1, 1, 1, 0, 0, 1, 0])},
+            });
+
+            const program = new Program(gl, {
+                vertexShader: BasicShader.vertex,
+                fragmentShader: BasicShader.fragment,
+                uniforms: {
+                    uTime: {value: 0},
+                },
+            });
+
+            const indexedMesh = new Mesh(gl, {geometry: indexedGeometry, program});
+            indexedMesh.setParent(scene);
+            indexedMesh.position.y = 1;
+
+            const nonIndexedMesh = new Mesh(gl, {geometry: nonIndexedGeometry, program});
+            nonIndexedMesh.setParent(scene);
+            nonIndexedMesh.position.y = -1;
+
+            requestAnimationFrame(update);
+            function update(t) {
+                requestAnimationFrame(update);
+
+                program.uniforms.uTime.value = t * 0.001;
+                renderer.render({scene, camera});
+            }
+        }
+
+    </script>
+</body>
+</html>

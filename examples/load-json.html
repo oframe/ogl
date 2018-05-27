@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+
+    <title>O-GL • Load JSON</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info">Load JSON (Javascript Object Notation)</div>
+    <script type="module">
+        import {Renderer, Geometry, Program, Mesh, Transform, Camera, Texture, Color} from '../src/OGL.js';
+        import JSONShader from './shaders/JSONShader.js';
+
+        {
+            let mesh;
+            const renderer = new Renderer({
+                width: window.innerWidth,
+                height: window.innerHeight,
+                dpr: 2,
+            });
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+            gl.clearColor(1, 1, 1, 1);
+
+            const scene = new Transform(gl);
+
+            const camera = new Camera(gl, {
+                fov: 35,
+                aspect: gl.canvas.width / gl.canvas.height,
+            });
+            camera.position.set(8, 5, 15);
+            camera.lookAt([0, 1.5, 0]);
+
+            loadModel();
+            async function loadModel() {
+                const data = await (await fetch(`assets/fox.json`)).json();
+
+                const geometry = new Geometry(gl, {
+                    position: {size: 3, data: new Float32Array(data.position)},
+                    uv: {size: 2, data: new Float32Array(data.uv)},
+                    normal: {size: 3, data: new Float32Array(data.normal)},
+                });
+
+                const program = new Program(gl, {
+                    vertexShader: JSONShader.vertex,
+                    fragmentShader: JSONShader.fragment,
+                    uniforms: {
+                        tMap: {value: new Texture(gl)},
+                    },
+                });
+
+                let img = new Image();
+                img.onload = () => program.uniforms.tMap.value.image = img;
+                img.src = 'assets/fox.jpg';
+
+                mesh = new Mesh(gl, {geometry, program});
+                mesh.setParent(scene);
+            }
+
+            requestAnimationFrame(update);
+            function update() {
+                requestAnimationFrame(update);
+
+                if (mesh) mesh.rotation.y -= 0.005;
+
+                renderer.render({scene, camera});
+            }
+        }
+
+    </script>
+</body>
+</html>

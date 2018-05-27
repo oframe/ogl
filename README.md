@@ -16,7 +16,7 @@ Ideally, the framework does the minimum abstraction necessary, so that devs shou
 For an example, the way to set a clear color is to use the native call `gl.clearColor(r, g, b, a)`.
 This hopefully makes it easier to extend, and to use as a WebGL learning resource.
 
-[Go to the examples](https://oframe.github.io/ogl/)
+[Go to the examples](https://oframe.github.io/ogl/examples)
 
 The core of the framework is made up of the following
  - Geometry.js
@@ -50,10 +50,10 @@ so that the framework can achieve any desired effect.
 
 ### Geometry
  - [x] Triangle Screen Shader
- - [ ] Points, Lines, Triangles, TriangleStrip, TriangleFan
- - [ ] Indexed vs Non-Indexed
- - [ ] Wireframe
- - [ ] Load JSON (Javascript Object Notation)
+ - [x] Draw Modes
+ - [x] Indexed vs Non-Indexed
+ - [x] Load JSON (Javascript Object Notation)
+ - [x] Wireframe
  - [ ] Base Primitives - Plane, Cube, Sphere
  - [ ] Particles
  - [ ] Instancing

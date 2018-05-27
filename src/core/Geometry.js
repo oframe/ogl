@@ -7,8 +7,7 @@
 //     normalize - boolean default false
 // }
 
-// TODO: learn transform feedback and how to fit it in
-
+// TODO: fit in transform feedback
 // TODO: bounding box for auto culling
 // this.boundingBox.center
 
@@ -26,6 +25,7 @@ export class Geometry {
         this.drawRange = {start: 0, count: 0};
         this.instancedCount = 0;
 
+        // TODO: maybe attach these to renderer?
         // Get functions that differ between webgl1 and webgl2
         this.vertexAttribDivisor = gl.renderer.getExtension('ANGLE_instanced_arrays', 'vertexAttribDivisor', 'vertexAttribDivisorANGLE');
         this.drawArraysInstanced = gl.renderer.getExtension('ANGLE_instanced_arrays', 'drawArraysInstanced', 'drawArraysInstancedANGLE');
@@ -133,14 +133,13 @@ export class Geometry {
             // Bind indices if geometry indexed
             if (this.attributes.index) this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.attributes.index.buffer);
 
-            // Store so doesn't bind redundantly
-            this.gl.renderer.currentGeometry = this.id;
-
         } else if (!geometryBound) {
 
             // Bind if not already bound to program
             this.bindVertexArray(this.vao);
-            // this.gl.bindVertexArray(null);
+
+            // Store so doesn't bind redundantly
+            this.gl.renderer.currentGeometry = this.id;
         }
 
         if (this.isInstanced) {

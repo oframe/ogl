@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+
+    <title>O-GL • Wireframe</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info">Wireframe</div>
+    <script type="module">
+        import {Renderer, Geometry, Program, Mesh, Transform, Camera, Texture} from '../src/OGL.js';
+        import JSONShader from './shaders/JSONShader.js';
+
+        {
+            let lineLoopMesh, wireframeMesh;
+            const renderer = new Renderer({
+                width: window.innerWidth,
+                height: window.innerHeight,
+                dpr: 2,
+            });
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+            gl.clearColor(1, 1, 1, 1);
+
+            const scene = new Transform(gl);
+
+            const camera = new Camera(gl, {
+                fov: 35,
+                aspect: gl.canvas.width / gl.canvas.height,
+            });
+            camera.position.set(8, 5, 15);
+            camera.lookAt([0, 1.5, 0]);
+
+            loadModel();
+            async function loadModel() {
+                const data = await (await fetch(`assets/fox.json`)).json();
+
+                // Geometry to be used with gl.LINE_LOOP version
+                const geometry = new Geometry(gl, {
+                    position: {size: 3, data: new Float32Array(data.position)},
+                    uv: {size: 2, data: new Float32Array(data.uv)},
+                    normal: {size: 3, data: new Float32Array(data.normal)},
+                });
+
+                // For an accurate wireframe, triangle vertices need to be duplicated to make line pairs.
+                let index = new Uint16Array((data.position.length / 3 - 1) * 2);
+                for (let i = 0; i < data.position.length / 3 - 1; i += 3) {
+                    index[i * 2] = i;
+                    index[i * 2 + 1] = i + 1;
+                    index[i * 2 + 2] = i + 1;
+                    index[i * 2 + 3] = i + 2;
+                    index[i * 2 + 4] = i + 2;
+                    index[i * 2 + 5] = i;
+                }
+
+                const wireframeGeometry = new Geometry(gl, {
+                    position: {size: 3, data: new Float32Array(data.position)},
+                    uv: {size: 2, data: new Float32Array(data.uv)},
+                    normal: {size: 3, data: new Float32Array(data.normal)},
+                    index: {data: index},
+                });
+
+                const program = new Program(gl, {
+                    vertexShader: JSONShader.vertex,
+                    fragmentShader: JSONShader.fragment,
+                    uniforms: {
+                        tMap: {value: new Texture(gl)},
+                    },
+                });
+
+                let img = new Image();
+                img.onload = () => program.uniforms.tMap.value.image = img;
+                img.src = 'assets/fox.jpg';
+
+                // Using gl.LINE_LOOP will give an approximate wireframe, with extra, unwanted lines. For debugging or specific
+                // topologies, this is a much simpler option.
+                lineLoopMesh = new Mesh(gl, {mode: gl.LINE_LOOP, geometry, program});
+                lineLoopMesh.setParent(scene);
+                lineLoopMesh.position.y = 2;
+
+                wireframeMesh = new Mesh(gl, {mode: gl.LINES, geometry: wireframeGeometry, program});
+                wireframeMesh.setParent(scene);
+                wireframeMesh.position.y = -2;
+            }
+
+            requestAnimationFrame(update);
+            function update() {
+                requestAnimationFrame(update);
+
+                if (lineLoopMesh) lineLoopMesh.rotation.y -= 0.005;
+                if (wireframeMesh) wireframeMesh.rotation.y += 0.005;
+
+                renderer.render({scene, camera});
+            }
+        }
+
+    </script>
+</body>
+</html>
