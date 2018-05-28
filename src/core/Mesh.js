@@ -40,7 +40,7 @@ export class Mesh extends Transform {
             this.modelViewMatrix.multiply(camera.viewMatrix, this.worldMatrix);
             this.normalMatrix.getNormalMatrix(this.modelViewMatrix);
 
-            this.program.uniforms.modelMatrix.value = this.modelMatrix;
+            this.program.uniforms.modelMatrix.value = this.matrix;
             this.program.uniforms.modelViewMatrix.value = this.modelViewMatrix;
             this.program.uniforms.normalMatrix.value = this.normalMatrix;
         }

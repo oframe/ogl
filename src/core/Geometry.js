@@ -13,6 +13,7 @@
 
 // TODO: when would I disableVertexAttribArray ?
 // TODO: do I need to unbind after drawing ?
+// TODO: test updating attributes on the fly
 
 let ID = 0;
 
@@ -40,7 +41,7 @@ export class Geometry {
         }
     }
 
-    addAttribute(key, attr){
+    addAttribute(key, attr) {
         this.attributes[key] = attr;
 
         // Set options
@@ -52,9 +53,7 @@ export class Geometry {
         attr.count = attr.data.length / attr.size;
 
         // Push data to buffer
-        this.gl.bindBuffer(attr.target, attr.buffer);
-        this.gl.bufferData(attr.target, attr.data, this.gl.STATIC_DRAW);
-        this.gl.bindBuffer(attr.target, null);
+        this.updateAttribute(attr);
 
         // Update geometry counts. If indexed, ignore regular attributes
         if (attr.instanced) {
@@ -69,6 +68,12 @@ export class Geometry {
         } else if (!this.attributes.index) {
             this.drawRange.count = Math.max(this.drawRange.count, attr.count);
         }
+    }
+
+    updateAttribute(attr) {
+        this.gl.bindBuffer(attr.target, attr.buffer);
+        this.gl.bufferData(attr.target, attr.data, this.gl.STATIC_DRAW);
+        this.gl.bindBuffer(attr.target, null);
     }
 
     setIndex(value) {
@@ -132,6 +137,9 @@ export class Geometry {
 
             // Bind indices if geometry indexed
             if (this.attributes.index) this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.attributes.index.buffer);
+
+            // Store so doesn't bind redundantly
+            this.gl.renderer.currentGeometry = this.id;
 
         } else if (!geometryBound) {
 

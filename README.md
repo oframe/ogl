@@ -55,7 +55,7 @@ so that the framework can achieve any desired effect.
  - [x] Load JSON (Javascript Object Notation)
  - [x] Wireframe
  - [ ] Base Primitives - Plane, Cube, Sphere
- - [ ] Particles
+ - [x] Particles
  - [ ] Instancing
  - [ ] Billboard Depth Test (instances and points)
  - [ ] Frustum culling
