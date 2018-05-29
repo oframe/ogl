@@ -2,7 +2,7 @@
 // {
 //     data - typed array eg UInt16Array for indices, Float32Array
 //     size - int default 1
-//     instance - boolean default false
+//     instanced - boolean default false. can pass true or divisor amount
 //     type - gl enum default gl.UNSIGNED_SHORT for 'index', gl.FLOAT for others
 //     normalize - boolean default false
 // }
@@ -51,18 +51,19 @@ export class Geometry {
         attr.normalize = attr.normalize || false;
         attr.buffer = this.gl.createBuffer();
         attr.count = attr.data.length / attr.size;
+        attr.divisor = !attr.instanced ? 0 : typeof attr.instanced === 'number' ? attr.instanced : 1;
 
         // Push data to buffer
         this.updateAttribute(attr);
 
         // Update geometry counts. If indexed, ignore regular attributes
-        if (attr.instanced) {
-            if (this.instancedCount && this.instancedCount !== attr.count) {
-                console.warn('geometry has multiple instanced buffers of different length');
-                return this.instancedCount = Math.min(this.instancedCount, attr.count);
-            }
-            this.instancedCount = attr.count;
+        if (attr.divisor) {
             this.isInstanced = true;
+            if (this.instancedCount && this.instancedCount !== attr.count * attr.divisor) {
+                console.warn('geometry has multiple instanced buffers of different length');
+                return this.instancedCount = Math.min(this.instancedCount, attr.count * attr.divisor);
+            }
+            this.instancedCount = attr.count * attr.divisor;
         } else if (key === 'index') {
             this.drawRange.count = attr.count;
         } else if (!this.attributes.index) {
@@ -89,59 +90,51 @@ export class Geometry {
         this.instancedCount = value;
     }
 
+    createVAO(program) {
+        this.vao = this.createVertexArray();
+        this.bindVertexArray(this.vao);
+
+        // Link all attributes to program using gl.vertexAttribPointer
+        program.attributeLocations.forEach((location, name) => {
+
+            // If geometry missing a required shader attribute
+            if (!this.attributes[name]) {
+                console.warn(`active attribute ${name} not being supplied`);
+                return;
+            }
+
+            const attr = this.attributes[name];
+
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, attr.buffer);
+            this.gl.vertexAttribPointer(
+                location,
+                attr.size,
+                attr.type,
+                attr.normalize,
+                0, // stride
+                0 // offset
+            );
+            this.gl.enableVertexAttribArray(location);
+
+            // TODO: find a smarter way than calling this on everything ?
+            // For instanced attributes, divisor needs to be set.
+            // For firefox, need to set back to 0 if non-instanced drawn after instanced. Else won't render
+            this.vertexAttribDivisor(location, attr.divisor);
+        });
+
+        // Bind indices if geometry indexed
+        if (this.attributes.index) this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.attributes.index.buffer);
+    }
+
     draw({
         program,
         mode = this.gl.TRIANGLES,
         geometryBound = false,
     }) {
+        if (!geometryBound) {
 
-        // Create VAO on first draw. Needs to wait for program to get attribute locations
-        if (!this.vao) {
-            this.vao = this.createVertexArray();
-            this.bindVertexArray(this.vao);
-
-            // Link all attributes to program using gl.vertexAttribPointer
-            program.attributeLocations.forEach((location, name) => {
-
-                // If geometry missing a required shader attribute
-                if (!this.attributes[name]) {
-                    console.warn(`active attribute ${name} not being supplied`);
-                    return;
-                }
-
-                const attr = this.attributes[name];
-
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, attr.buffer);
-                this.gl.vertexAttribPointer(
-                    location,
-                    attr.size,
-                    attr.type,
-                    attr.normalize,
-                    0, // stride
-                    0 // offset
-                );
-                this.gl.enableVertexAttribArray(location);
-
-                // For instanced attributes
-                if (attr.instanced) {
-
-                    // attribute used once per instance
-                    this.vertexAttribDivisor(location, 1);
-                } else {
-
-                    // TODO: find a smarter way than calling this on everything ?
-                    // For firefox, need to set back to 0 if non-instanced drawn after instanced. Else won't render
-                    this.vertexAttribDivisor(location, 0);
-                }
-            });
-
-            // Bind indices if geometry indexed
-            if (this.attributes.index) this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.attributes.index.buffer);
-
-            // Store so doesn't bind redundantly
-            this.gl.renderer.currentGeometry = this.id;
-
-        } else if (!geometryBound) {
+            // Create VAO on first draw. Needs to wait for program to get attribute locations
+            if (!this.vao) this.createVAO(program);
 
             // Bind if not already bound to program
             this.bindVertexArray(this.vao);
