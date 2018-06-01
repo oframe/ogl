@@ -15,21 +15,25 @@
         import DrawModesShader from './shaders/DrawModesShader.js';
 
         {
-            const renderer = new Renderer({
-                width: window.innerWidth,
-                height: window.innerHeight,
-            });
+            const renderer = new Renderer();
             const gl = renderer.gl;
             document.body.appendChild(gl.canvas);
             gl.clearColor(1, 1, 1, 1);
 
+            const camera = new Camera(gl, {fov: 15});
+            camera.position.z = 15;
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height})
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
             const scene = new Transform(gl);
 
-            const camera = new Camera(gl, {
-                fov: 15,
-                aspect: gl.canvas.width / gl.canvas.height,
-            });
-            camera.position.z = 15;
+
+
 
             // Geometry is an indexed square, comprised of 4 vertices.
             const geometry = new Geometry(gl, {

@@ -19,7 +19,7 @@ export {Vec3} from './math/Vec3.js';
 export {Vec4} from './math/Vec4.js';
 
 // Extras
-// export {Plane} from './extras/Plane.js';
+export {Plane} from './extras/Plane.js';
 // export {Cube} from './extras/Cube.js';
 // export {Sphere} from './extras/Sphere.js';
 // export {OrbitControls} extras/from './OrbitControls';

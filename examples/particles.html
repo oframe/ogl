@@ -11,23 +11,27 @@
 <body>
     <div class="Info">Particles</div>
     <script type="module">
-        import {Renderer, Geometry, Program, Mesh, Transform, Camera} from '../src/OGL.js';
+        import {Renderer, Geometry, Program, Mesh, Camera} from '../src/OGL.js';
         import ParticlesShader from './shaders/ParticlesShader.js';
 
         {
-            const renderer = new Renderer({
-                width: window.innerWidth,
-                height: window.innerHeight,
-            });
+            const renderer = new Renderer();
             const gl = renderer.gl;
             document.body.appendChild(gl.canvas);
             gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {
-                fov: 15,
-                aspect: gl.canvas.width / gl.canvas.height,
-            });
+            const camera = new Camera(gl, {fov: 15});
             camera.position.z = 15;
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height})
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+
+
 
             const num = 100;
             const position = new Float32Array(num * 3);

@@ -63,6 +63,36 @@ export class Texture {
         // Bind so we can set its params
         this.gl.bindTexture(this.target, this.texture);
 
+        if (this.flipY !== this.store.flipY) {
+            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, this.flipY);
+            this.store.flipY = this.flipY;
+        }
+
+        if (this.premultiplyAlpha !== this.store.premultiplyAlpha) {
+            this.gl.pixelStorei(this.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.premultiplyAlpha);
+            this.store.premultiplyAlpha = this.premultiplyAlpha;
+        }
+
+        if (this.minFilter !== this.store.minFilter) {
+            this.gl.texParameteri(this.target, this.gl.TEXTURE_MIN_FILTER, this.minFilter);
+            this.store.minFilter = this.minFilter;
+        }
+
+        if (this.magFilter !== this.store.magFilter) {
+            this.gl.texParameteri(this.target, this.gl.TEXTURE_MAG_FILTER, this.magFilter);
+            this.store.magFilter = this.magFilter;
+        }
+
+        if (this.wrapS !== this.store.wrapS) {
+            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+            this.store.wrapS = this.wrapS;
+        }
+
+        if (this.wrapT !== this.store.wrapT) {
+            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+            this.store.wrapT = this.wrapT;
+        }
+
         if (this.image !== this.store.image) {
             if (this.image) {
 
@@ -126,36 +156,6 @@ export class Texture {
 
             }
             this.store.image = this.image;
-        }
-
-        if (this.flipY !== this.store.flipY) {
-            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, this.flipY);
-            this.store.flipY = this.flipY;
-        }
-
-        if (this.premultiplyAlpha !== this.store.premultiplyAlpha) {
-            this.gl.pixelStorei(this.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.premultiplyAlpha);
-            this.store.premultiplyAlpha = this.premultiplyAlpha;
-        }
-
-        if (this.minFilter !== this.store.minFilter) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_MIN_FILTER, this.minFilter);
-            this.store.minFilter = this.minFilter;
-        }
-
-        if (this.magFilter !== this.store.magFilter) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_MAG_FILTER, this.magFilter);
-            this.store.magFilter = this.magFilter;
-        }
-
-        if (this.wrapS !== this.store.wrapS) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-            this.store.wrapS = this.wrapS;
-        }
-
-        if (this.wrapT !== this.store.wrapT) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-            this.store.wrapT = this.wrapT;
         }
     }
 }

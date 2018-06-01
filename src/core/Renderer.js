@@ -43,8 +43,11 @@ export class Renderer {
             this.gl = canvas.getContext('webgl', attributes) || canvas.getContext('experimental-webgl', attributes);
         }
 
-        // Attach renderer to gl so that all classes have access to gl state functions
+        // Attach renderer to gl so that all classes have access to internal state functions
         this.gl.renderer = this;
+
+        // initialise size values
+        this.setSize(width, height);
 
         // gl state stores to avoid redundant calls on methods used internally
         this.state = {};
@@ -72,8 +75,13 @@ export class Renderer {
             this.getExtension('WEBGL_depth_texture');
         }
 
-        // Set initial size and viewport state
-        this.setSize(width, height);
+        // Create method aliases using extension or native if available
+        this.vertexAttribDivisor = this.gl.renderer.getExtension('ANGLE_instanced_arrays', 'vertexAttribDivisor', 'vertexAttribDivisorANGLE');
+        this.drawArraysInstanced = this.gl.renderer.getExtension('ANGLE_instanced_arrays', 'drawArraysInstanced', 'drawArraysInstancedANGLE');
+        this.drawElementsInstanced = this.gl.renderer.getExtension('ANGLE_instanced_arrays', 'drawElementsInstanced', 'drawElementsInstancedANGLE');
+        this.createVertexArray = this.gl.renderer.getExtension('OES_vertex_array_object', 'createVertexArray', 'createVertexArrayOES');
+        this.bindVertexArray = this.gl.renderer.getExtension('OES_vertex_array_object', 'bindVertexArray', 'bindVertexArrayOES');
+        this.deleteVertexArray = this.gl.renderer.getExtension('OES_vertex_array_object', 'deleteVertexArray', 'deleteVertexArrayOES');
     }
 
     setSize(width, height) {
@@ -87,8 +95,6 @@ export class Renderer {
             width: width + 'px',
             height: height + 'px',
         });
-
-        this.setViewport(width * this.dpr, height * this.dpr);
     }
 
     setViewport(width, height) {
@@ -187,12 +193,12 @@ export class Renderer {
 
         if (target === null) {
 
-            // make sure no render target bound to draw to canvas
+            // make sure no render target bound so draws to canvas
             this.bindFramebuffer();
             this.setViewport(this.width * this.dpr, this.height * this.dpr);
         } else {
 
-            // bind supplied render target
+            // bind supplied render target and update viewport
             this.bindFramebuffer(target);
             this.setViewport(target.width, target.height);
         }

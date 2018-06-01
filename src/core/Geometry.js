@@ -26,15 +26,6 @@ export class Geometry {
         this.drawRange = {start: 0, count: 0};
         this.instancedCount = 0;
 
-        // TODO: maybe attach these to renderer?
-        // Get functions that differ between webgl1 and webgl2
-        this.vertexAttribDivisor = gl.renderer.getExtension('ANGLE_instanced_arrays', 'vertexAttribDivisor', 'vertexAttribDivisorANGLE');
-        this.drawArraysInstanced = gl.renderer.getExtension('ANGLE_instanced_arrays', 'drawArraysInstanced', 'drawArraysInstancedANGLE');
-        this.drawElementsInstanced = gl.renderer.getExtension('ANGLE_instanced_arrays', 'drawElementsInstanced', 'drawElementsInstancedANGLE');
-        this.createVertexArray = gl.renderer.getExtension('OES_vertex_array_object', 'createVertexArray', 'createVertexArrayOES');
-        this.bindVertexArray = gl.renderer.getExtension('OES_vertex_array_object', 'bindVertexArray', 'bindVertexArrayOES');
-        this.deleteVertexArray = gl.renderer.getExtension('OES_vertex_array_object', 'deleteVertexArray', 'deleteVertexArrayOES');
-
         // create the buffers
         for (let key in attributes) {
             this.addAttribute(key, attributes[key]);
@@ -91,8 +82,12 @@ export class Geometry {
     }
 
     createVAO(program) {
-        this.vao = this.createVertexArray();
-        this.bindVertexArray(this.vao);
+        this.vao = this.gl.renderer.createVertexArray();
+        this.gl.renderer.bindVertexArray(this.vao);
+        this.bindAttributes(program);
+    }
+
+    bindAttributes(program) {
 
         // Link all attributes to program using gl.vertexAttribPointer
         program.attributeLocations.forEach((location, name) => {
@@ -116,10 +111,9 @@ export class Geometry {
             );
             this.gl.enableVertexAttribArray(location);
 
-            // TODO: find a smarter way than calling this on everything ?
             // For instanced attributes, divisor needs to be set.
             // For firefox, need to set back to 0 if non-instanced drawn after instanced. Else won't render
-            this.vertexAttribDivisor(location, attr.divisor);
+            this.gl.renderer.vertexAttribDivisor(location, attr.divisor);
         });
 
         // Bind indices if geometry indexed
@@ -136,8 +130,10 @@ export class Geometry {
             // Create VAO on first draw. Needs to wait for program to get attribute locations
             if (!this.vao) this.createVAO(program);
 
+            // TODO: add fallback for non vao support (ie)
+
             // Bind if not already bound to program
-            this.bindVertexArray(this.vao);
+            this.gl.renderer.bindVertexArray(this.vao);
 
             // Store so doesn't bind redundantly
             this.gl.renderer.currentGeometry = this.id;
@@ -145,9 +141,9 @@ export class Geometry {
 
         if (this.isInstanced) {
             if (this.attributes.index) {
-                this.drawElementsInstanced(mode, this.drawRange.count, this.attributes.index.type, this.drawRange.start, this.instancedCount);
+                this.gl.renderer.drawElementsInstanced(mode, this.drawRange.count, this.attributes.index.type, this.drawRange.start, this.instancedCount);
             } else {
-                this.drawArraysInstanced(mode, this.drawRange.start, this.drawRange.count, this.instancedCount);
+                this.gl.renderer.drawArraysInstanced(mode, this.drawRange.start, this.drawRange.count, this.instancedCount);
             }
         } else {
             if (this.attributes.index) {
@@ -159,7 +155,7 @@ export class Geometry {
     }
 
     remove() {
-        if (this.vao) this.deleteVertexArray(this.vao);
+        if (this.vao) this.gl.renderer.deleteVertexArray(this.vao);
         for (let key in this.attributes) {
             this.gl.deleteBuffer(this.attributes[key].buffer);
             delete this.attributes[key];

@@ -15,23 +15,27 @@
         import BasicShader from './shaders/BasicShader.js';
 
         {
-            const renderer = new Renderer({
-                width: window.innerWidth,
-                height: window.innerHeight,
-            });
+            const renderer = new Renderer();
             const gl = renderer.gl;
             document.body.appendChild(gl.canvas);
             gl.clearColor(1, 1, 1, 1);
 
-            const scene = new Transform(gl);
-
-            const camera = new Camera(gl, {
-                fov: 15,
-                aspect: gl.canvas.width / gl.canvas.height,
-            });
+            const camera = new Camera(gl, {fov: 15});
             camera.position.z = 15;
 
-            // Example using the same position and uv attributes for each to help demonstrate difference.
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height})
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+            const scene = new Transform(gl);
+
+
+
+
+            // Note: Each geometry using the same position and uv attributes to help demonstrate the difference.
 
             // 4 vertices, using 6 indices to illustrate 2 triangles using the default gl.TRIANGLES draw mode
             const indexedGeometry = new Geometry(gl, {

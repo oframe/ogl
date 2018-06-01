@@ -51,7 +51,7 @@ void main() {
     
     float circle = smoothstep(0.5, 0.4, length(uv - 0.5)) * 0.8;
     
-    gl_FragColor.rgb = 0.7 + 0.2 * sin(uv.yxx + uTime + vRandom.y * 6.28) + vec3(0.2, 0.0, 0.1);
+    gl_FragColor.rgb = 0.8 + 0.2 * sin(uv.yxx + uTime + vRandom.y * 6.28) + vec3(0.1, 0.0, 0.3);
     gl_FragColor.a = circle;
 }
 `;
