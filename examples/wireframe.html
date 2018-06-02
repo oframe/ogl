@@ -21,8 +21,8 @@
             gl.clearColor(1, 1, 1, 1);
 
             const camera = new Camera(gl, {fov: 35});
-            camera.position.set(8, 5, 15);
-            camera.lookAt([0, 1.5, 0]);
+            camera.position.set(5, 3, 6);
+            camera.lookAt([0, 0, 0]);
 
             function resize() {
                 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -48,11 +48,11 @@
 
             let img = new Image();
             img.onload = () => program.uniforms.tMap.value.image = img;
-            img.src = 'assets/fox.jpg';
+            img.src = 'assets/croissant.jpg';
 
             loadModel();
             async function loadModel() {
-                const data = await (await fetch(`assets/fox.json`)).json();
+                const data = await (await fetch(`assets/croissant.json`)).json();
 
                 // Regular geometry with no modifications to be used with gl.LINE_LOOP version
                 const geometry = new Geometry(gl, {
@@ -65,7 +65,7 @@
                 // This is a simpler, lighter option if accuracy is not important (i.e. debugging).
                 lineLoopMesh = new Mesh(gl, {mode: gl.LINE_LOOP, geometry, program});
                 lineLoopMesh.setParent(scene);
-                lineLoopMesh.position.y = 2;
+                lineLoopMesh.position.y = 1;
 
 
 
@@ -89,7 +89,7 @@
                 // use the gl.LINES draw mode
                 wireframeMesh = new Mesh(gl, {mode: gl.LINES, geometry: wireframeGeometry, program});
                 wireframeMesh.setParent(scene);
-                wireframeMesh.position.y = -2;
+                wireframeMesh.position.y = -1;
             }
 
             requestAnimationFrame(update);

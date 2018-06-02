@@ -30,7 +30,7 @@ The core of the framework is made up of the following
 
 Any extra layers of abstraction will be included as extras, and not part of the core.
 These extra classes are still a work-in-progress as examples are developed, but ideally will include:
- - [ ] Plane.js
+ - [x] Plane.js
  - [ ] Cube.js
  - [ ] Sphere.js
  - [ ] OrbitControls
@@ -56,7 +56,7 @@ so that the framework can achieve any desired effect.
  - [x] Wireframe
  - [ ] Base Primitives - Plane, Cube, Sphere
  - [x] Particles
- - [ ] Instancing
+ - [x] Instancing
  - [ ] Billboard Depth Test (instances and points)
  - [ ] Frustum culling
  - [ ] LODs (Level Of Detail)
@@ -73,7 +73,7 @@ so that the framework can achieve any desired effect.
  - [ ] Projection (Mouse, clip space)
 
 ### Shading
- - [ ] Fog
+ - [x] Fog
  - [ ] Textures
  - [ ] Skydome
  - [ ] Normal Maps

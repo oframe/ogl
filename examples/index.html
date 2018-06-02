@@ -40,7 +40,7 @@
         <div class="Example">Projection (Mouse, clip space)</div>
 
         <div class="Section">Shading</div>
-        <div class="Example">Fog</div>
+        <a class="Example" href="fog.html">Fog</a>
         <div class="Example">Textures</div>
         <div class="Example">Skydome</div>
         <div class="Example">Normal Maps</div>
@@ -98,7 +98,9 @@
 
             iFrame.src = e.target.href;
             sourceLink.href = sourcePath + src;
-            location.search = `?src=${src}`;
+
+            // Update search query
+            history.pushState(null, null, `${location.origin}${location.pathname}?src=${src}`);
             e.preventDefault();
         }
     </script>

@@ -1,7 +1,7 @@
 export class Color extends Float32Array {
     constructor(array = [0, 0, 0]) {
         super(3);
-        if (typeof array === 'string') array = this.hexToRGB(array);
+        if (typeof array === 'string') array = Color.hexToRGB(array);
         this.set(...array);
         return this;
     }
