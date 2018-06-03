@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/oframe/ogl/raw/master/examples/assets/ogl.png" alt="O-GL" width="680" height="400" />
+  <img src="https://github.com/oframe/ogl/raw/master/examples/assets/ogl.png" alt="O-GL" width="510" height="300" />
 </p>
 
 <h1 align="center">O-GL</h1>
@@ -14,7 +14,7 @@
 
 </p>
 
-<p align="center"><b>WebGL framework.</b></p>
+<p align="center"><b>Minimal WebGL framework.</b></p>
 
 <br />
 
