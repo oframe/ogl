@@ -77,11 +77,16 @@
         const sourcePath = 'https://github.com/oframe/ogl/tree/master/examples/';
 
         // Load query example in iFrame if linked
-         let loadQuery = location.search.split('src=');
-         if (loadQuery[1]) {
+        let loadQuery = location.search.split('src=');
+        if (loadQuery[1]) {
             iFrame.src = loadQuery[1];
             sourceLink.href = sourcePath + loadQuery[1];
-         }
+        } else {
+
+            // choose random example to show if none linked
+            let target = exampleLinks[Math.floor(Math.random() * exampleLinks.length)];
+            updateExample({target});
+        }
 
         exampleLinks.forEach(link => {
             link.addEventListener('click', updateExample, false);
@@ -101,7 +106,7 @@
 
             // Update search query
             history.pushState(null, null, `${location.origin}${location.pathname}?src=${src}`);
-            e.preventDefault();
+            e.preventDefault && e.preventDefault();
         }
     </script>
 </body>
