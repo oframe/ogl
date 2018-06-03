@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <title>O-GL • Base Primitives - Plane, Cube, Sphere</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info">Base Primitives - Plane, Cube, Sphere</div>
+    <script type="module">
+        import {Renderer, Camera, Transform, Plane, Cube, Sphere, Program, Mesh} from '../src/OGL.js';
+        import BasePrimitivesShader from './shaders/BasePrimitivesShader.js';
+
+        {
+            const renderer = new Renderer({dpr: 2});
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+            gl.clearColor(1, 1, 1, 1);
+
+            const camera = new Camera(gl, {fov: 35});
+            camera.position.set(0, 1, 7);
+            camera.lookAt([0, 0, 0]);
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height})
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+            const scene = new Transform(gl);
+
+            const planeGeometry = new Plane(gl);
+            const sphereGeometry = new Sphere(gl);
+            const cubeGeometry = new Cube(gl);
+
+            const program = new Program(gl, {
+                vertexShader: BasePrimitivesShader.vertex,
+                fragmentShader: BasePrimitivesShader.fragment,
+                uniforms: {
+                    uTime: {value: 0},
+                },
+                cullFace: null,
+            });
+
+            const plane = new Mesh(gl, {geometry: planeGeometry, program});
+            plane.position.set(0, 1.3, 0);
+            plane.setParent(scene);
+
+            const sphere = new Mesh(gl, {geometry: sphereGeometry, program});
+            sphere.setParent(scene);
+
+            const cube = new Mesh(gl, {geometry: cubeGeometry, program});
+            cube.position.set(0, -1.3, 0);
+            cube.setParent(scene);
+
+
+            requestAnimationFrame(update);
+            function update(t) {
+                requestAnimationFrame(update);
+
+                plane.rotation.y -= 0.02;
+                sphere.rotation.y -= 0.03;
+                cube.rotation.y -= 0.04;
+                program.uniforms.uTime.value = t * 0.001;
+                renderer.render({scene, camera});
+            }
+        }
+
+    </script>
+</body>
+</html>

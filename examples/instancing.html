@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
 
     <title>O-GL • Instancing</title>
     <link href="assets/main.css" rel="stylesheet">
@@ -12,7 +13,7 @@
     <div class="Info">Instancing. Model by Google Poly</div>
     <script type="module">
         import {Renderer, Geometry, Program, Mesh, Camera, Texture} from '../src/OGL.js';
-        import InstanceShader from './shaders/InstanceShader.js';
+        import InstancingShader from './shaders/InstancingShader.js';
 
         {
             const renderer = new Renderer({dpr: 2});
@@ -36,8 +37,8 @@
             let mesh;
 
             const program = new Program(gl, {
-                vertexShader: InstanceShader.vertex,
-                fragmentShader: InstanceShader.fragment,
+                vertexShader: InstancingShader.vertex,
+                fragmentShader: InstancingShader.fragment,
                 uniforms: {
                     uTime: {value: 0},
                     tMap: {value: new Texture(gl)},

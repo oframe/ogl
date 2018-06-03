@@ -31,8 +31,8 @@ The core of the framework is made up of the following
 Any extra layers of abstraction will be included as extras, and not part of the core.
 These extra classes are still a work-in-progress as examples are developed, but ideally will include:
  - [x] Plane.js
- - [ ] Cube.js
- - [ ] Sphere.js
+ - [x] Cube.js
+ - [x] Sphere.js
  - [ ] OrbitControls
  - [ ] Curve.js
  - [ ] Raycasting.js
@@ -54,7 +54,7 @@ so that the framework can achieve any desired effect.
  - [x] Indexed vs Non-Indexed
  - [x] Load JSON (Javascript Object Notation)
  - [x] Wireframe
- - [ ] Base Primitives - Plane, Cube, Sphere
+ - [x] Base Primitives - Plane, Cube, Sphere
  - [x] Particles
  - [x] Instancing
  - [ ] Billboard Depth Test (instances and points)

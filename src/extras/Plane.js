@@ -1,40 +1,19 @@
 import {Geometry} from '../core/Geometry.js';
 
 export class Plane extends Geometry {
-    constructor(gl, w = 1, h = 1, wSeg = 1, hSeg = 1) {
-        const num = (wSeg + 1) * (hSeg + 1);
-        const numIndices = wSeg * hSeg * 6;
+    constructor(gl, width = 1, height = width, wSegs = 1, hSegs = 1) {
 
+        // Determine length of arrays
+        const num = (wSegs + 1) * (hSegs + 1);
+        const numIndices = wSegs * hSegs;
+
+        // Generate empty arrays once
         const position = new Float32Array(num * 3);
         const normal = new Float32Array(num * 3);
         const uv = new Float32Array(num * 2);
-        const index = new Uint16Array(numIndices);
+        const index = new Uint16Array(numIndices * 6);
 
-        const segW = w / wSeg;
-        const segH = h / hSeg;
-        const up = [0, 0, 1];
-
-        let i = 0;
-        let iI = 0;
-
-        for (let iy = 0; iy <= hSeg; iy++) {
-            let y = iy * segH - h / 2;
-            for (let ix = 0; ix <= wSeg; ix++, i++) {
-                let x = ix * segW - w / 2;
-                position.set([x, -y, 0], i * 3);
-                normal.set(up, i * 3);
-                uv.set([ix / wSeg, 1 - iy / hSeg], i * 2);
-
-                if (iy === hSeg || ix === wSeg) continue;
-                let a = ix + iy * (wSeg + 1);
-                let b = ix + (iy + 1) * (wSeg + 1);
-                let c = ix + (iy + 1) * (wSeg + 1) + 1;
-                let d = ix + iy * (wSeg + 1) + 1;
-
-                index.set([a, b, d, b, c, d], iI * 6);
-                iI++;
-            }
-        }
+        Plane.buildPlane(position, normal, uv, index, width, height, 0, wSegs, hSegs);
 
         super(gl, {
             position: {size: 3, data: position},
@@ -42,5 +21,47 @@ export class Plane extends Geometry {
             uv: {size: 2, data: uv},
             index: {data: index},
         });
+    }
+
+    static buildPlane(position, normal, uv, index, width, height, depth, wSegs, hSegs,
+        u = 0, v = 1, w = 2,
+        uDir = 1, vDir = -1,
+        i = 0, ii = 0
+    ) {
+        const io = i;
+        const segW = width / wSegs;
+        const segH = height / hSegs;
+
+        for (let iy = 0; iy <= hSegs; iy++) {
+            let y = iy * segH - height / 2;
+            for (let ix = 0; ix <= wSegs; ix++, i++) {
+                let x = ix * segW - width / 2;
+
+                position[i * 3 + u] = x * uDir;
+                position[i * 3 + v] = y * vDir;
+                position[i * 3 + w] = depth / 2;
+
+                normal[i * 3 + u] = 0;
+                normal[i * 3 + v] = 0;
+                normal[i * 3 + w] = depth >= 0 ? 1 : -1;
+
+                uv[i * 2]     = ix / wSegs;
+                uv[i * 2 + 1] = 1 - iy / hSegs;
+
+                if (iy === hSegs || ix === wSegs) continue;
+                let a = io + ix + iy * (wSegs + 1);
+                let b = io + ix + (iy + 1) * (wSegs + 1);
+                let c = io + ix + (iy + 1) * (wSegs + 1) + 1;
+                let d = io + ix + iy * (wSegs + 1) + 1;
+
+                index[ii * 6]     = a;
+                index[ii * 6 + 1] = b;
+                index[ii * 6 + 2] = d;
+                index[ii * 6 + 3] = b;
+                index[ii * 6 + 4] = c;
+                index[ii * 6 + 5] = d;
+                ii++;
+            }
+        }
     }
 }
