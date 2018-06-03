@@ -23,8 +23,8 @@ export class Cube extends Geometry {
         Plane.buildPlane(position, normal, uv, index, width, depth, -height, dSegs, hSegs, 0, 2, 1,  1, -1, i += (wSegs + 1) * (dSegs + 1), ii += wSegs * dSegs);
 
         // front, back
-        Plane.buildPlane(position, normal, uv, index, width, height,  depth, wSegs, hSegs, 0, 1, 2,  1,  1, i += (wSegs + 1) * (dSegs + 1), ii += wSegs * dSegs);
-        Plane.buildPlane(position, normal, uv, index, width, height, -depth, wSegs, hSegs, 0, 1, 2,  1, -1, i += (wSegs + 1) * (hSegs + 1), ii += wSegs * hSegs);
+        Plane.buildPlane(position, normal, uv, index, width, height, -depth, wSegs, hSegs, 0, 1, 2,  1,  1, i += (wSegs + 1) * (dSegs + 1), ii += wSegs * dSegs);
+        Plane.buildPlane(position, normal, uv, index, width, height,  depth, wSegs, hSegs, 0, 1, 2,  1, -1, i += (wSegs + 1) * (hSegs + 1), ii += wSegs * hSegs);
 
         super(gl, {
             position: {size: 3, data: position},

@@ -1,24 +1,130 @@
-# O-GL WebGL Framework
+<p align="center">
+  <img src="https://github.com/oframe/ogl/blob/master/examples/assets/ogl.png" alt="O-GL" width="680" height="400" />
+</p>
 
-:warning: Currently in alpha. Working on completing Examples wishlist before moving to beta
+<h1 align="center">O-GL</h1>
 
-O-GL is a minimal WebGL framework that supports both WebGL1 and WebGL2.
+<p align="center">
+    <a href="https://npmjs.org/package/ogl">
+        <img src="https://img.shields.io/npm/v/ogl.svg" alt="version" />
+    </a>
+    <a href="https://github.com/oframe/ogl/blob/master/LICENSE">
+        <img src="https://img.shields.io/npm/l/ogl.svg" alt="license" />
+    </a>
 
-It's written using ES6 modules, built for use directly in supported browsers with no need for a dev stack.
-Of course it can also be used in any stack that supports ES modules.
+</p>
 
-When minified, its total weight is currently 13kb gzipped.
-This includes its own Math library - itself comprising 7kb gzipped, which can be used separately.
+<p align="center"><b>WebGL framework.</b></p>
 
-The API shares lots of similarities to Threejs, however is tightly coupled to WebGL and has much fewer features.
-In its creation, it is aimed at devs who like small layers of abstraction, and are comfortable enough with WebGL to run their own shaders.
-Ideally, the framework does the minimum abstraction necessary, so that devs should still feel comfortable using it in conjunction with native WebGL commands.
-For an example, the way to set a clear color is to use the native call `gl.clearColor(r, g, b, a)`.
-This hopefully makes it easier to extend, and to use as a WebGL learning resource.
+<br />
 
-[Go to the examples](https://oframe.github.io/ogl/examples)
+⚠️ *Note: currently in alpha, so expect breaking changes.*
 
-The core of the framework is made up of the following
+[Examples](https://oframe.github.io/ogl/examples)
+
+O-GL is a small, effective WebGL framework aimed at developers who like minimal layers of abstraction, and are comfortable creating their own shaders.
+
+With 0 dependencies, the API shares many similarities with ThreeJS, however it is tightly coupled with WebGL and comes with much fewer features.
+
+In its design, the framework does the minimum abstraction necessary, so devs should still feel comfortable using it in conjunction with native WebGL commands.
+
+Keeping the level of abstraction low helps to make the framework easier to understand and extend, and also makes it more practical as a WebGL learning resource.
+
+## Install
+
+```
+npm install ogl
+```
+
+**or**
+
+Use directly in your project with es6 modules and load directly in the browser - **no dev-stack required**.
+
+## Examples
+
+[Show me what you got!](https://oframe.github.io/ogl/examples) - Explore a comprehensive list of examples, with comments in the source code.
+
+## Weight
+
+Even though the source is completely modular, as a guide, below are the complete component download sizes.
+
+Component | Size (gzipped)
+------------ | -------------:
+Core | 6kb
+Math | 7kb
+Extras | 2kb
+Total | 15kb
+
+## Usage
+
+Importing is done from a single point of access for simplicity. *This may cause some issues with certain bundlers when tree-shaking.*
+
+```js
+
+import {Renderer, Camera, Transform, Cube, Program, Mesh} from './OGL.js';
+```
+
+Below renders a spinning black cube.
+
+```js
+
+{
+    const renderer = new Renderer({
+        width: window.innerWidth,
+        height: window.innerHeight,
+    });
+    const gl = renderer.gl;
+    document.body.appendChild(gl.canvas);
+
+    const camera = new Camera(gl, {
+        fov: 35,
+        aspect: gl.canvas.width / gl.canvas.height,
+    });
+    camera.position.z = 5;
+
+    const scene = new Transform(gl);
+
+    const geometry = new Cube(gl);
+
+    const program = new Program(gl, {
+        vertexShader: `
+            attribute vec3 position;
+
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+
+            void main() {
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+            `,
+        fragmentShader: `
+            void main() {
+                gl_FragColor = vec4(1.0);
+            }
+        `,
+    });
+
+    const mesh = new Mesh(gl, {geometry, program});
+    mesh.setParent(scene);
+
+    requestAnimationFrame(update);
+    function update(t) {
+        requestAnimationFrame(update);
+
+        mesh.rotation.y -= 0.04;
+        mesh.rotation.x += 0.03;
+        renderer.render({scene, camera});
+    }
+}
+```
+
+## Structure
+
+In an attempt to leep things light and modular, the framework is split up into three components: **Math**, **Core**, and **Extras**.
+
+The **Math** component is based on a fork of gl-matrix - featuring a practical API. 7kb when gzipped, it has no dependencies and can be used separately.
+
+The **Core** is made up of the following:
  - Geometry.js
  - Program.js
  - Renderer.js
@@ -28,8 +134,9 @@ The core of the framework is made up of the following
  - Texture.js
  - RenderTarget.js
 
-Any extra layers of abstraction will be included as extras, and not part of the core.
-These extra classes are still a work-in-progress as examples are developed, but ideally will include:
+Any additional layers of abstraction will be included as **Extras**, and not part of the core as to reduce bloat.
+
+Below is an **Extras** wish-list, and is still a work-in-progress as examples are developed.
  - [x] Plane.js
  - [x] Cube.js
  - [x] Sphere.js
@@ -41,12 +148,18 @@ These extra classes are still a work-in-progress as examples are developed, but 
  - [ ] Rig.js
  - [ ] RigAnimation.js
 
-
 ## Examples wishlist
 
-This is an opinionated, comprehensive list of examples for any fully-fledged WebGL framework.
-The goal is to complete these as reference for users, and also to help determine which 'extras' need to be developed
-so that the framework can achieve any desired effect.
+[Examples](https://oframe.github.io/ogl/examples)
+
+In order to test the completeness of the framework, below is a wish-list that covers most commonly-used 3D techniques.
+
+It is an opinionated, comprehensive list of examples for any fully-fledged WebGL framework.
+
+Much inspired by ThreeJS' examples, they will serve as reference for how to achieve a wide range of techniques.
+
+In order to make the framework as usable as possible, for more involved techniques, extra classes will be developed
+and contained within the 'Extras' folder of the framework.
 
 ### Geometry
  - [x] Triangle Screen Shader
@@ -96,4 +209,3 @@ so that the framework can achieve any desired effect.
 
 ### Stencil
  - [ ] Stencil Shadows and Mirror
-
