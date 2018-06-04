@@ -2,7 +2,7 @@ import {Geometry} from '../core/Geometry.js';
 import {Plane} from './Plane.js';
 
 export class Cube extends Geometry {
-    constructor(gl, width = 1, height = width, depth = width, wSegs = 1, hSegs = 1, dSegs = 1) {
+    constructor(gl, width = 1, height = width, depth = width, wSegs = 1, hSegs = wSegs, dSegs = wSegs) {
         const num = (wSegs + 1) * (hSegs + 1) * 2 + (wSegs + 1) * (dSegs + 1) * 2 + (hSegs + 1) * (dSegs + 1) * 2;
         const numIndices = wSegs * hSegs * 2 + wSegs * dSegs * 2 + hSegs * dSegs * 2;
 

@@ -1,7 +1,7 @@
 import {Geometry} from '../core/Geometry.js';
 
 export class Plane extends Geometry {
-    constructor(gl, width = 1, height = width, wSegs = 1, hSegs = 1) {
+    constructor(gl, width = 1, height = width, wSegs = 1, hSegs = wSegs) {
 
         // Determine length of arrays
         const num = (wSegs + 1) * (hSegs + 1);

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/oframe/ogl/raw/master/examples/assets/ogl.png" alt="O-GL" width="510" height="300" />
+  <img src="https://github.com/oframe/ogl/raw/master/examples/assets/ogl.png" alt="O-GL" width="510" />
 </p>
 
 <h1 align="center">O-GL</h1>
