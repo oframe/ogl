@@ -187,7 +187,7 @@ and contained within the 'Extras' folder of the framework.
 
 ### Shading
  - [x] Fog
- - [ ] Textures
+ - [x] Textures
  - [ ] Skydome
  - [ ] Normal Maps
  - [ ] SDF Alpha test/clip (Signed Distance Fields)

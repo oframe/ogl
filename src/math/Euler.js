@@ -40,7 +40,7 @@ export class Euler extends Float32Array {
         this.onChange();
     }
 
-    set(x, y, z) {
+    set(x, y = x, z = x) {
         this[0] = x;
         this[1] = y;
         this[2] = z;

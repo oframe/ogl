@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <title>O-GL • Textures</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info">Textures. Model by Google Poly. Film bt Studio Ghibli.</div>
+    <script type="module">
+        import {Renderer, Geometry, Program, Plane, Mesh, Camera, Transform, Texture} from '../src/OGL.js';
+        import TexturesShader from './shaders/TexturesShader.js';
+
+        {
+            const renderer = new Renderer({dpr: 2});
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+            gl.clearColor(1, 1, 1, 1);
+
+            const camera = new Camera(gl, {fov: 45});
+            camera.position.set(0, 2, 5);
+            camera.lookAt([0, 0.2, 0]);
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height})
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+            const scene = new Transform(gl);
+
+
+
+            let mesh;
+
+            const program = new Program(gl, {
+                vertexShader: TexturesShader.vertex,
+                fragmentShader: TexturesShader.fragment,
+                uniforms: {
+
+                    // Upload empty texture while source loading
+                    tMap: {value: new Texture(gl)},
+                },
+            });
+
+            // update image value with source once loaded
+            let img = new Image();
+            img.onload = () => program.uniforms.tMap.value.image = img;
+            img.src = 'assets/saddle.jpg';
+
+            loadModel();
+            async function loadModel() {
+                const data = await (await fetch(`assets/saddle.json`)).json();
+
+                const geometry = new Geometry(gl, {
+                    position: {size: 3, data: new Float32Array(data.position)},
+                    uv: {size: 2, data: new Float32Array(data.uv)},
+                    normal: {size: 3, data: new Float32Array(data.normal)},
+                });
+
+                mesh = new Mesh(gl, {geometry, program});
+                mesh.position.set(0, 0, 0);
+                mesh.setParent(scene);
+            }
+
+
+
+            const videoGeometry = new Plane(gl, 1.78, 1);
+
+            // Init empty texture while source loading
+            const videoTexture = new Texture(gl, {
+                generateMipmaps: false,
+                width: 1024,
+                height: 512,
+            });
+
+            // Create video with attributes that let it autoplay
+            // Check update loop to see when video is attached to texture
+            let video = document.createElement('video');
+            video.src = 'assets/laputa.mp4';
+            video.loop = true;
+            video.autoplay = true;
+            video.setAttribute('crossorigin', 'anonymous');
+            video.setAttribute('webkit-playsinline', true);
+            video.setAttribute('muted', true);
+
+
+            const videoProgram = new Program(gl, {
+                vertexShader: TexturesShader.vertex,
+                fragmentShader: TexturesShader.fragment,
+                uniforms: {
+                    tMap: {value: videoTexture},
+                },
+                cullFace: null,
+            });
+            const videoMesh = new Mesh(gl, {geometry: videoGeometry, program: videoProgram});
+            videoMesh.position.set(0, 0, -4);
+            videoMesh.scale.set(2);
+            videoMesh.setParent(scene);
+
+            requestAnimationFrame(update);
+            function update(t) {
+                requestAnimationFrame(update);
+
+                // Attach video and/or update texture when video is ready
+                if (video.readyState >= video.HAVE_ENOUGH_DATA) {
+                    if (!videoTexture.image) videoTexture.image = video;
+                    videoTexture.needsUpdate = true;
+                }
+
+                if (!mesh) return;
+                mesh.rotation.y -= 0.005;
+                renderer.render({scene, camera});
+            }
+        }
+
+    </script>
+</body>
+</html>

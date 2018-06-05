@@ -30,7 +30,7 @@ export class Vec3 extends Float32Array {
         this[2] = v;
     }
 
-    set(x, y, z) {
+    set(x, y = x, z = x) {
         Vec3Func.set(this, x, y, z);
         return this;
     }

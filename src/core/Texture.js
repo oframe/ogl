@@ -93,7 +93,8 @@ export class Texture {
             this.store.wrapT = this.wrapT;
         }
 
-        if (this.image !== this.store.image) {
+        if (this.image !== this.store.image || this.needsUpdate) {
+            this.needsUpdate = false;
             if (this.image) {
 
                 // TODO: is there always width/height?
@@ -150,7 +151,7 @@ export class Texture {
                     this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, null);
                 } else {
 
-                    // Upload empty pixel if no image to avoid errors while image loading
+                    // Upload empty pixel if no image to avoid errors while image or video loading
                     this.gl.texImage2D(this.target, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
                 }
 

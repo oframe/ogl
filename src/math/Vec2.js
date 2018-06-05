@@ -22,7 +22,7 @@ export class Vec2 extends Float32Array {
         this[1] = v;
     }
 
-    set(x, y) {
+    set(x, y = x) {
         Vec2Func.set(this, x, y);
         return this;
     }
