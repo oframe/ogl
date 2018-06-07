@@ -73,32 +73,36 @@ export class Quat extends Float32Array {
         return this;
     }
 
-    invert(quat = this) {
-        QuatFunc.invert(this, quat);
+    invert(q = this) {
+        QuatFunc.invert(this, q);
         this.onChange();
         return this;
     }
 
-    copy(quat) {
-        QuatFunc.copy(this, quat);
+    copy(q) {
+        QuatFunc.copy(this, q);
         this.onChange();
         return this;
     }
 
-    normalize(quat = this) {
-        QuatFunc.normalize(this, quat);
+    normalize(q = this) {
+        QuatFunc.normalize(this, q);
         this.onChange();
         return this;
     }
 
-    multiply(quatA, quatB) {
-        if (quatB) {
-            QuatFunc.multiply(this, quatA, quatB);
+    multiply(qA, qB) {
+        if (qB) {
+            QuatFunc.multiply(this, qA, qB);
         } else {
-            QuatFunc.multiply(this, this, quatA);
+            QuatFunc.multiply(this, this, qA);
         }
         this.onChange();
         return this;
+    }
+
+    dot(v) {
+        return QuatFunc.dot(this, v);
     }
 
     fromMatrix3(matrix3) {

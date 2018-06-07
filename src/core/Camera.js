@@ -23,8 +23,8 @@ export class Camera extends Transform {
         this.projectionMatrix = new Mat4();
         this.viewMatrix = new Mat4();
 
-        // Use orthogonal if values set, else default to perspective camera
-        if (left || right) this.orthogonal({left, right, bottom, top});
+        // Use orthographic if values set, else default to perspective camera
+        if (left || right) this.orthographic({left, right, bottom, top});
         else this.perspective();
     }
 
@@ -35,10 +35,10 @@ export class Camera extends Transform {
         aspect = this.aspect,
     } = {}) {
         this.projectionMatrix.fromPerspective({fov: fov * (Math.PI / 180), aspect, near, far});
-        this.type = 'perpective';
+        this.type = 'perspective';
     }
 
-    orthogonal({
+    orthographic({
         near = this.near,
         far = this.far,
         left = -1,
@@ -47,7 +47,7 @@ export class Camera extends Transform {
         top = 1,
     } = {}) {
         this.projectionMatrix.fromOrthogonal({left, right, bottom, top, near, far});
-        this.type = 'orthogonal';
+        this.type = 'orthographic';
     }
 
     updateMatrixWorld() {

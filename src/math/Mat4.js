@@ -46,36 +46,36 @@ export class Mat4 extends Float32Array {
         return this;
     }
 
-    translate(vec3, mat4 = this) {
-        Mat4Func.translate(this, mat4, vec3);
+    translate(v, m = this) {
+        Mat4Func.translate(this, m, v);
         return this;
     }
 
-    rotateX(v, mat4 = this) {
-        Mat4Func.rotateX(this, mat4, v);
+    rotateX(v, m = this) {
+        Mat4Func.rotateX(this, m, v);
         return this;
     }
 
-    rotateY(v, mat4 = this) {
-        Mat4Func.rotateY(this, mat4, v);
+    rotateY(v, m = this) {
+        Mat4Func.rotateY(this, m, v);
         return this;
     }
 
-    rotateZ(v, mat4 = this) {
-        Mat4Func.rotateZ(this, mat4, v);
+    rotateZ(v, m = this) {
+        Mat4Func.rotateZ(this, m, v);
         return this;
     }
 
-    scale(v, mat4 = this) {
-        Mat4Func.scale(this, mat4, typeof v === "number" ? [v, v, v] : v);
+    scale(v, m = this) {
+        Mat4Func.scale(this, m, typeof v === "number" ? [v, v, v] : v);
         return this;
     }
 
-    multiply(mat4a, mat4b) {
-        if (mat4b) {
-            Mat4Func.multiply(this, mat4a, mat4b);
+    multiply(ma, mb) {
+        if (mb) {
+            Mat4Func.multiply(this, ma, mb);
         } else {
-            Mat4Func.multiply(this, this, mat4a);
+            Mat4Func.multiply(this, this, ma);
         }
         return this;
     }
@@ -85,8 +85,8 @@ export class Mat4 extends Float32Array {
         return this;
     }
 
-    copy(mat4) {
-        Mat4Func.copy(this, mat4);
+    copy(m) {
+        Mat4Func.copy(this, m);
         return this;
     }
 
@@ -100,30 +100,30 @@ export class Mat4 extends Float32Array {
         return this;
     }
 
-    fromQuaternion(quat) {
-        Mat4Func.fromQuat(this, quat);
+    fromQuaternion(q) {
+        Mat4Func.fromQuat(this, q);
         return this;
     }
 
-    setPosition(vec3) {
-        this.x = vec3[0];
-        this.y = vec3[1];
-        this.z = vec3[2];
+    setPosition(v) {
+        this.x = v[0];
+        this.y = v[1];
+        this.z = v[2];
         return this;
     }
 
-    invert(mat4 = this) {
-        Mat4Func.invert(this, mat4);
+    invert(m = this) {
+        Mat4Func.invert(this, m);
         return this;
     }
 
-    compose(quat, pos, scale) {
-        Mat4Func.fromRotationTranslationScale(this, quat, pos, scale);
+    compose(q, pos, scale) {
+        Mat4Func.fromRotationTranslationScale(this, q, pos, scale);
         return this;
     }
 
-    getRotation(quat) {
-        Mat4Func.getRotation(quat, this);
+    getRotation(q) {
+        Mat4Func.getRotation(q, this);
         return this;
     }
 

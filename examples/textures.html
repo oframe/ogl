@@ -22,8 +22,8 @@
             gl.clearColor(1, 1, 1, 1);
 
             const camera = new Camera(gl, {fov: 45});
-            camera.position.set(0, 2, 5);
-            camera.lookAt([0, 0.2, 0]);
+            camera.position.set(3, 1.5, 4);
+            camera.lookAt([1, 0.2, 0]);
 
             function resize() {
                 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -35,23 +35,24 @@
             const scene = new Transform(gl);
 
 
-
+            // Image texture
             let mesh;
+
+            // Upload empty texture while source loading
+            const texture = new Texture(gl);
+            const img = new Image();
+
+            // update image value with source once loaded
+            img.onload = () => texture.image = img;
+            img.src = 'assets/saddle.jpg';
 
             const program = new Program(gl, {
                 vertexShader: TexturesShader.vertex,
                 fragmentShader: TexturesShader.fragment,
                 uniforms: {
-
-                    // Upload empty texture while source loading
-                    tMap: {value: new Texture(gl)},
+                    tMap: {value: texture},
                 },
             });
-
-            // update image value with source once loaded
-            let img = new Image();
-            img.onload = () => program.uniforms.tMap.value.image = img;
-            img.src = 'assets/saddle.jpg';
 
             loadModel();
             async function loadModel() {
@@ -68,8 +69,9 @@
                 mesh.setParent(scene);
             }
 
-
-
+            // Video Texture
+            // Disclaimer: video autoplay is a confusing, constantly-changing browser feature.
+            // The best approach is to never assume that it will work, and therefore prepare for a fallback.
             const videoGeometry = new Plane(gl, 1.78, 1);
 
             // Init empty texture while source loading
@@ -83,12 +85,16 @@
             // Check update loop to see when video is attached to texture
             let video = document.createElement('video');
             video.src = 'assets/laputa.mp4';
-            video.loop = true;
-            video.autoplay = true;
-            video.setAttribute('crossorigin', 'anonymous');
-            video.setAttribute('webkit-playsinline', true);
-            video.setAttribute('muted', true);
 
+            // Tested on mac: Chrome, Safari, Firefox; android: chrome
+            video.loop = true;
+            video.muted = true;
+            video.play();
+
+            // TODO: test ios
+            // video.setAttribute('crossorigin', 'anonymous');
+            // video.setAttribute('webkit-playsinline', true);
+            // video.setAttribute('playsinline', true);
 
             const videoProgram = new Program(gl, {
                 vertexShader: TexturesShader.vertex,
@@ -98,7 +104,10 @@
                 },
                 cullFace: null,
             });
-            const videoMesh = new Mesh(gl, {geometry: videoGeometry, program: videoProgram});
+            const videoMesh = new Mesh(gl, {
+                geometry: videoGeometry,
+                program: videoProgram
+            });
             videoMesh.position.set(0, 0, -4);
             videoMesh.scale.set(2);
             videoMesh.setParent(scene);

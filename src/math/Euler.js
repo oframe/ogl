@@ -54,13 +54,13 @@ export class Euler extends Float32Array {
         return this;
     }
 
-    fromRotationMatrix(mat4, order = this.order) {
-        EulerFunc.fromRotationMatrix(this, mat4, order);
+    fromRotationMatrix(m, order = this.order) {
+        EulerFunc.fromRotationMatrix(this, m, order);
         return this;
     }
 
-    fromQuaternion(quat, order = this.order) {
-        tmpMat4.fromQuaternion(quat);
+    fromQuaternion(q, order = this.order) {
+        tmpMat4.fromQuaternion(q);
         return this.fromRotationMatrix(tmpMat4, order);
     }
 }

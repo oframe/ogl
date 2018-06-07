@@ -27,23 +27,29 @@ export class Vec2 extends Float32Array {
         return this;
     }
 
-    copy(vec2) {
-        Vec2Func.copy(this, vec2);
+    copy(v) {
+        Vec2Func.copy(this, v);
         return this;
     }
 
-    add(vec2) {
-        Vec2Func.add(this, this, vec2);
+    add(v) {
+        Vec2Func.add(this, this, v);
         return this;
     }
 
-    distance(vec2) {
-        if (vec2) return Vec2Func.distance(this, vec2);
+    multiply(m) {
+        if (m.length) Vec2Func.multiply(this, this, m);
+        else Vec2Func.scale(this, this, m);
+        return this;
+    }
+
+    distance(v) {
+        if (v) return Vec2Func.distance(this, v);
         else return Vec2Func.length(this);
     }
 
-    squaredDistance(vec2) {
-        if (vec2) return Vec2Func.squaredDistance(this, vec2);
+    squaredDistance(v) {
+        if (v) return Vec2Func.squaredDistance(this, v);
         else return Vec2Func.squaredLength(this);
     }
 
@@ -51,18 +57,19 @@ export class Vec2 extends Float32Array {
         return this.squaredDistance();
     }
 
-    subtract(vec2) {
-        Vec2Func.subtract(this, this, vec2);
+    subtract(va, vb) {
+        if (vb) Vec2Func.subtract(this, va, vb);
+        else Vec2Func.subtract(this, this, va);
         return this;
     }
 
-    negate(vec2 = this) {
-        Vec2Func.negate(this, vec2);
+    negate(v = this) {
+        Vec2Func.negate(this, v);
         return this;
     }
 
-    cross(vec2a, vec2b) {
-        Vec2Func.cross(this, vec2a, vec2b);
+    cross(va, vb) {
+        Vec2Func.cross(this, va, vb);
         return this;
     }
 
@@ -75,12 +82,12 @@ export class Vec2 extends Float32Array {
         Vec2Func.normalize(this, this);
     }
 
-    dot(vec2) {
-        return Vec2Func.dot(this, vec2);
+    dot(v) {
+        return Vec2Func.dot(this, v);
     }
 
-    equals(vec2) {
-        return Vec2Func.exactEquals(this, vec2);
+    equals(v) {
+        return Vec2Func.exactEquals(this, v);
     }
 
     applyMatrix3(mat3) {
@@ -93,8 +100,8 @@ export class Vec2 extends Float32Array {
         return this;
     }
 
-    lerp(vec2, v) {
-        Vec2Func.lerp(this, this, vec2, v);
+    lerp(v, a) {
+        Vec2Func.lerp(this, this, v, a);
     }
 
     clone() {

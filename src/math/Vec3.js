@@ -35,23 +35,32 @@ export class Vec3 extends Float32Array {
         return this;
     }
 
-    copy(vec3) {
-        Vec3Func.copy(this, vec3);
+    copy(v) {
+        Vec3Func.copy(this, v);
         return this;
     }
 
-    add(vec3) {
-        Vec3Func.add(this, this, vec3);
+    add(v) {
+        Vec3Func.add(this, this, v);
         return this;
     }
 
-    distance(vec3) {
-        if (vec3) return Vec3Func.distance(this, vec3);
-        else return Vec3Func.length(this);
+    multiply(m) {
+        if (m.length) Vec3Func.multiply(this, this, m);
+        else Vec3Func.scale(this, this, m);
+        return this;
     }
 
-    squaredDistance(vec3) {
-        if (vec3) return Vec3Func.squaredDistance(this, vec3);
+    length() {
+        return Vec3Func.length(this);
+    }
+
+    distance(v) {
+        return Vec3Func.distance(this, v);
+    }
+
+    squaredDistance(v) {
+        if (v) return Vec3Func.squaredDistance(this, v);
         else return Vec3Func.squaredLength(this);
     }
 
@@ -59,18 +68,19 @@ export class Vec3 extends Float32Array {
         return this.squaredDistance();
     }
 
-    subtract(vec3) {
-        Vec3Func.subtract(this, this, vec3);
+    subtract(va, vb) {
+        if (vb) Vec3Func.subtract(this, va, vb);
+        else Vec3Func.subtract(this, this, va);
         return this;
     }
 
-    negate(vec3 = this) {
-        Vec3Func.negate(this, vec3);
+    negate(v = this) {
+        Vec3Func.negate(this, v);
         return this;
     }
 
-    cross(vec3a, vec3b) {
-        Vec3Func.cross(this, vec3a, vec3b);
+    cross(va, vb) {
+        Vec3Func.cross(this, va, vb);
         return this;
     }
 
@@ -84,12 +94,12 @@ export class Vec3 extends Float32Array {
         return this;
     }
 
-    dot(vec3) {
-        return Vec3Func.dot(this, vec3);
+    dot(v) {
+        return Vec3Func.dot(this, v);
     }
 
-    equals(vec3) {
-        return Vec3Func.exactEquals(this, vec3);
+    equals(v) {
+        return Vec3Func.exactEquals(this, v);
     }
 
     applyMatrix4(mat4) {
@@ -97,8 +107,8 @@ export class Vec3 extends Float32Array {
         return this;
     }
 
-    angle(vec3) {
-        return Vec3Func.angle(this, vec3);
+    angle(v) {
+        return Vec3Func.angle(this, v);
     }
 
     clone() {

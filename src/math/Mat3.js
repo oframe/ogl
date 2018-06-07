@@ -11,26 +11,26 @@ export class Mat3 extends Float32Array {
         return this;
     }
 
-    translate(vec2, mat3 = this) {
-        Mat3Func.translate(this, mat3, vec2);
+    translate(v, m = this) {
+        Mat3Func.translate(this, m, v);
         return this;
     }
 
-    rotate(v, mat3 = this) {
-        Mat3Func.rotate(this, mat3, v);
+    rotate(v, m = this) {
+        Mat3Func.rotate(this, m, v);
         return this;
     }
 
-    scale(vec2, mat3 = this) {
-        Mat3Func.scale(this, mat3, vec2);
+    scale(v, m = this) {
+        Mat3Func.scale(this, m, v);
         return this;
     }
 
-    multiply(mat3a, mat3b) {
-        if (mat3b) {
-            Mat3Func.multiply(this, mat3a, mat3b);
+    multiply(ma, mb) {
+        if (mb) {
+            Mat3Func.multiply(this, ma, mb);
         } else {
-            Mat3Func.multiply(this, this, mat3a);
+            Mat3Func.multiply(this, this, ma);
         }
         return this;
     }
@@ -40,18 +40,18 @@ export class Mat3 extends Float32Array {
         return this;
     }
 
-    copy(mat3) {
-        Mat3Func.copy(this, mat3);
+    copy(m) {
+        Mat3Func.copy(this, m);
         return this;
     }
 
-    fromMatrix4(mat4) {
-        Mat3Func.fromMat4(this, mat4);
+    fromMatrix4(m) {
+        Mat3Func.fromMat4(this, m);
         return this;
     }
 
-    fromQuaternion(quat) {
-        Mat3Func.fromQuat(this, quat);
+    fromQuaternion(q) {
+        Mat3Func.fromQuat(this, q);
         return this;
     }
 
@@ -70,13 +70,13 @@ export class Mat3 extends Float32Array {
         return this;
     }
 
-    invert(mat3 = this) {
-        Mat3Func.invert(this, mat3);
+    invert(m = this) {
+        Mat3Func.invert(this, m);
         return this;
     }
 
-    getNormalMatrix(mat4) {
-        Mat3Func.normalFromMat4(this, mat4);
+    getNormalMatrix(m) {
+        Mat3Func.normalFromMat4(this, m);
         return this;
     }
 }

@@ -22,7 +22,7 @@ export {Vec4} from './math/Vec4.js';
 export {Plane} from './extras/Plane.js';
 export {Cube} from './extras/Cube.js';
 export {Sphere} from './extras/Sphere.js';
-// export {OrbitControls} extras/from './OrbitControls';
+export {Orbit} from './extras/Orbit.js';
 // export {Curve} from './extras/Curve.js';
 // export {Raycasting} from './extras/Raycasting.js';
 // export {Projection} from './extras/Projection.js';
