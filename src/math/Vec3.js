@@ -111,6 +111,11 @@ export class Vec3 extends Float32Array {
         return Vec3Func.angle(this, v);
     }
 
+    lerp(v, t) {
+        Vec3Func.lerp(this, this, v, t);
+        return this;
+    }
+
     clone() {
         return new Vec3(this);
     }

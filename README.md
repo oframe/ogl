@@ -140,7 +140,7 @@ Below is an **Extras** wish-list, and is still a work-in-progress as examples ar
  - [x] Plane.js
  - [x] Cube.js
  - [x] Sphere.js
- - [ ] OrbitControls
+ - [x] Orbit.js
  - [ ] Curve.js
  - [ ] Raycasting.js
  - [ ] Projection.js
@@ -181,14 +181,14 @@ and contained within the 'Extras' folder of the framework.
  - [ ] Render Hierarchy With Transparency
 
 ### Interaction
- - [ ] Orbit controls
+ - [x] Orbit controls
  - [ ] Raycasting
  - [ ] Projection (Mouse, clip space)
 
 ### Shading
  - [x] Fog
  - [x] Textures
- - [ ] Skydome
+ - [x] Skydome
  - [ ] Normal Maps
  - [ ] SDF Alpha test/clip (Signed Distance Fields)
  - [ ] MSDF Text Glyphs (Multichannel Signed Distance Fields)

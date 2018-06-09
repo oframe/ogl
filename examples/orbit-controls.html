@@ -6,14 +6,14 @@
     <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <link rel="icon" type="image/png" href="assets/favicon.png">
 
-    <title>O-GL • Skydome</title>
+    <title>O-GL • OrbitControls</title>
     <link href="assets/main.css" rel="stylesheet">
 </head>
 <body>
-    <div class="Info">Skydome. Image credit charlesashaw.</div>
+    <div class="Info">OrbitControls. Model by Google Poly.</div>
     <script type="module">
-        import {Renderer, Geometry, Program, Sphere, Mesh, Camera, Transform, Texture, Orbit} from '../src/OGL.js';
-        import SkydomeShader from './shaders/SkydomeShader.js';
+        import {Renderer, Geometry, Program, Sphere, Mesh, Camera, Transform, Texture, Orbit, Vec3} from '../src/OGL.js';
+        import OrbitControlsShader from './shaders/OrbitControlsShader.js';
 
         {
             const renderer = new Renderer({dpr: 2});
@@ -22,12 +22,12 @@
             gl.clearColor(1, 1, 1, 1);
 
             const camera = new Camera(gl, {fov: 45});
-            camera.position.set(0, 0, 8);
+            camera.position.set(-2, 1, 2);
 
+            // Create controls and pass parameters
             const controls = new Orbit({
                 object: camera,
-                enablePan: false,
-                enableZoom: false,
+                target: new Vec3([0, 0.7, 0]),
             });
 
             function resize() {
@@ -42,30 +42,36 @@
             const texture = new Texture(gl);
             const img = new Image();
             img.onload = () => texture.image = img;
-            img.src = 'assets/sky.jpg';
-
-            const geometry = new Sphere(gl, 1, 64);
+            img.src = 'assets/macaw.jpg';
 
             const program = new Program(gl, {
-                vertexShader: SkydomeShader.vertex,
-                fragmentShader: SkydomeShader.fragment,
+                vertexShader: OrbitControlsShader.vertex,
+                fragmentShader: OrbitControlsShader.fragment,
                 uniforms: {
                     tMap: {value: texture},
                 },
                 cullFace: null,
             });
 
-            const mesh = new Mesh(gl, {geometry, program});
-            mesh.setParent(scene);
+            loadModel();
+            async function loadModel() {
+                const data = await (await fetch(`assets/macaw.json`)).json();
 
-            const skybox = new Mesh(gl, {geometry, program});
-            skybox.scale.set(10);
-            skybox.setParent(scene);
+                const geometry = new Geometry(gl, {
+                    position: {size: 3, data: new Float32Array(data.position)},
+                    uv: {size: 2, data: new Float32Array(data.uv)},
+                    normal: {size: 3, data: new Float32Array(data.normal)},
+                });
+
+                let mesh = new Mesh(gl, {geometry, program});
+                mesh.setParent(scene);
+            }
 
             requestAnimationFrame(update);
             function update() {
                 requestAnimationFrame(update);
 
+                // Need to update controls every frame
                 controls.update();
                 renderer.render({scene, camera});
             }

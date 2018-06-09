@@ -12,7 +12,7 @@
 <body>
     <div class="Info">Textures. Model by Google Poly. Film bt Studio Ghibli.</div>
     <script type="module">
-        import {Renderer, Geometry, Program, Plane, Mesh, Camera, Transform, Texture} from '../src/OGL.js';
+        import {Renderer, Geometry, Program, Plane, Cube, Mesh, Camera, Transform, Texture} from '../src/OGL.js';
         import TexturesShader from './shaders/TexturesShader.js';
 
         {
@@ -72,7 +72,8 @@
             // Video Texture
             // Disclaimer: video autoplay is a confusing, constantly-changing browser feature.
             // The best approach is to never assume that it will work, and therefore prepare for a fallback.
-            const videoGeometry = new Plane(gl, 1.78, 1);
+//            const videoGeometry = new Plane(gl, 1.78, 1);
+            const videoGeometry = new Cube(gl, 1.78, 1, 1.78);
 
             // Init empty texture while source loading
             const videoTexture = new Texture(gl, {
@@ -108,8 +109,8 @@
                 geometry: videoGeometry,
                 program: videoProgram
             });
-            videoMesh.position.set(0, 0, -4);
-            videoMesh.scale.set(2);
+            videoMesh.position.set(0, 0.5, -4);
+            videoMesh.scale.set(1.5);
             videoMesh.setParent(scene);
 
             requestAnimationFrame(update);
@@ -122,8 +123,8 @@
                     videoTexture.needsUpdate = true;
                 }
 
-                if (!mesh) return;
-                mesh.rotation.y -= 0.005;
+                if (mesh) mesh.rotation.y -= 0.005;
+                videoMesh.rotation.y += 0.003;
                 renderer.render({scene, camera});
             }
         }
