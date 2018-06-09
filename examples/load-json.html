@@ -12,7 +12,7 @@
 <body>
     <div class="Info">Load JSON (Javascript Object Notation). Model by Google Poly</div>
     <script type="module">
-        import {Renderer, Geometry, Program, Mesh, Camera, Texture} from '../src/OGL.js';
+        import {Renderer, Geometry, Program, Mesh, Camera, Transform, Texture} from '../src/OGL.js';
         import LoadJSONShader from './shaders/LoadJSONShader.js';
 
         {
@@ -31,6 +31,8 @@
             }
             window.addEventListener('resize', resize, false);
             resize();
+
+            const scene = new Transform(gl);
 
 
 
@@ -59,15 +61,15 @@
                 });
 
                 mesh = new Mesh(gl, {geometry, program});
+                mesh.setParent(scene);
             }
 
             requestAnimationFrame(update);
             function update() {
                 requestAnimationFrame(update);
 
-                if (!mesh) return;
-                mesh.rotation.y -= 0.005;
-                renderer.render({scene: mesh, camera});
+                if (mesh) mesh.rotation.y -= 0.005;
+                renderer.render({scene, camera});
             }
         }
 

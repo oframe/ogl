@@ -12,7 +12,7 @@
 <body>
 <div class="Info">Fog. Model by Google Poly</div>
 <script type="module">
-    import {Renderer, Geometry, Program, Mesh, Camera, Texture, Color} from '../src/OGL.js';
+    import {Renderer, Geometry, Program, Mesh, Camera, Texture, Transform, Color} from '../src/OGL.js';
     import FogShader from './shaders/FogShader.js';
 
     {
@@ -31,6 +31,8 @@
         }
         window.addEventListener('resize', resize, false);
         resize();
+
+        const scene = new Transform(gl);
 
 
 
@@ -85,17 +87,19 @@
             });
 
             mesh = new Mesh(gl, {geometry, program});
+            mesh.setParent(scene);
         }
 
         requestAnimationFrame(update);
         function update(t) {
             requestAnimationFrame(update);
 
-            if (!mesh) return;
-            mesh.rotation.y += 0.003;
-            mesh.position.z = Math.sin(t * 0.0004) * 3.0;
+            if (mesh) {
+                mesh.rotation.y += 0.003;
+                mesh.position.z = Math.sin(t * 0.0004) * 3.0;
+            }
             program.uniforms.uTime.value = t * 0.001;
-            renderer.render({scene: mesh, camera});
+            renderer.render({scene, camera});
         }
     }
 
