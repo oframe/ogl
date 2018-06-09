@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <title>O-GL • Render Hierarchy With Transparency</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info">Render Hierarchy With Transparency</div>
+    <script type="module">
+        import {Renderer, Camera, Transform, Plane, Cube, Sphere, Program, Mesh, Texture, Color} from '../src/OGL.js';
+        import RenderTransparencyShader from './shaders/RenderTransparencyShader.js';
+
+        {
+            const renderer = new Renderer({dpr: 2});
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+            gl.clearColor(1, 1, 1, 1);
+
+            const camera = new Camera(gl, {fov: 35});
+            camera.position.set(0, 0, 7);
+            camera.rotation.z = -0.3;
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height})
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+            const scene = new Transform(gl);
+
+            const geometry = new Plane(gl, 1, 1, 10);
+
+            const texture = new Texture(gl);
+            const img = new Image();
+            img.onload = () => texture.image = img;
+            img.src = 'assets/leaf.jpg';
+
+            const program = new Program(gl, {
+                vertexShader: RenderTransparencyShader.vertex,
+                fragmentShader: RenderTransparencyShader.fragment,
+                uniforms: {
+                    tMap: {value: texture},
+                    uColor: {value: new Color('#853543')}
+                },
+                transparent: true,
+                cullFace: null,
+            });
+
+            const meshes = [];
+
+            for (let i = 0; i < 20; i++) {
+                const mesh = new Mesh(gl, {geometry, program});
+                mesh.position.set(
+                    (Math.random() - 0.5) * 3,
+                    (Math.random() - 0.5) * 6,
+                    (Math.random() - 0.5) * 3
+                );
+                mesh.rotation.set(
+                    0,
+                    (Math.random() - 0.5) * 6.28,
+                    (Math.random() - 0.5) * 6.28
+                );
+                mesh.scale.set(Math.random() * 0.5 + 0.5);
+                mesh.speed = Math.random() + 0.5;
+                mesh.setParent(scene);
+                meshes.push(mesh);
+            }
+
+            requestAnimationFrame(update);
+            function update(t) {
+                requestAnimationFrame(update);
+
+                meshes.forEach(mesh => {
+                    mesh.rotation.y += 0.05;
+                    mesh.rotation.z += 0.05;
+                    mesh.position.y -= 0.02 * mesh.speed;
+                    if (mesh.position.y < -3) mesh.position.y += 6;
+                });
+
+                scene.rotation.y += 0.015;
+
+                renderer.render({scene, camera});
+            }
+        }
+
+    </script>
+</body>
+</html>

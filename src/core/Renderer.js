@@ -1,5 +1,6 @@
-// TODO: render lists - opaque and transparent
-// TODO: sort opaque list in order of program
+import {Mat4} from '../math/Mat4.js';
+import {Vec3} from '../math/Vec3.js';
+
 // TODO: culling
 // TODO: cnv.addEventListener('webglcontextlost', contextLost, false);
 // TODO: cnv.addEventListener('webglcontextrestored', contextRestore, false);
@@ -11,6 +12,9 @@
 // gl.stencilFunc( stencilFunc, stencilRef, stencilMask );
 // gl.stencilOp( stencilFail, stencilZFail, stencilZPass );
 // gl.clearStencil( stencil );
+
+const projMat4 = new Mat4();
+const tempVec3 = new Vec3();
 
 export class Renderer {
     constructor({
@@ -26,6 +30,7 @@ export class Renderer {
         preserveDrawingBuffer = false,
         powerPreference = 'default',
         autoClear = true,
+        sort = true,
     } = {}) {
         const attributes = {alpha, depth, stencil, antialias, premultipliedAlpha, preserveDrawingBuffer, powerPreference};
         this.dpr = dpr;
@@ -35,6 +40,7 @@ export class Renderer {
         this.stencil = stencil;
         this.premultipliedAlpha = premultipliedAlpha;
         this.autoClear = autoClear;
+        this.sort = sort;
 
         // Attempt WebGL2, otherwise fallback to WebGL1
         this.gl = canvas.getContext('webgl2', attributes);
@@ -185,10 +191,66 @@ export class Renderer {
         return this.extensions[extension][extFunc].bind(this.extensions[extension]);
     }
 
+    drawOpaque(scene, camera) {
+        const opaque = [];
+        scene.traverse(node => {
+            if (!node.program || node.program.transparent) return;
+            opaque.splice(getRenderOrder(node), 0, node);
+        });
+
+        function getRenderOrder(node) {
+            node.worldMatrix.getTranslation(tempVec3);
+            tempVec3.applyMatrix4(projMat4);
+
+            node.zDepth = tempVec3.z;
+            for (let i = 0; i < opaque.length; i++) {
+                if (node.zDepth <= opaque[i].zDepth) return i;
+            }
+            return opaque.length;
+        }
+
+        for (let i = 0; i < opaque.length; i++) {
+            opaque[i].draw({camera});
+        }
+    }
+
+    drawTransparent(scene, camera) {
+        const transparent = [];
+        const custom = [];
+        scene.traverse(node => {
+            if (!node.program || !node.program.transparent) return;
+
+            // If manual order set, add to queue last
+            if (node.renderOrder !== undefined) return custom.push(node);
+            transparent.splice(getRenderOrder(node), 0, node);
+        });
+
+        function getRenderOrder(node) {
+            node.worldMatrix.getTranslation(tempVec3);
+            tempVec3.applyMatrix4(projMat4);
+
+            node.zDepth = tempVec3.z;
+            for (let i = 0; i < transparent.length; i++) {
+                if (node.zDepth >= transparent[i].zDepth) return i;
+            }
+            return transparent.length;
+        }
+
+        // Add manually ordered nodes
+        for (let i = 0; i < custom.length; i++) {
+            transparent.splice(custom[i].renderOrder, 0, custom[i]);
+        }
+
+        for (let i = 0; i < transparent.length; i++) {
+            transparent[i].draw({camera});
+        }
+    }
+
     render({
         scene,
         camera,
         target = null,
+        update = true,
     }) {
 
         if (target === null) {
@@ -214,30 +276,26 @@ export class Renderer {
         }
 
         // updates all scene graph matrices
-        scene.updateMatrixWorld();
+        if (update) scene.updateMatrixWorld();
 
         // Update camera separately if not in scene graph
         if (camera && camera.parent === null) camera.updateMatrixWorld();
 
-        scene.traverse(node => {
-            if (!node.draw) return;
-            node.draw({camera});
-        });
+        // can only sort if camera available
+        if (this.sort && camera) {
+            projMat4.multiply(camera.projectionMatrix, camera.viewMatrix);
+            this.drawOpaque(scene, camera);
+            this.drawTransparent(scene, camera);
+        } else {
+            scene.traverse(node => {
+                if (!node.draw) return;
+                node.draw({camera});
+            });
+        }
 
         // SORTING using a proj matrix to get distance from cam
         // _projScreenMatrix.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse );
         // _frustum.setFromMatrix( _projScreenMatrix );
-        // if ( _this.sortObjects === true ) {
-        //     opaqueObjects.sort( painterSortStable );
-        //     transparentObjects.sort( reversePainterSortStable );
-        // }
         // culling
-
-        // state.setBlending( NoBlending );
-        // renderObjects( opaqueObjects, scene, camera );
-        // // transparent pass (back-to-front order)
-        // renderObjects( transparentObjects, scene, camera );
-
-        // never call gl.get anything during render
     }
 }

@@ -177,8 +177,8 @@ and contained within the 'Extras' folder of the framework.
  - [ ] Load GLTF (Graphics Language Transmission Format)
 
 ### Scene
- - [ ] Scene Graph hierarchy
- - [ ] Render Hierarchy With Transparency
+ - [x] Scene Graph hierarchy
+ - [x] Render Hierarchy With Transparency
 
 ### Interaction
  - [x] Orbit controls

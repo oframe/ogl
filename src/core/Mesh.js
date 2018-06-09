@@ -1,4 +1,6 @@
 import {Transform} from './Transform.js';
+import {Mat3} from '../math/Mat3.js';
+import {Mat4} from '../math/Mat4.js';
 
 export class Mesh extends Transform {
     constructor(gl, {
@@ -12,6 +14,9 @@ export class Mesh extends Transform {
         this.geometry = geometry;
         this.program = program;
         this.mode = mode;
+
+        this.modelViewMatrix = new Mat4();
+        this.normalMatrix = new Mat3();
 
         // Add empty matrix uniforms to program if unset
         if (!this.program.uniforms.modelMatrix) {

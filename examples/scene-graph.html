@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <title>O-GL • Scene Graph Hierarchy</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info">Scene Graph Hierarchy</div>
+    <script type="module">
+        import {Renderer, Camera, Transform, Plane, Cube, Sphere, Program, Mesh} from '../src/OGL.js';
+        import SceneGraphShader from './shaders/SceneGraphShader.js';
+
+        {
+            const renderer = new Renderer({dpr: 2});
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+            gl.clearColor(1, 1, 1, 1);
+
+            // The Camera class extends Transform. See Below.
+            const camera = new Camera(gl, {fov: 35});
+            camera.position.set(0, 1, 7);
+            camera.lookAt([0, 0, 0]);
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height})
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+            const sphereGeometry = new Sphere(gl, 0.15);
+            const cubeGeometry = new Cube(gl, 0.3);
+
+            const program = new Program(gl, {
+                vertexShader: SceneGraphShader.vertex,
+                fragmentShader: SceneGraphShader.fragment,
+            });
+
+            // The scene hierarchy is controlled by the Transform class
+            // To create scenes, groups, null pointers etc, use Transform
+            const scene = new Transform(gl);
+
+            // The Mesh class extends the Transform class, so shares the scene graph functionality
+            const sphere = new Mesh(gl, {geometry: sphereGeometry, program});
+            sphere.speed = -0.5;
+
+            // Use .setParent to add transform as a child
+            // scene.addChild(sphere); // also works
+            sphere.setParent(scene);
+
+            const shapes = [];
+            shapes.push(sphere);
+
+            // Create random array of shapes
+            for (let i = 0; i < 50; i++) {
+                const geometry = Math.random() > 0.5 ? cubeGeometry : sphereGeometry;
+                const shape = new Mesh(gl, {geometry, program});
+                shape.scale.set(Math.random() * 0.3 + 0.7);
+                shape.position.set(
+                    (Math.random() - 0.5) * 3,
+                    (Math.random() - 0.5) * 3,
+                    (Math.random() - 0.5) * 3
+                );
+                shape.speed = (Math.random() - 0.5) * 0.7;
+
+                // Attach them to a random, previously created shape
+                shape.setParent(shapes[Math.floor(Math.random() * shapes.length)]);
+                shapes.push(shape);
+            }
+
+            requestAnimationFrame(update);
+            function update(t) {
+                requestAnimationFrame(update);
+
+                shapes.forEach(shape => {
+                    shape.rotation.y += 0.03 * shape.speed;
+                    shape.rotation.x += 0.04 * shape.speed;
+                    shape.rotation.z += 0.01 * shape.speed;
+                });
+
+                // The 'scene' property in the render call expects any Transform.
+                // Therefore can be a Mesh instance as well.
+                renderer.render({scene, camera});
+            }
+        }
+
+    </script>
+</body>
+</html>

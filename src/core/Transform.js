@@ -1,6 +1,5 @@
 import {Vec3} from '../math/Vec3.js';
 import {Quat} from '../math/Quat.js';
-import {Mat3} from '../math/Mat3.js';
 import {Mat4} from '../math/Mat4.js';
 import {Euler} from '../math/Euler.js';
 
@@ -12,8 +11,6 @@ export class Transform {
 
         this.matrix = new Mat4();
         this.worldMatrix = new Mat4();
-        this.modelViewMatrix = new Mat4();
-        this.normalMatrix = new Mat3();
         this.matrixAutoUpdate = true;
 
         this.position = new Vec3();
