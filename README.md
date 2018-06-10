@@ -20,7 +20,7 @@
 
 ⚠️ *Note: currently in alpha, so expect breaking changes.*
 
-[Examples](https://oframe.github.io/ogl/examples)
+[See Examples](https://oframe.github.io/ogl/examples)
 
 O-GL is a small, effective WebGL framework aimed at developers who like minimal layers of abstraction, and are comfortable creating their own shaders.
 
@@ -120,7 +120,7 @@ Below renders a spinning black cube.
 
 ## Structure
 
-In an attempt to leep things light and modular, the framework is split up into three components: **Math**, **Core**, and **Extras**.
+In an attempt to keep things light and modular, the framework is split up into three components: **Math**, **Core**, and **Extras**.
 
 The **Math** component is based on a fork of gl-matrix - featuring a practical API. 7kb when gzipped, it has no dependencies and can be used separately.
 
