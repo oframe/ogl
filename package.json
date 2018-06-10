@@ -1,6 +1,6 @@
 {
     "name": "ogl",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "description": "WebGL Framework",
     "main": "src/OGL.js",
     "directories": {
