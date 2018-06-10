@@ -12,7 +12,7 @@
 <body>
 <div class="Info">Fog. Model by Google Poly</div>
 <script type="module">
-    import {Renderer, Geometry, Program, Mesh, Camera, Texture, Transform, Color} from '../src/OGL.js';
+    import {Renderer, Camera, Transform, Texture, Program, Color, Geometry, Mesh} from '../src/OGL.js';
     import FogShader from './shaders/FogShader.js';
 
     {
@@ -32,19 +32,19 @@
         window.addEventListener('resize', resize, false);
         resize();
 
-        const scene = new Transform(gl);
+        const scene = new Transform();
 
-
-
-
-        let mesh;
+        const texture = new Texture(gl);
+        const img = new Image();
+        img.onload = () => texture.image = img;
+        img.src = 'assets/forest.jpg';
 
         const program = new Program(gl, {
             vertexShader: FogShader.vertex,
             fragmentShader: FogShader.fragment,
             uniforms: {
                 uTime: {value: 0},
-                tMap: {value: new Texture(gl)},
+                tMap: {value: texture},
 
                 // Pass relevant uniforms for fog
                 uFogColor: {value: new Color('#ffffff')},
@@ -53,10 +53,8 @@
             },
         });
 
-        let img = new Image();
-        img.onload = () => program.uniforms.tMap.value.image = img;
-        img.src = 'assets/forest.jpg';
 
+        let mesh;
         loadModel();
         async function loadModel() {
             const data = await (await fetch(`assets/forest.json`)).json();
@@ -81,7 +79,6 @@
             const geometry = new Geometry(gl, {
                 position: {size: 3, data: new Float32Array(data.position)},
                 uv: {size: 2, data: new Float32Array(data.uv)},
-                normal: {size: 3, data: new Float32Array(data.normal)},
                 offset: {instanced: true, size: 3, data: offset},
                 random: {instanced: true, size: 3, data: random},
             });

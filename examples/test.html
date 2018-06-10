@@ -46,11 +46,11 @@
                 // transparent: true,
             });
 
-            let img = new Image();
+            const img = new Image();
             img.onload = () => program.uniforms.tMap.value.image = img;
             img.src = 'assets/uv.jpg';
 
-            const scene = new Transform(gl);
+            const scene = new Transform();
 
             const shape = new Mesh(gl, {geometry, program});
             shape.scale.x = -1;

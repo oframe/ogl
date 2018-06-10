@@ -25,7 +25,6 @@ const fragment = `
 precision highp float;
 precision highp int;
 
-uniform float uTime;
 uniform sampler2D tMap;
 
 varying vec2 vUv;

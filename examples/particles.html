@@ -12,7 +12,7 @@
 <body>
     <div class="Info">Particles</div>
     <script type="module">
-        import {Renderer, Geometry, Program, Mesh, Camera} from '../src/OGL.js';
+        import {Renderer, Camera, Geometry, Program, Mesh} from '../src/OGL.js';
         import ParticlesShader from './shaders/ParticlesShader.js';
 
         {
@@ -30,9 +30,6 @@
             }
             window.addEventListener('resize', resize, false);
             resize();
-
-
-
 
             const num = 100;
             const position = new Float32Array(num * 3);

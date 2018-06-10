@@ -2,6 +2,7 @@ import * as Vec2Func from './functions/Vec2Func.js';
 
 export class Vec2 extends Float32Array {
     constructor(array = [0, 0]) {
+        if (!array.length) array = [array, array];
         super(array);
         return this;
     }

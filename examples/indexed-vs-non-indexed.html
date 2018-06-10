@@ -12,7 +12,7 @@
 <body>
     <div class="Info">Indexed vs Non-Indexed</div>
     <script type="module">
-        import {Renderer, Geometry, Program, Mesh, Transform, Camera} from '../src/OGL.js';
+        import {Renderer, Camera, Transform, Geometry, Program, Mesh} from '../src/OGL.js';
         import IndexedVsNonShader from './shaders/IndexedVsNonShader.js';
 
         {
@@ -31,10 +31,7 @@
             window.addEventListener('resize', resize, false);
             resize();
 
-            const scene = new Transform(gl);
-
-
-
+            const scene = new Transform();
 
             // 4 vertices, using 6 indices to designate 2 triangles using the default gl.TRIANGLES draw mode
             const indexedGeometry = new Geometry(gl, {

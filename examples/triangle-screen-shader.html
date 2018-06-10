@@ -12,7 +12,7 @@
 <body>
     <div class="Info">Triangle Screen Shader</div>
     <script type="module">
-        import {Renderer, Geometry, Program, Mesh, Color} from '../src/OGL.js';
+        import {Renderer, Geometry, Program, Color, Mesh} from '../src/OGL.js';
         import TriangleScreenShader from './shaders/TriangleScreenShader.js';
 
         {
@@ -49,6 +49,8 @@
                 requestAnimationFrame(update);
 
                 program.uniforms.uTime.value = t * 0.001;
+
+                // Don't need a camera if camera uniforms aren't required
                 renderer.render({scene: mesh});
             }
         }

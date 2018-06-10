@@ -194,9 +194,10 @@ and contained within the 'Extras' folder of the framework.
  - [ ] MSDF Text Glyphs (Multichannel Signed Distance Fields)
  - [ ] Point lighting with specular highlights
  - [ ] PBR (Physically Based Rendering)
+ - [ ] Compressed Textures
 
 ### Frame Buffer
- - [ ] Render to texture
+ - [x] Render to texture
  - [ ] MRT (Multiple Render Targets)
  - [ ] Reflections
  - [ ] Shadow maps

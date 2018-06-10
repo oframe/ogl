@@ -24,8 +24,7 @@
             const camera = new Camera(gl, {fov: 45});
             camera.position.set(0, 0, 8);
 
-            const controls = new Orbit({
-                object: camera,
+            const controls = new Orbit(camera, {
                 enablePan: false,
                 enableZoom: false,
             });
@@ -37,13 +36,15 @@
             window.addEventListener('resize', resize, false);
             resize();
 
-            const scene = new Transform(gl);
+            const scene = new Transform();
 
+            // Texture is equirectangular
             const texture = new Texture(gl);
             const img = new Image();
             img.onload = () => texture.image = img;
             img.src = 'assets/sky.jpg';
 
+            // Use Sphere geometry to render equirectangular textures
             const geometry = new Sphere(gl, 1, 64);
 
             const program = new Program(gl, {
@@ -52,12 +53,16 @@
                 uniforms: {
                     tMap: {value: texture},
                 },
+
+                // Need inside of sphere to be visible
                 cullFace: null,
             });
 
+            // A smaller sphere in the center just to help illustrate
             const mesh = new Mesh(gl, {geometry, program});
             mesh.setParent(scene);
 
+            // Camera will dwell inside skybox
             const skybox = new Mesh(gl, {geometry, program});
             skybox.scale.set(10);
             skybox.setParent(scene);

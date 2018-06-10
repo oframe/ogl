@@ -12,7 +12,7 @@
 <body>
     <div class="Info">Base Primitives - Plane, Cube, Sphere</div>
     <script type="module">
-        import {Renderer, Camera, Transform, Plane, Cube, Sphere, Program, Mesh} from '../src/OGL.js';
+        import {Renderer, Camera, Transform, Plane, Sphere, Cube, Program, Mesh} from '../src/OGL.js';
         import BasePrimitivesShader from './shaders/BasePrimitivesShader.js';
 
         {
@@ -32,7 +32,7 @@
             window.addEventListener('resize', resize, false);
             resize();
 
-            const scene = new Transform(gl);
+            const scene = new Transform();
 
             const planeGeometry = new Plane(gl);
             const sphereGeometry = new Sphere(gl);
@@ -58,7 +58,7 @@
             cube.setParent(scene);
 
             requestAnimationFrame(update);
-            function update(t) {
+            function update() {
                 requestAnimationFrame(update);
 
                 plane.rotation.y -= 0.02;

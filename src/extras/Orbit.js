@@ -10,8 +10,7 @@ const tempVec3 = new Vec3();
 const tempVec2a = new Vec2();
 const tempVec2b = new Vec2();
 
-export function Orbit({
-    object,
+export function Orbit(object, {
     element = document,
     enabled = true,
     target = new Vec3(),
@@ -29,7 +28,7 @@ export function Orbit({
     maxAzimuthAngle = Infinity,
     minDistance = 0,
     maxDistance = Infinity,
-}) {
+} = {}) {
     this.enabled = enabled;
     this.target = target;
 

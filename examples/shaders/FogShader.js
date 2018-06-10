@@ -4,7 +4,6 @@ precision highp int;
 
 attribute vec2 uv;
 attribute vec3 position;
-attribute vec3 normal;
 attribute vec3 offset;
 attribute vec3 random;
 

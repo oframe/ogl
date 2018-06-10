@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <title>O-GL • Render to texture</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info">Render to texture</div>
+    <script type="module">
+        import {Renderer, Camera, Transform, Cube, Texture, RenderTarget, Program, Mesh} from '../src/OGL.js';
+        import RenderToTextureShader from './shaders/RenderToTextureShader.js';
+
+        {
+            const renderer = new Renderer({dpr: 2});
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+
+
+            const camera = new Camera(gl, {fov: 35});
+            camera.position.set(0, 1, 5);
+            camera.lookAt([0, 0, 0]);
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height})
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+            const geometry = new Cube(gl);
+
+            // A little data texture with 4 colors just to keep things interesting
+            const texture = new Texture(gl, {
+                image: new Uint8Array([
+                    191, 25, 54, 255,
+                    96, 18, 54, 255,
+                    96, 18, 54, 255,
+                    37, 13, 53, 255,
+                ]),
+                width: 2,
+                height: 2,
+            });
+
+            const program = new Program(gl, {
+                vertexShader: RenderToTextureShader.vertex,
+                fragmentShader: RenderToTextureShader.fragment,
+                uniforms: {
+                    tMap: {value: texture},
+                }
+            });
+
+            // Create render target framebuffer.
+            // Uses canvas size by default and doesn't automatically resize.
+            // To resize, re-create target
+            const target = new RenderTarget(gl);
+
+            const targetProgram = new Program(gl, {
+                vertexShader: RenderToTextureShader.vertex,
+                fragmentShader: RenderToTextureShader.fragment,
+                uniforms: {
+                    tMap: {value: target.texture},
+                }
+            });
+
+            const mesh = new Mesh(gl, {geometry, program});
+            const targetMesh = new Mesh(gl, {geometry, program: targetProgram});
+
+            requestAnimationFrame(update);
+            function update() {
+                requestAnimationFrame(update);
+
+                mesh.rotation.y -= 0.02;
+                targetMesh.rotation.y -= 0.005;
+                targetMesh.rotation.x -= 0.01;
+
+                // Set background for first render to target
+                gl.clearColor(0.15, 0.05, 0.2, 1);
+
+                // Add target property to render call
+                renderer.render({scene: mesh, camera, target});
+
+                // Change to final background
+                gl.clearColor(1, 1, 1, 1);
+
+                // Omit target to render to canvas
+                renderer.render({scene: targetMesh, camera});
+            }
+        }
+    </script>
+</body>
+</html>

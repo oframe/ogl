@@ -1,3 +1,5 @@
+// TODO : support more color formats - e.g 0xffffff, '#fff'
+
 export class Color extends Float32Array {
     constructor(array = [0, 0, 0]) {
         super(3);

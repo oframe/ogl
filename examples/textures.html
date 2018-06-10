@@ -12,7 +12,7 @@
 <body>
     <div class="Info">Textures. Model by Google Poly. Film bt Studio Ghibli.</div>
     <script type="module">
-        import {Renderer, Geometry, Program, Plane, Cube, Mesh, Camera, Transform, Texture} from '../src/OGL.js';
+        import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Cube} from '../src/OGL.js';
         import TexturesShader from './shaders/TexturesShader.js';
 
         {
@@ -32,11 +32,7 @@
             window.addEventListener('resize', resize, false);
             resize();
 
-            const scene = new Transform(gl);
-
-
-            // Image texture
-            let mesh;
+            const scene = new Transform();
 
             // Upload empty texture while source loading
             const texture = new Texture(gl);
@@ -54,6 +50,7 @@
                 },
             });
 
+            let mesh;
             loadModel();
             async function loadModel() {
                 const data = await (await fetch(`assets/saddle.json`)).json();
@@ -69,10 +66,6 @@
                 mesh.setParent(scene);
             }
 
-            // Video Texture
-            // Disclaimer: video autoplay is a confusing, constantly-changing browser feature.
-            // The best approach is to never assume that it will work, and therefore prepare for a fallback.
-//            const videoGeometry = new Plane(gl, 1.78, 1);
             const videoGeometry = new Cube(gl, 1.78, 1, 1.78);
 
             // Init empty texture while source loading
@@ -87,12 +80,14 @@
             let video = document.createElement('video');
             video.src = 'assets/laputa.mp4';
 
+            // Disclaimer: video autoplay is a confusing, constantly-changing browser feature.
+            // The best approach is to never assume that it will work, and therefore prepare for a fallback.
             // Tested on mac: Chrome, Safari, Firefox; android: chrome
             video.loop = true;
             video.muted = true;
             video.play();
 
-            // TODO: test ios
+            // TODO: test ios. Possible add following
             // video.setAttribute('crossorigin', 'anonymous');
             // video.setAttribute('webkit-playsinline', true);
             // video.setAttribute('playsinline', true);

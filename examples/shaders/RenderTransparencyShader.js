@@ -34,7 +34,7 @@ varying vec4 vMVPos;
 void main() {
     float alpha = texture2D(tMap, vUv).g;
     
-    vec3 color = uColor + vMVPos.xzy * 0.1;
+    vec3 color = uColor + vMVPos.xzy * 0.05;
     
     float dist = length(vMVPos);
     float fog = smoothstep(5.0, 10.0, dist);

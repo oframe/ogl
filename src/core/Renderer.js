@@ -1,9 +1,9 @@
 import {Mat4} from '../math/Mat4.js';
 import {Vec3} from '../math/Vec3.js';
 
-// TODO: culling
-// TODO: cnv.addEventListener('webglcontextlost', contextLost, false);
-// TODO: cnv.addEventListener('webglcontextrestored', contextRestore, false);
+// TODO: frustum culling
+// TODO: gl.canvas.addEventListener('webglcontextlost', contextLost, false);
+// TODO: gl.canvas.addEventListener('webglcontextrestored', contextRestore, false);
 
 // Not automatic - devs to use these methods manually
 // gl.colorMask( colorMask, colorMask, colorMask, colorMask );

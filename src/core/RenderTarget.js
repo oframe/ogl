@@ -1,3 +1,5 @@
+// TODO: multi target rendering
+// TODO: test stencil and depth
 import {Texture} from './Texture.js';
 
 export class RenderTarget {

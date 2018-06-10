@@ -12,7 +12,7 @@
 <body>
     <div class="Info">Instancing. Model by Google Poly</div>
     <script type="module">
-        import {Renderer, Geometry, Program, Mesh, Camera, Transform, Texture} from '../src/OGL.js';
+        import {Renderer, Camera, Transform, Texture, Program, Geometry,  Mesh} from '../src/OGL.js';
         import InstancingShader from './shaders/InstancingShader.js';
 
         {
@@ -31,26 +31,23 @@
             window.addEventListener('resize', resize, false);
             resize();
 
-            const scene = new Transform(gl);
+            const scene = new Transform();
 
-
-
-
-            let mesh;
+            const texture = new Texture(gl);
+            const img = new Image();
+            img.onload = () => texture.image = img;
+            img.src = 'assets/acorn.jpg';
 
             const program = new Program(gl, {
                 vertexShader: InstancingShader.vertex,
                 fragmentShader: InstancingShader.fragment,
                 uniforms: {
                     uTime: {value: 0},
-                    tMap: {value: new Texture(gl)},
+                    tMap: {value: texture},
                 },
             });
 
-            let img = new Image();
-            img.onload = () => program.uniforms.tMap.value.image = img;
-            img.src = 'assets/acorn.jpg';
-
+            let mesh;
             loadModel();
             async function loadModel() {
                 const data = await (await fetch(`assets/acorn.json`)).json();

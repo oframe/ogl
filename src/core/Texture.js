@@ -1,5 +1,5 @@
-// TODO: Video
 // TODO: Compressed Texture
+// TODO: data texture
 
 const emptyPixel = new Uint8Array(4);
 
@@ -97,7 +97,6 @@ export class Texture {
             this.needsUpdate = false;
             if (this.image) {
 
-                // TODO: is there always width/height?
                 if (this.image.width) {
                     this.width = this.image.width;
                     this.height = this.image.height;

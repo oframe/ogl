@@ -4,8 +4,7 @@ import {Mat4} from '../math/Mat4.js';
 import {Euler} from '../math/Euler.js';
 
 export class Transform {
-    constructor(gl, {
-    } = {}) {
+    constructor() {
         this.parent = null;
         this.children = [];
 

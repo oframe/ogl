@@ -12,7 +12,7 @@
 <body>
     <div class="Info">Render Hierarchy With Transparency</div>
     <script type="module">
-        import {Renderer, Camera, Transform, Plane, Cube, Sphere, Program, Mesh, Texture, Color} from '../src/OGL.js';
+        import {Renderer, Camera, Transform, Plane, Texture, Program, Color, Mesh} from '../src/OGL.js';
         import RenderTransparencyShader from './shaders/RenderTransparencyShader.js';
 
         {
@@ -32,7 +32,7 @@
             window.addEventListener('resize', resize, false);
             resize();
 
-            const scene = new Transform(gl);
+            const scene = new Transform();
 
             const geometry = new Plane(gl, 1, 1, 10);
 
@@ -46,7 +46,7 @@
                 fragmentShader: RenderTransparencyShader.fragment,
                 uniforms: {
                     tMap: {value: texture},
-                    uColor: {value: new Color('#853543')}
+                    uColor: {value: new Color('#354c85')},
                 },
                 transparent: true,
                 cullFace: null,

@@ -12,7 +12,7 @@
 <body>
     <div class="Info">Scene Graph Hierarchy</div>
     <script type="module">
-        import {Renderer, Camera, Transform, Plane, Cube, Sphere, Program, Mesh} from '../src/OGL.js';
+        import {Renderer, Camera, Sphere, Cube, Program, Transform, Mesh} from '../src/OGL.js';
         import SceneGraphShader from './shaders/SceneGraphShader.js';
 
         {
@@ -21,7 +21,7 @@
             document.body.appendChild(gl.canvas);
             gl.clearColor(1, 1, 1, 1);
 
-            // The Camera class extends Transform. See Below.
+            // The Camera class extends Transform. See Below for more on Transform.
             const camera = new Camera(gl, {fov: 35});
             camera.position.set(0, 1, 7);
             camera.lookAt([0, 0, 0]);
@@ -43,18 +43,17 @@
 
             // The scene hierarchy is controlled by the Transform class
             // To create scenes, groups, null pointers etc, use Transform
-            const scene = new Transform(gl);
+            const scene = new Transform();
 
-            // The Mesh class extends the Transform class, so shares the scene graph functionality
+            // The Mesh class extends the Transform class, and so shares the scene graph functionality
             const sphere = new Mesh(gl, {geometry: sphereGeometry, program});
             sphere.speed = -0.5;
 
-            // Use .setParent to add transform as a child
-            // scene.addChild(sphere); // also works
+            // Use .setParent to add transform as a child of another transform
             sphere.setParent(scene);
+            // scene.addChild(sphere); // also works
 
-            const shapes = [];
-            shapes.push(sphere);
+            const shapes = [sphere];
 
             // Create random array of shapes
             for (let i = 0; i < 50; i++) {
