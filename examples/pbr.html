@@ -67,37 +67,76 @@
                     normal: {size: 3, data: new Float32Array(dataInner.normal)},
                 });
 
-                //
-
+                // This whole effect lives in the fairly epic shader.
                 const program = new Program(gl, {
                     vertexShader: PBRShader.vertex,
                     fragmentShader: PBRShader.fragment,
                     uniforms: {
+
+                        // Base color / albedo. This is used to determine both the diffuse and specular colors.
                         tBaseColor: {value: getTexture('assets/pbr/car-ext-color.jpg')},
+
+                        // This works as a multiplier for each channel in the texture above.
                         uBaseColor: {value: new Color([1, 1, 1])},
-                        uAlpha: {value: 1},
                         
+                        // 'Roughness', 'Metalness' and 'Occlusion', each packed into their own channel (R, G, B) 
                         tRMO: {value: getTexture('assets/pbr/car-ext-rmo.jpg')},
-                        uMetallic: {value: 1},
+
+                        // The following are multipliers to the above values
                         uRoughness: {value: 1},
+                        uMetallic: {value: 1},
                         uOcclusion: {value: 1},
                         
+                        // Just a regular normal map
                         tNormal: {value: getTexture('assets/pbr/car-ext-normal.jpg')},
                         uNormalScale: {value: 0.5},
                         uNormalUVScale: {value: 1},
                 
+                        // Emissive color is added at the very end to simulate light sources.
                         tEmissive: {value: getTexture('assets/pbr/car-ext-emissive.jpg')},
                         uEmissive: {value: 1},
                         
+                        // Initial opacity is taken from the green channel of the map below.
+                        // If a transparent area is smooth, the specular may increase the opacity.
+                        // This is done to simulate specular reflections on transparent surfaces like glass.
                         tOpacity: {value: getTexture('assets/pbr/car-ext-opacity.jpg')},
+                      
+                        // uAlpha is an overall alpha control. It is applied right at the end to hide the geometry.
+                        // Specular reflections will not affect this value, unlike above.
+                        uAlpha: {value: 1},
                         
+                        // This Look Up Table is used to calculate the BRDF (Bidirectional reflectance distribution function)
+                        // coefficients used in the shader more efficiently. 
+                        // It is based on the roughness and fresnel grazing angle.
                         tLUT: {value: getTexture('assets/pbr/lut.png', false)},
                         
+                        // The following two environment maps are the most important inputs. 
+                        // They are equirectangular (a sphere mapped to a rectangle) maps used for lighting the model.
+                        // Instead of just relying on lights, we use these textures as IBL (image-based lighting), which
+                        // is like having thousands of lights in a scene. 
+                        // In order to get more realistic results, we use a HDR (high dynamic range) image as an input,
+                        // so instead of values being limited between 0 and 1, they can go higher (up to 6 in this implementation).
+                        // These images have been converted to an RGBM structure (where the rgb channels multiply with the 
+                        // alpha channel to recapture their original HDR value), as this allows us to store it in an 8 bit PNG.
+                        
+                        // The first of the two maps is the diffuse irradiance. It's a small, blurry texture used to give 
+                        // ambient/diffuse lighting to the model. 
                         tEnvDiffuse: {value: getTexture('assets/pbr/waterfall-diffuse-RGBM.png', false)},
+
+                        // The second is the pre-filtered specular vertical atlas. It's basically 7 environment maps
+                        // in one, with each step half the size of the previous and also a bit blurrier.
+                        // It's used for specular reflections, with the different levels to be sampled depending on how
+                        // rough the model is at that point.
+                        // I've used an atlas instead of mipmaps or texture arrays for simplicity's sake.
                         tEnvSpecular: {value: getTexture('assets/pbr/waterfall-specular-RGBM.png', false)},
+
+                        // This is a multiplier to the amount of specular. Especially useful if you don't have an HDR map.
                         uEnvSpecular: {value: 2},
                         
+                        // One light is included, ideally to simulate the sun, and both specular and diffuse are calculated.
                         uLightDirection: {value: new Color([0, 1, 1])},
+
+                        // Here I've pushed the white light beyond 1 to increase its effect.
                         uLightColor: {value: new Vec3(7)},
                     },
                     transparent: true,
@@ -125,21 +164,21 @@
                     uniforms: {
                         tBaseColor: {value: getTexture('assets/pbr/car-int-color.jpg')},
                         uBaseColor: {value: new Color([1, 1, 1])},
-                        uAlpha: {value: 1},
                         
                         tRMO: {value: getTexture('assets/pbr/car-int-rmo.jpg')},
-                        uMetallic: {value: 1},
                         uRoughness: {value: 1},
+                        uMetallic: {value: 1},
                         uOcclusion: {value: 1},
                         
                         tNormal: {value: getTexture('assets/pbr/car-int-normal.jpg')},
                         uNormalScale: {value: 0.5},
                         uNormalUVScale: {value: 1},
-                
+                        
                         tEmissive: {value: getTexture('assets/pbr/black.jpg')},
                         uEmissive: {value: 1},
                         
                         tOpacity: {value: getTexture('assets/pbr/white.jpg')},
+                        uAlpha: {value: 1},
                         
                         tLUT: {value: getTexture('assets/pbr/lut.png', false)},
                         
