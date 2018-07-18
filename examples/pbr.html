@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <title>O-GL • PBR</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info" style="color: #fff;">PBR (Physically Based Rendering). Model by <a href="https://sketchfab.com/slava" target="_blank">Slava Z</a></div>
+    <script type="module">
+        import {Renderer, Transform, Camera, Orbit, Geometry, Plane, Texture, Program, Mesh, Vec3, Color} from '../src/OGL.js';
+        import PBRShader from './shaders/PBRShader.js';
+        import PBRShadowShader from './shaders/PBRShadowShader.js';
+
+        {
+            const renderer = new Renderer({dpr: 2});
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+            gl.clearColor(0.1, 0.1, 0.1, 1);
+
+            const camera = new Camera(gl, {fov: 35});
+            camera.position.set(2, 0.5, 3);
+
+            const controls = new Orbit(camera);
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height})
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+            const scene = new Transform();
+            scene.position.y = -0.4;
+
+            function getTexture(src, generateMipmaps = true) {
+                const texture = new Texture(gl, {generateMipmaps});
+                const image = new Image();
+                image.onload = () => {
+                    texture.image = image;
+                };
+                image.src = src;
+                return texture;
+            }
+
+            loadExterior();
+            loadInterior();
+            loadShadow();
+
+            async function loadExterior() {
+                const data = await (await fetch(`assets/pbr/car-ext.json`)).json();
+                const dataInner = await (await fetch(`assets/pbr/car-ext-inner.json`)).json();
+
+                const geometry = new Geometry(gl, {
+                    position: {size: 3, data: new Float32Array(data.position)},
+                    uv: {size: 2, data: new Float32Array(data.uv)},
+                    normal: {size: 3, data: new Float32Array(data.normal)},
+                });
+
+                const geometryInner = new Geometry(gl, {
+                    position: {size: 3, data: new Float32Array(dataInner.position)},
+                    uv: {size: 2, data: new Float32Array(dataInner.uv)},
+                    normal: {size: 3, data: new Float32Array(dataInner.normal)},
+                });
+
+                //
+
+                const program = new Program(gl, {
+                    vertexShader: PBRShader.vertex,
+                    fragmentShader: PBRShader.fragment,
+                    uniforms: {
+                        tBaseColor: {value: getTexture('assets/pbr/car-ext-color.jpg')},
+                        uBaseColor: {value: new Color([1, 1, 1])},
+                        uAlpha: {value: 1},
+                        
+                        tRMO: {value: getTexture('assets/pbr/car-ext-rmo.jpg')},
+                        uMetallic: {value: 1},
+                        uRoughness: {value: 1},
+                        uOcclusion: {value: 1},
+                        
+                        tNormal: {value: getTexture('assets/pbr/car-ext-normal.jpg')},
+                        uNormalScale: {value: 0.5},
+                        uNormalUVScale: {value: 1},
+                
+                        tEmissive: {value: getTexture('assets/pbr/car-ext-emissive.jpg')},
+                        uEmissive: {value: 1},
+                        
+                        tOpacity: {value: getTexture('assets/pbr/car-ext-opacity.jpg')},
+                        
+                        tLUT: {value: getTexture('assets/pbr/lut.png', false)},
+                        
+                        tEnvDiffuse: {value: getTexture('assets/pbr/waterfall-diffuse-RGBM.png', false)},
+                        tEnvSpecular: {value: getTexture('assets/pbr/waterfall-specular-RGBM.png', false)},
+                        uEnvSpecular: {value: 2},
+                        
+                        uLightDirection: {value: new Color([0, 1, 1])},
+                        uLightColor: {value: new Vec3(7)},
+                    },
+                    transparent: true,
+                });
+
+                const mesh = new Mesh(gl, {geometry, program});
+                mesh.setParent(scene);
+
+                const meshInner = new Mesh(gl, {geometry: geometryInner, program});
+                meshInner.setParent(scene);
+            }
+
+            async function loadInterior() {
+                const data = await (await fetch(`assets/pbr/car-int.json`)).json();
+
+                const geometry = new Geometry(gl, {
+                    position: {size: 3, data: new Float32Array(data.position)},
+                    uv: {size: 2, data: new Float32Array(data.uv)},
+                    normal: {size: 3, data: new Float32Array(data.normal)},
+                });
+
+                const program = new Program(gl, {
+                    vertexShader: PBRShader.vertex,
+                    fragmentShader: PBRShader.fragment,
+                    uniforms: {
+                        tBaseColor: {value: getTexture('assets/pbr/car-int-color.jpg')},
+                        uBaseColor: {value: new Color([1, 1, 1])},
+                        uAlpha: {value: 1},
+                        
+                        tRMO: {value: getTexture('assets/pbr/car-int-rmo.jpg')},
+                        uMetallic: {value: 1},
+                        uRoughness: {value: 1},
+                        uOcclusion: {value: 1},
+                        
+                        tNormal: {value: getTexture('assets/pbr/car-int-normal.jpg')},
+                        uNormalScale: {value: 0.5},
+                        uNormalUVScale: {value: 1},
+                
+                        tEmissive: {value: getTexture('assets/pbr/black.jpg')},
+                        uEmissive: {value: 1},
+                        
+                        tOpacity: {value: getTexture('assets/pbr/white.jpg')},
+                        
+                        tLUT: {value: getTexture('assets/pbr/lut.png', false)},
+                        
+                        tEnvDiffuse: {value: getTexture('assets/pbr/waterfall-diffuse-RGBM.png', false)},
+                        tEnvSpecular: {value: getTexture('assets/pbr/waterfall-specular-RGBM.png', false)},
+                        uEnvSpecular: {value: 1.0},
+                        
+                        uLightDirection: {value: new Color([1, 1, 1])},
+                        uLightColor: {value: new Vec3(7)},
+                    },
+                });
+
+                const mesh = new Mesh(gl, {geometry, program});
+                mesh.setParent(scene);
+            }
+
+            function loadShadow() {
+                const geometry = new Plane(gl, 2.3);
+                const program = new Program(gl, {
+                    vertexShader: PBRShadowShader.vertex,
+                    fragmentShader: PBRShadowShader.fragment,
+                    uniforms: {
+                        tMap: {value: getTexture('assets/pbr/car-shadow.jpg')},
+                    },
+                    transparent: true,
+                    cullFace: false,
+                });
+
+                const mesh = new Mesh(gl, {geometry, program});
+                mesh.rotation.x = -Math.PI / 2;
+                mesh.setParent(scene);
+            }
+
+            requestAnimationFrame(update);
+            function update() {
+                requestAnimationFrame(update);
+
+                scene.rotation.y += 0.005;
+                controls.update();
+                renderer.render({scene, camera});
+            }
+        }
+    </script>
+</body>
+</html>

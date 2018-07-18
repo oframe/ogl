@@ -6,14 +6,17 @@
     <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <link rel="icon" type="image/png" href="assets/favicon.png">
 
-    <title>O-GL • Render Hierarchy With Transparency</title>
+    <title>O-GL • Sort Transparency</title>
     <link href="assets/main.css" rel="stylesheet">
 </head>
 <body>
-    <div class="Info">Render Hierarchy With Transparency</div>
+    <div class="Info">Sort Transparency</div>
     <script type="module">
         import {Renderer, Camera, Transform, Plane, Texture, Program, Color, Mesh} from '../src/OGL.js';
-        import RenderTransparencyShader from './shaders/RenderTransparencyShader.js';
+        import SortTransparencyShader from './shaders/SortTransparencyShader.js';
+
+        // This demonstrates the default geometry sorting before rendering.
+        // It does not include sorting between faces/points within a single geometry.
 
         {
             const renderer = new Renderer({dpr: 2});
@@ -42,11 +45,11 @@
             img.src = 'assets/leaf.jpg';
 
             const program = new Program(gl, {
-                vertexShader: RenderTransparencyShader.vertex,
-                fragmentShader: RenderTransparencyShader.fragment,
+                vertexShader: SortTransparencyShader.vertex,
+                fragmentShader: SortTransparencyShader.fragment,
                 uniforms: {
                     tMap: {value: texture},
-                    uColor: {value: new Color('#354c85')},
+                    uColor: {value: new Color('#3e9873')},
                 },
                 transparent: true,
                 cullFace: null,
@@ -85,6 +88,7 @@
 
                 scene.rotation.y += 0.015;
 
+                // Objects are automatically sorted if renderer.sort === true
                 renderer.render({scene, camera});
             }
         }

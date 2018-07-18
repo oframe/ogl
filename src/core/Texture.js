@@ -1,5 +1,6 @@
 // TODO: Compressed Texture
 // TODO: data texture
+// TODO: cube map
 
 const emptyPixel = new Uint8Array(4);
 
@@ -23,7 +24,7 @@ export class Texture {
         flipY = true,
         level = 0,
         width, // used for RenderTargets or Data Textures
-        height,
+        height = width,
 
         // TODO: need? encoding = linearEncoding
     } = {}) {

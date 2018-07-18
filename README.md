@@ -82,7 +82,7 @@ Below renders a spinning black cube.
     });
     camera.position.z = 5;
 
-    const scene = new Transform(gl);
+    const scene = new Transform();
 
     const geometry = new Cube(gl);
 
@@ -178,7 +178,7 @@ and contained within the 'Extras' folder of the framework.
 
 ### Scene
  - [x] Scene Graph hierarchy
- - [x] Render Hierarchy With Transparency
+ - [x] Sort Transparency
 
 ### Interaction
  - [x] Orbit controls
@@ -193,7 +193,7 @@ and contained within the 'Extras' folder of the framework.
  - [ ] SDF Alpha test/clip (Signed Distance Fields)
  - [ ] MSDF Text Glyphs (Multichannel Signed Distance Fields)
  - [ ] Point lighting with specular highlights
- - [ ] PBR (Physically Based Rendering)
+ - [x] PBR (Physically Based Rendering)
  - [ ] Compressed Textures
 
 ### Frame Buffer

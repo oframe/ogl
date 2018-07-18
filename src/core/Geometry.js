@@ -26,6 +26,10 @@ export class Geometry {
         this.drawRange = {start: 0, count: 0};
         this.instancedCount = 0;
 
+        // Unbind current VAO so that new buffers don't get added to active mesh
+        this.gl.renderer.bindVertexArray(null);
+        this.gl.renderer.currentGeometry = null;
+
         // create the buffers
         for (let key in attributes) {
             this.addAttribute(key, attributes[key]);

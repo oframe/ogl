@@ -17,7 +17,7 @@ function setUniform(gl, type, location, value) {
         case 35670 : // BOOL
         case 5124  : // INT
         case 35678 : // SAMPLER_2D
-        case 35680 : return gl.uniform1i(location, value); // SAMPLER_CUBE
+        case 35680 : return value.length ? gl.uniform1iv(location, value) : gl.uniform1i(location, value); // SAMPLER_CUBE
         case 35671 : // BOOL_VEC2
         case 35667 : return gl.uniform2iv(location, value); // INT_VEC2
         case 35672 : // BOOL_VEC3
@@ -175,7 +175,8 @@ export class Program {
         // Set only the active uniforms found in the shader
         this.uniformLocations.forEach((location, activeUniform) => {
             const name = activeUniform.uniformName;
-
+            
+            
             // get supplied uniform
             const uniform = this.uniforms[name];
             if (!uniform) {
@@ -194,6 +195,18 @@ export class Program {
 
                 // set uniform using texture unit instead of value
                 return setUniform(this.gl, activeUniform.type, location, textureUnit);
+            }
+
+            if (uniform.value.length && uniform.value[0].texture) {
+                const textureUnits = [];
+                uniform.value.forEach(value => {
+                    textureUnits.push(++textureUnit);
+                    this.gl.activeTexture(this.gl.TEXTURE0 + textureUnit);
+                    value.update();
+                });
+                
+                // For texture arrays, pass an array of texture units
+                return setUniform(this.gl, activeUniform.type, location, textureUnits);
             }
 
             setUniform(this.gl, activeUniform.type, location, uniform.value);
