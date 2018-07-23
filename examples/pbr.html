@@ -16,6 +16,9 @@
         import PBRShader from './shaders/PBRShader.js';
         import PBRShadowShader from './shaders/PBRShadowShader.js';
 
+        // Use this online tool to create the required IBL environment maps
+        // https://oframe.github.io/ibl-converter/
+
         {
             const renderer = new Renderer({dpr: 2});
             const gl = renderer.gl;
@@ -111,6 +114,7 @@
                         tLUT: {value: getTexture('assets/pbr/lut.png', false)},
                         
                         // The following two environment maps are the most important inputs. 
+                        // They can be generated using this online tool https://oframe.github.io/ibl-converter/
                         // They are equirectangular (a sphere mapped to a rectangle) maps used for lighting the model.
                         // Instead of just relying on lights, we use these textures as IBL (image-based lighting), which
                         // is like having thousands of lights in a scene. 
