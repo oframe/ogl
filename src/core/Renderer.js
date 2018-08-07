@@ -1,7 +1,7 @@
 import {Mat4} from '../math/Mat4.js';
 import {Vec3} from '../math/Vec3.js';
 
-// TODO: frustum culling
+// TODO: frustum culling ?
 // TODO: gl.canvas.addEventListener('webglcontextlost', contextLost, false);
 // TODO: gl.canvas.addEventListener('webglcontextrestored', contextRestore, false);
 
@@ -63,6 +63,12 @@ export class Renderer {
         this.state.frontFace = this.gl.CCW;
         this.state.depthMask = true;
         this.state.depthFunc = this.gl.LESS;
+        this.state.minFilter = this.gl.NEAREST_MIPMAP_LINEAR;
+        this.state.magFilter = this.gl.LINEAR;
+        this.state.wrapS = this.gl.REPEAT;
+        this.state.wrapT = this.gl.REPEAT;
+        this.state.premultiplyAlpha = false;
+        this.state.flipY = false;
         this.state.framebuffer = null;
         this.state.viewport = {width: null, height: null};
 

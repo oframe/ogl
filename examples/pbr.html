@@ -12,9 +12,10 @@
 <body>
     <div class="Info" style="color: #fff;">PBR (Physically Based Rendering). Model by <a href="https://sketchfab.com/slava" target="_blank">Slava Z</a></div>
     <script type="module">
-        import {Renderer, Transform, Camera, Orbit, Geometry, Plane, Texture, Program, Mesh, Vec3, Color} from '../src/OGL.js';
+        import {Renderer, Transform, Camera, Geometry, Texture, Program, Mesh, Vec3, Color} from '../src/Core.js';
+        import {Orbit, Plane} from '../src/Extras.js';
         import PBRShader from './shaders/PBRShader.js';
-        import PBRShadowShader from './shaders/PBRShadowShader.js';
+        import ShadowShader from './shaders/ShadowShader.js';
 
         // Use this online tool to create the required IBL environment maps
         // https://oframe.github.io/ibl-converter/
@@ -202,8 +203,8 @@
             function loadShadow() {
                 const geometry = new Plane(gl, 2.3);
                 const program = new Program(gl, {
-                    vertexShader: PBRShadowShader.vertex,
-                    fragmentShader: PBRShadowShader.fragment,
+                    vertexShader: ShadowShader.vertex,
+                    fragmentShader: ShadowShader.fragment,
                     uniforms: {
                         tMap: {value: getTexture('assets/pbr/car-shadow.jpg')},
                     },

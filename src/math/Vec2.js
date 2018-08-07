@@ -108,4 +108,10 @@ export class Vec2 extends Float32Array {
     clone() {
         return new Vec2(this);
     }
+
+    fromArray(a, o = 0) {
+		this[0] = a[o];
+		this[1] = a[o + 1];
+		return this;
+	}
 }

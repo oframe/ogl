@@ -79,6 +79,12 @@ export class Quat extends Float32Array {
         return this;
     }
 
+    conjugate(q = this) {
+        QuatFunc.conjugate(this, q);
+        this.onChange();
+        return this;
+    }
+
     copy(q) {
         QuatFunc.copy(this, q);
         this.onChange();
@@ -115,4 +121,17 @@ export class Quat extends Float32Array {
         QuatFunc.fromEuler(this, euler, euler.order);
         return this;
     }
+
+    slerp(q, t) {
+        QuatFunc.slerp(this, this, q, t);
+        return this;
+    }
+
+    fromArray(a, o = 0) {
+		this[0] = a[o];
+		this[1] = a[o + 1];
+		this[2] = a[o + 2];
+		this[3] = a[o + 3];
+		return this;
+	}
 }

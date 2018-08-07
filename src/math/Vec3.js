@@ -46,9 +46,25 @@ export class Vec3 extends Float32Array {
         return this;
     }
 
-    multiply(m) {
-        if (m.length) Vec3Func.multiply(this, this, m);
-        else Vec3Func.scale(this, this, m);
+    subtract(v) {
+        Vec3Func.subtract(this, this, v);
+        return this;
+    }
+
+    multiply(v) {
+        if (v.length) Vec3Func.multiply(this, this, v);
+        else Vec3Func.scale(this, this, v);
+        return this;
+    }
+
+    divide(v) {
+        if (v.length) Vec3Func.divide(this, this, v);
+        else Vec3Func.scale(this, this, 1 / v);
+        return this;
+    }
+
+    inverse() {
+        Vec3Func.inverse(this, this);
         return this;
     }
 
@@ -108,6 +124,11 @@ export class Vec3 extends Float32Array {
         return this;
     }
 
+    applyQuaternion(q) {
+        Vec3Func.transformQuat(this, this, q);
+        return this;
+    }
+
     angle(v) {
         return Vec3Func.angle(this, v);
     }
@@ -120,4 +141,11 @@ export class Vec3 extends Float32Array {
     clone() {
         return new Vec3(this);
     }
+
+    fromArray(a, o = 0) {
+		this[0] = a[o];
+		this[1] = a[o + 1];
+		this[2] = a[o + 2];
+		return this;
+	}
 }

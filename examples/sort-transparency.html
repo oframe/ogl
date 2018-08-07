@@ -12,7 +12,8 @@
 <body>
     <div class="Info">Sort Transparency</div>
     <script type="module">
-        import {Renderer, Camera, Transform, Plane, Texture, Program, Color, Mesh} from '../src/OGL.js';
+        import {Renderer, Camera, Transform, Texture, Program, Color, Mesh} from '../src/Core.js';
+        import {Plane} from '../src/Extras.js';
         import SortTransparencyShader from './shaders/SortTransparencyShader.js';
 
         // This demonstrates the default geometry sorting before rendering.

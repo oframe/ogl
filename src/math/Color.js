@@ -40,6 +40,7 @@ export class Color extends Float32Array {
     }
 
     static hexToRGB(hex) {
+        if (hex.length === 4) hex = hex[0] + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
         const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return r ? [
             parseInt(r[1], 16) / 255,

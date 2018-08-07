@@ -43,4 +43,12 @@ export class Vec4 extends Float32Array {
         Vec4Func.set(this, x, y, z, w);
         return this;
     }
+
+    fromArray(a, o = 0) {
+		this[0] = a[o];
+		this[1] = a[o + 1];
+		this[2] = a[o + 2];
+		this[3] = a[o + 3];
+		return this;
+	}
 }

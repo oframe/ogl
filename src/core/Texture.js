@@ -47,16 +47,12 @@ export class Texture {
         this.height = height;
         this.texture = this.gl.createTexture();
 
-        // Store which values have been set on the gpu. Fill with webgl defaults
         this.store = {
             image: null,
-            minFilter: this.gl.NEAREST_MIPMAP_LINEAR,
-            magFilter: this.gl.LINEAR,
-            wrapS: this.gl.REPEAT,
-            wrapT: this.gl.REPEAT,
-            premultiplyAlpha: false,
-            flipY: false,
         };
+
+        // Alias to reduce code
+        this.state = this.gl.renderer.state;
     }
 
     update() {
@@ -64,34 +60,34 @@ export class Texture {
         // Bind so we can set its params
         this.gl.bindTexture(this.target, this.texture);
 
-        if (this.flipY !== this.store.flipY) {
+        if (this.flipY !== this.state.flipY) {
             this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, this.flipY);
-            this.store.flipY = this.flipY;
+            this.state.flipY = this.flipY;
         }
 
-        if (this.premultiplyAlpha !== this.store.premultiplyAlpha) {
+        if (this.premultiplyAlpha !== this.state.premultiplyAlpha) {
             this.gl.pixelStorei(this.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.premultiplyAlpha);
-            this.store.premultiplyAlpha = this.premultiplyAlpha;
+            this.state.premultiplyAlpha = this.premultiplyAlpha;
         }
 
-        if (this.minFilter !== this.store.minFilter) {
+        if (this.minFilter !== this.state.minFilter) {
             this.gl.texParameteri(this.target, this.gl.TEXTURE_MIN_FILTER, this.minFilter);
-            this.store.minFilter = this.minFilter;
+            this.state.minFilter = this.minFilter;
         }
 
-        if (this.magFilter !== this.store.magFilter) {
+        if (this.magFilter !== this.state.magFilter) {
             this.gl.texParameteri(this.target, this.gl.TEXTURE_MAG_FILTER, this.magFilter);
-            this.store.magFilter = this.magFilter;
+            this.state.magFilter = this.magFilter;
         }
 
-        if (this.wrapS !== this.store.wrapS) {
+        if (this.wrapS !== this.state.wrapS) {
             this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-            this.store.wrapS = this.wrapS;
+            this.state.wrapS = this.wrapS;
         }
 
-        if (this.wrapT !== this.store.wrapT) {
+        if (this.wrapT !== this.state.wrapT) {
             this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-            this.store.wrapT = this.wrapT;
+            this.state.wrapT = this.wrapT;
         }
 
         if (this.image !== this.store.image || this.needsUpdate) {

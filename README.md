@@ -32,13 +32,13 @@ Keeping the level of abstraction low helps to make the framework easier to under
 
 ## Install
 
-```
-npm install ogl
-```
+Use directly in your project with es6 modules and load directly in the browser - **no dev-stack required**.
 
 **or**
 
-Use directly in your project with es6 modules and load directly in the browser - **no dev-stack required**.
+```
+npm install ogl
+```
 
 ## Examples
 
@@ -57,11 +57,12 @@ Total | 15kb
 
 ## Usage
 
-Importing is done from a single point of access for simplicity. *This may cause some issues with certain bundlers when tree-shaking.*
+Importing is done from a two points of access for simplicity. These are `Core.js` and `Extras.js` and relate to the component structure detailed below. *Note: this may cause some issues with certain bundlers when tree-shaking.*
 
 ```js
 
-import {Renderer, Camera, Transform, Cube, Program, Mesh} from './OGL.js';
+import {Renderer, Camera, Transform, Program, Mesh} from './Core.js';
+import {Cube} from './Extras.js';
 ```
 
 Below renders a spinning black cube.
@@ -122,7 +123,7 @@ Below renders a spinning black cube.
 
 In an attempt to keep things light and modular, the framework is split up into three components: **Math**, **Core**, and **Extras**.
 
-The **Math** component is based on a fork of gl-matrix - featuring a practical API. 7kb when gzipped, it has no dependencies and can be used separately.
+The **Math** component is based on [gl-matrix](http://glmatrix.net/), however also includes classes that extend Float32Array for each of the module types. This technique was shown to me by [@damienmortini](https://twitter.com/damienmortini), and it creates a very efficient, yet still highly practical way of dealing with Math. 7kb when gzipped, it has no dependencies and can be used separately.
 
 The **Core** is made up of the following:
  - Geometry.js
@@ -145,8 +146,9 @@ Below is an **Extras** wish-list, and is still a work-in-progress as examples ar
  - [ ] Raycasting.js
  - [ ] Projection.js
  - [ ] Post.js
- - [ ] Rig.js
- - [ ] RigAnimation.js
+ - [x] Skin.js
+ - [x] Animation.js
+ - [x] Text.js
 
 ## Examples wishlist
 
@@ -158,8 +160,7 @@ It is an opinionated, comprehensive list of examples for any fully-fledged WebGL
 
 Much inspired by ThreeJS' examples, they will serve as reference for how to achieve a wide range of techniques.
 
-In order to make the framework as usable as possible, for more involved techniques, extra classes will be developed
-and contained within the 'Extras' folder of the framework.
+For more advanced techniques, extra classes will be developed and contained within the 'Extras' folder of the framework.
 
 ### Geometry
  - [x] Triangle Screen Shader
@@ -170,7 +171,7 @@ and contained within the 'Extras' folder of the framework.
  - [x] Base Primitives - Plane, Cube, Sphere
  - [x] Particles
  - [x] Instancing
- - [ ] Billboard Depth Test (instances and points)
+ - [ ] Particle Depth Sort
  - [ ] Frustum culling
  - [ ] LODs (Level Of Detail)
  - [ ] Thick Lines
@@ -179,19 +180,22 @@ and contained within the 'Extras' folder of the framework.
 ### Scene
  - [x] Scene Graph hierarchy
  - [x] Sort Transparency
+ - [ ] Load Hierarchy Animation
 
 ### Interaction
  - [x] Orbit controls
- - [ ] Raycasting
- - [ ] Projection (Mouse, clip space)
+ - [ ] Projection and Raycasting
+ - [ ] Mouse Flowmap
 
 ### Shading
  - [x] Fog
  - [x] Textures
  - [x] Skydome
- - [ ] Normal Maps
+ - [x] Normal Maps
+ - [ ] Flat Shading
+ - [ ] Wireframe Shader
  - [ ] SDF Alpha test/clip (Signed Distance Fields)
- - [ ] MSDF Text Glyphs (Multichannel Signed Distance Fields)
+ - [x] MSDF Text Glyphs (Multichannel Signed Distance Fields)
  - [ ] Point lighting with specular highlights
  - [x] PBR (Physically Based Rendering)
  - [ ] Compressed Textures
@@ -205,7 +209,7 @@ and contained within the 'Extras' folder of the framework.
  - [ ] Effects - DOF (Depth Of Field) + light rays + tone mapping
 
 ### Animation
- - [ ] Skinning
+ - [x] Skinning
  - [ ] Blendshapes
 
 ### Stencil
