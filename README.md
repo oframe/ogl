@@ -24,7 +24,7 @@
 
 O-GL is a small, effective WebGL framework aimed at developers who like minimal layers of abstraction, and are comfortable creating their own shaders.
 
-With 0 dependencies, the API shares many similarities with ThreeJS, however it is tightly coupled with WebGL and comes with much fewer features.
+With zero dependencies, the API shares many similarities with ThreeJS, however it is tightly coupled with WebGL and comes with much fewer features.
 
 In its design, the framework does the minimum abstraction necessary, so devs should still feel comfortable using it in conjunction with native WebGL commands.
 
@@ -52,12 +52,12 @@ Component | Size (gzipped)
 ------------ | -------------:
 Core | 6kb
 Math | 7kb
-Extras | 2kb
-Total | 15kb
+Extras | 4kb
+Total | 17kb
 
 ## Usage
 
-Importing is done from a two points of access for simplicity. These are `Core.js` and `Extras.js` and relate to the component structure detailed below. *Note: this may cause some issues with certain bundlers when tree-shaking.*
+Importing can be done from two points of access for simplicity. These are `Core.js` and `Extras.js` - which relate to the component structure detailed below. *Note: this may cause some issues with certain bundlers when tree-shaking.*
 
 ```js
 
