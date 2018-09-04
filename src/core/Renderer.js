@@ -63,10 +63,6 @@ export class Renderer {
         this.state.frontFace = this.gl.CCW;
         this.state.depthMask = true;
         this.state.depthFunc = this.gl.LESS;
-        this.state.minFilter = this.gl.NEAREST_MIPMAP_LINEAR;
-        this.state.magFilter = this.gl.LINEAR;
-        this.state.wrapS = this.gl.REPEAT;
-        this.state.wrapT = this.gl.REPEAT;
         this.state.premultiplyAlpha = false;
         this.state.flipY = false;
         this.state.framebuffer = null;

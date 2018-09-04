@@ -51,47 +51,59 @@ export class Texture {
             image: null,
         };
 
-        // Alias to reduce code
-        this.state = this.gl.renderer.state;
+        // Alias for state store to avoid redundant calls for global state
+        this.glState = this.gl.renderer.state;
+
+        // State store to avoid redundant calls for per-texture state
+        this.state = {};
+        this.state.minFilter = this.gl.NEAREST_MIPMAP_LINEAR;
+        this.state.magFilter = this.gl.LINEAR;
+        this.state.wrapS = this.gl.REPEAT;
+        this.state.wrapT = this.gl.REPEAT;
+
+        // TODO: test if premultiplyAlpha is global or per texture 
+        this.state.premultiplyAlpha = false;
     }
 
     update() {
 
         // Bind so we can set its params
+        // TODO: do we need to bind every frame?
         this.gl.bindTexture(this.target, this.texture);
-
-        if (this.flipY !== this.state.flipY) {
-            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, this.flipY);
-            this.state.flipY = this.flipY;
-        }
-
-        if (this.premultiplyAlpha !== this.state.premultiplyAlpha) {
-            this.gl.pixelStorei(this.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.premultiplyAlpha);
-            this.state.premultiplyAlpha = this.premultiplyAlpha;
-        }
-
-        if (this.minFilter !== this.state.minFilter) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_MIN_FILTER, this.minFilter);
-            this.state.minFilter = this.minFilter;
-        }
-
-        if (this.magFilter !== this.state.magFilter) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_MAG_FILTER, this.magFilter);
-            this.state.magFilter = this.magFilter;
-        }
-
-        if (this.wrapS !== this.state.wrapS) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-            this.state.wrapS = this.wrapS;
-        }
-
-        if (this.wrapT !== this.state.wrapT) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-            this.state.wrapT = this.wrapT;
-        }
 
         if (this.image !== this.store.image || this.needsUpdate) {
             this.needsUpdate = false;
+
+            if (this.flipY !== this.glState.flipY) {
+                this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, this.flipY);
+                this.glState.flipY = this.flipY;
+            }
+    
+            if (this.premultiplyAlpha !== this.state.premultiplyAlpha) {
+                this.gl.pixelStorei(this.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.premultiplyAlpha);
+                this.state.premultiplyAlpha = this.premultiplyAlpha;
+            }
+    
+            if (this.minFilter !== this.state.minFilter) {
+                this.gl.texParameteri(this.target, this.gl.TEXTURE_MIN_FILTER, this.minFilter);
+                this.state.minFilter = this.minFilter;
+            }
+    
+            if (this.magFilter !== this.state.magFilter) {
+                this.gl.texParameteri(this.target, this.gl.TEXTURE_MAG_FILTER, this.magFilter);
+                this.state.magFilter = this.magFilter;
+            }
+    
+            if (this.wrapS !== this.state.wrapS) {
+                this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+                this.state.wrapS = this.wrapS;
+            }
+    
+            if (this.wrapT !== this.state.wrapT) {
+                this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+                this.state.wrapT = this.wrapT;
+            }
+
             if (this.image) {
 
                 if (this.image.width) {
@@ -153,6 +165,9 @@ export class Texture {
 
             }
             this.store.image = this.image;
+
+            // Call onUpdate if exists to close imageBitmap decoder
+            this.onUpdate && this.onUpdate();
         }
     }
 }

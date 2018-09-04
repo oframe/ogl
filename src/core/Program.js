@@ -8,46 +8,6 @@ let ID = 0;
 // cache of typed arrays used to flatten uniform arrays
 const arrayCacheF32 = {};
 
-function setUniform(gl, type, location, value) {
-    switch (type) {
-        case 5126  : return value.length ? gl.uniform1fv(location, value) : gl.uniform1f(location, value); // FLOAT
-        case 35664 : return gl.uniform2fv(location, value[0].length ? flatten(value) : value); // FLOAT_VEC2
-        case 35665 : return gl.uniform3fv(location, value[0].length ? flatten(value) : value); // FLOAT_VEC3
-        case 35666 : return gl.uniform4fv(location, value[0].length ? flatten(value) : value); // FLOAT_VEC4
-        case 35670 : // BOOL
-        case 5124  : // INT
-        case 35678 : // SAMPLER_2D
-        case 35680 : return value.length ? gl.uniform1iv(location, value) : gl.uniform1i(location, value); // SAMPLER_CUBE
-        case 35671 : // BOOL_VEC2
-        case 35667 : return gl.uniform2iv(location, value); // INT_VEC2
-        case 35672 : // BOOL_VEC3
-        case 35668 : return gl.uniform3iv(location, value); // INT_VEC3
-        case 35673 : // BOOL_VEC4
-        case 35669 : return gl.uniform4iv(location, value); // INT_VEC4
-        case 35674 : return gl.uniformMatrix2fv(location, false, value[0].length ? flatten(value) : value); // FLOAT_MAT2
-        case 35675 : return gl.uniformMatrix3fv(location, false, value[0].length ? flatten(value) : value); // FLOAT_MAT3
-        case 35676 : return gl.uniformMatrix4fv(location, false, value[0].length ? flatten(value) : value); // FLOAT_MAT4
-    }
-}
-
-function addLineNumbers(string) {
-    let lines = string.split('\n');
-    for (let i = 0; i < lines.length; i ++) {
-        lines[i] = (i + 1) + ': ' + lines[i];
-    }
-    return lines.join('\n');
-}
-
-function flatten(array) {
-    const arrayLen = array.length;
-    const valueLen = array[0].length;
-    const length = arrayLen * valueLen;
-    let value = arrayCacheF32[length];
-    if (!value) arrayCacheF32[length] = value = new Float32Array(length);
-    for (let i = 0; i < arrayLen; i++) value.set(array[i], i * valueLen);
-    return value;
-}
-
 export class Program {
     constructor(gl, {
         vertexShader,
@@ -221,4 +181,44 @@ export class Program {
         this.gl.deleteShader(this.vertexShader);
         this.gl.deleteShader(this.fragmentShader);
     }
+}
+
+function setUniform(gl, type, location, value) {
+    switch (type) {
+        case 5126  : return value.length ? gl.uniform1fv(location, value) : gl.uniform1f(location, value); // FLOAT
+        case 35664 : return gl.uniform2fv(location, value[0].length ? flatten(value) : value); // FLOAT_VEC2
+        case 35665 : return gl.uniform3fv(location, value[0].length ? flatten(value) : value); // FLOAT_VEC3
+        case 35666 : return gl.uniform4fv(location, value[0].length ? flatten(value) : value); // FLOAT_VEC4
+        case 35670 : // BOOL
+        case 5124  : // INT
+        case 35678 : // SAMPLER_2D
+        case 35680 : return value.length ? gl.uniform1iv(location, value) : gl.uniform1i(location, value); // SAMPLER_CUBE
+        case 35671 : // BOOL_VEC2
+        case 35667 : return gl.uniform2iv(location, value); // INT_VEC2
+        case 35672 : // BOOL_VEC3
+        case 35668 : return gl.uniform3iv(location, value); // INT_VEC3
+        case 35673 : // BOOL_VEC4
+        case 35669 : return gl.uniform4iv(location, value); // INT_VEC4
+        case 35674 : return gl.uniformMatrix2fv(location, false, value[0].length ? flatten(value) : value); // FLOAT_MAT2
+        case 35675 : return gl.uniformMatrix3fv(location, false, value[0].length ? flatten(value) : value); // FLOAT_MAT3
+        case 35676 : return gl.uniformMatrix4fv(location, false, value[0].length ? flatten(value) : value); // FLOAT_MAT4
+    }
+}
+
+function addLineNumbers(string) {
+    let lines = string.split('\n');
+    for (let i = 0; i < lines.length; i ++) {
+        lines[i] = (i + 1) + ': ' + lines[i];
+    }
+    return lines.join('\n');
+}
+
+function flatten(array) {
+    const arrayLen = array.length;
+    const valueLen = array[0].length;
+    const length = arrayLen * valueLen;
+    let value = arrayCacheF32[length];
+    if (!value) arrayCacheF32[length] = value = new Float32Array(length);
+    for (let i = 0; i < arrayLen; i++) value.set(array[i], i * valueLen);
+    return value;
 }

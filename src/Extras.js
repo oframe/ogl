@@ -10,3 +10,4 @@ export {Orbit} from './extras/Orbit.js';
 export {Skin} from './extras/Skin.js';
 export {Animation} from './extras/Animation.js';
 export {Text} from './extras/Text.js';
+export {NormalProgram} from './extras/NormalProgram.js';
