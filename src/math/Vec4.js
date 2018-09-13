@@ -2,7 +2,7 @@ import * as Vec4Func from './functions/Vec4Func.js';
 
 export class Vec4 extends Float32Array {
     constructor(array = [0, 0, 0, 0]) {
-        if (!array.length) array = [array, array, array];
+        if (!array.length) array = [array, array, array, array];
         super(array);
         return this;
     }
