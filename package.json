@@ -2,7 +2,7 @@
     "name": "ogl",
     "version": "0.0.5",
     "description": "WebGL Framework",
-    "main": "src/OGL.js",
+    "main": "src",
     "directories": {
         "example": "examples"
     },
