@@ -112,7 +112,7 @@ export class Mat4 extends Float32Array {
         return this;
     }
 
-    invert(m = this) {
+    inverse(m = this) {
         Mat4Func.invert(this, m);
         return this;
     }

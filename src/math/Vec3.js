@@ -41,13 +41,15 @@ export class Vec3 extends Float32Array {
         return this;
     }
 
-    add(v) {
-        Vec3Func.add(this, this, v);
+    add(va, vb) {
+        if (vb) Vec3Func.add(this, va, vb);
+        else Vec3Func.add(this, this, va);
         return this;
     }
 
-    subtract(v) {
-        Vec3Func.subtract(this, this, v);
+    sub(va, vb) {
+        if (vb) Vec3Func.subtract(this, va, vb);
+        else Vec3Func.subtract(this, this, va);
         return this;
     }
 
@@ -63,8 +65,8 @@ export class Vec3 extends Float32Array {
         return this;
     }
 
-    inverse() {
-        Vec3Func.inverse(this, this);
+    inverse(v = this) {
+        Vec3Func.inverse(this, v);
         return this;
     }
 
@@ -83,12 +85,6 @@ export class Vec3 extends Float32Array {
 
     squaredLength() {
         return this.squaredDistance();
-    }
-
-    subtract(va, vb) {
-        if (vb) Vec3Func.subtract(this, va, vb);
-        else Vec3Func.subtract(this, this, va);
-        return this;
     }
 
     negate(v = this) {

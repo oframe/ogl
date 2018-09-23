@@ -1,6 +1,7 @@
 // TODO: Compressed Texture
 // TODO: data texture
 // TODO: cube map
+// TODO: delete texture
 
 const emptyPixel = new Uint8Array(4);
 

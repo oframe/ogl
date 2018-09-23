@@ -1,4 +1,4 @@
-// Based from ThreeJS' OrbitControls class, rewritten using es6 with some additions and subtractions.
+// Based from ThreeJS' OrbitControls class, rewritten using es6 with some additions and subions.
 // TODO: abstract event handlers so can be fed from other sources
 // TODO: make scroll zoom more accurate than just >/< zero
 
@@ -47,7 +47,7 @@ export function Orbit(object, {
 
     // Grab initial position values
     const offset = new Vec3();
-    offset.copy(object.position).subtract(this.target);
+    offset.copy(object.position).sub(this.target);
     spherical.radius = sphericalTarget.radius = offset.length();
     spherical.theta = sphericalTarget.theta = Math.atan2(offset.x, offset.z);
     spherical.phi = sphericalTarget.phi = Math.acos(Math.min(Math.max(offset.y / sphericalTarget.radius, -1), 1));
@@ -123,7 +123,7 @@ export function Orbit(object, {
 
     const pan = (deltaX, deltaY) => {
         let el = element === document ? document.body : element;
-        tempVec3.copy(object.position).subtract(this.target);
+        tempVec3.copy(object.position).sub(this.target);
         let targetDistance = tempVec3.length();
         targetDistance *= Math.tan(((object.fov || 45) / 2) * Math.PI / 180.0);
         panLeft(2 * deltaX * targetDistance / el.clientHeight, object.matrix);
@@ -136,7 +136,7 @@ export function Orbit(object, {
 
     function handleMoveRotate(x, y) {
         tempVec2a.set(x, y);
-        tempVec2b.subtract(tempVec2a, rotateStart).multiply(rotateSpeed);
+        tempVec2b.sub(tempVec2a, rotateStart).multiply(rotateSpeed);
         let el = element === document ? document.body : element;
         sphericalDelta.theta -= 2 * Math.PI * tempVec2b.x / el.clientHeight;
         sphericalDelta.phi -= 2 * Math.PI * tempVec2b.y / el.clientHeight;
@@ -145,7 +145,7 @@ export function Orbit(object, {
 
     function handleMouseMoveDolly(e) {
         tempVec2a.set(e.clientX, e.clientY);
-        tempVec2b.subtract(tempVec2a, dollyStart);
+        tempVec2b.sub(tempVec2a, dollyStart);
         if (tempVec2b.y > 0) {
             dolly(getZoomScale());
         } else if (tempVec2b.y < 0) {
@@ -156,7 +156,7 @@ export function Orbit(object, {
 
     function handleMovePan(x, y) {
         tempVec2a.set(x, y);
-        tempVec2b.subtract(tempVec2a, panStart).multiply(panSpeed);
+        tempVec2b.sub(tempVec2a, panStart).multiply(panSpeed);
         pan(tempVec2b.x, tempVec2b.y);
         panStart.copy(tempVec2a);
     }

@@ -73,7 +73,7 @@ export class Quat extends Float32Array {
         return this;
     }
 
-    invert(q = this) {
+    inverse(q = this) {
         QuatFunc.invert(this, q);
         this.onChange();
         return this;

@@ -33,8 +33,16 @@ export class Vec2 extends Float32Array {
         return this;
     }
 
-    add(v) {
-        Vec2Func.add(this, this, v);
+    add(va, vb) {
+        if (vb) Vec2Func.add(this, va, vb);
+        else Vec2Func.add(this, this, va);
+        return this;
+    }
+
+
+    sub(va, vb) {
+        if (vb) Vec2Func.subtract(this, va, vb);
+        else Vec2Func.subtract(this, this, va);
         return this;
     }
 
@@ -56,12 +64,6 @@ export class Vec2 extends Float32Array {
 
     squaredLength() {
         return this.squaredDistance();
-    }
-
-    subtract(va, vb) {
-        if (vb) Vec2Func.subtract(this, va, vb);
-        else Vec2Func.subtract(this, this, va);
-        return this;
     }
 
     negate(v = this) {

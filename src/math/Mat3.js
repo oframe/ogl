@@ -70,7 +70,7 @@ export class Mat3 extends Float32Array {
         return this;
     }
 
-    invert(m = this) {
+    inverse(m = this) {
         Mat3Func.invert(this, m);
         return this;
     }
