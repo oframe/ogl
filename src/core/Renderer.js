@@ -2,8 +2,7 @@ import {Mat4} from '../math/Mat4.js';
 import {Vec3} from '../math/Vec3.js';
 
 // TODO: frustum culling ?
-// TODO: gl.canvas.addEventListener('webglcontextlost', contextLost, false);
-// TODO: gl.canvas.addEventListener('webglcontextrestored', contextRestore, false);
+// TODO: Handle context loss https://www.khronos.org/webgl/wiki/HandlingContextLost
 
 // Not automatic - devs to use these methods manually
 // gl.colorMask( colorMask, colorMask, colorMask, colorMask );
