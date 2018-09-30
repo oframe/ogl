@@ -8,12 +8,12 @@
 // }
 
 // TODO: fit in transform feedback
-// TODO: bounding box for auto culling
 // this.boundingBox.center
 
 // TODO: when would I disableVertexAttribArray ?
 // TODO: do I need to unbind after drawing ?
 // TODO: test updating attributes on the fly
+// TODO: add fallback for non vao support (ie)
 
 let ID = 0;
 

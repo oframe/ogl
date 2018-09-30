@@ -1,13 +1,20 @@
-// TODO: Compressed Texture
-// TODO: data texture
+// TODO: facilitate Compressed Textures
+// TODO: test data texture
 // TODO: cube map
 // TODO: delete texture
+// TODO: test if premultiplyAlpha is global or per texture 
+// TODO: check if we need to bind texture - ID?
+// TODO: should I support anisotropy? Maybe a way to extend the update easily
+// TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
+// TODO: use texSubImage2D for updates
 
 const emptyPixel = new Uint8Array(4);
 
 function isPowerOf2(value) {
     return (value & (value - 1)) === 0;
 }
+
+let ID = 0;
 
 export class Texture {
     constructor(gl, {
@@ -30,6 +37,10 @@ export class Texture {
         // TODO: need? encoding = linearEncoding
     } = {}) {
         this.gl = gl;
+        this.id = ID++;
+
+        // Assign texture unit spread over max available units to avoid frequent binding
+        this.textureUnit = this.gl.renderer.state.textureUnitIndex++ % this.gl.renderer.parameters.maxTextureUnits;
 
         this.image = image;
         this.target = target;
@@ -66,109 +77,122 @@ export class Texture {
         this.state.premultiplyAlpha = false;
     }
 
-    update() {
+    bind() {
 
-        // Bind so we can set its params
-        // TODO: do we need to bind every frame?
+        // Already bound to active texture unit
+        if (this.glState.textureUnits[this.glState.activeTextureUnit] === this.id) return;
         this.gl.bindTexture(this.target, this.texture);
+        this.glState.textureUnits[this.glState.activeTextureUnit] = this.id;
+    }
 
-        if (this.image !== this.store.image || this.needsUpdate) {
-            this.needsUpdate = false;
+    update(textureUnit = this.textureUnit) {
 
-            if (this.flipY !== this.glState.flipY) {
-                this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, this.flipY);
-                this.glState.flipY = this.flipY;
-            }
-    
-            if (this.premultiplyAlpha !== this.state.premultiplyAlpha) {
-                this.gl.pixelStorei(this.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.premultiplyAlpha);
-                this.state.premultiplyAlpha = this.premultiplyAlpha;
-            }
-    
-            if (this.minFilter !== this.state.minFilter) {
-                this.gl.texParameteri(this.target, this.gl.TEXTURE_MIN_FILTER, this.minFilter);
-                this.state.minFilter = this.minFilter;
-            }
-    
-            if (this.magFilter !== this.state.magFilter) {
-                this.gl.texParameteri(this.target, this.gl.TEXTURE_MAG_FILTER, this.magFilter);
-                this.state.magFilter = this.magFilter;
-            }
-    
-            if (this.wrapS !== this.state.wrapS) {
-                this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-                this.state.wrapS = this.wrapS;
-            }
-    
-            if (this.wrapT !== this.state.wrapT) {
-                this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-                this.state.wrapT = this.wrapT;
+        // Make sure that texture is bound to its texture unit
+        if (this.glState.textureUnits[textureUnit] !== this.id) {
+            this.gl.renderer.activeTexture(textureUnit);
+            this.bind();
+        }
+
+        if (this.image === this.store.image && !this.needsUpdate) return;
+        this.needsUpdate = false;
+
+        // Even if bound, set active texture unit to perform texture functions
+        this.gl.renderer.activeTexture(textureUnit);
+
+        // Check if need to bind to texture unit
+        this.bind();
+
+        if (this.flipY !== this.glState.flipY) {
+            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, this.flipY);
+            this.glState.flipY = this.flipY;
+        }
+
+        if (this.premultiplyAlpha !== this.state.premultiplyAlpha) {
+            this.gl.pixelStorei(this.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.premultiplyAlpha);
+            this.state.premultiplyAlpha = this.premultiplyAlpha;
+        }
+
+        if (this.minFilter !== this.state.minFilter) {
+            this.gl.texParameteri(this.target, this.gl.TEXTURE_MIN_FILTER, this.minFilter);
+            this.state.minFilter = this.minFilter;
+        }
+
+        if (this.magFilter !== this.state.magFilter) {
+            this.gl.texParameteri(this.target, this.gl.TEXTURE_MAG_FILTER, this.magFilter);
+            this.state.magFilter = this.magFilter;
+        }
+
+        if (this.wrapS !== this.state.wrapS) {
+            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+            this.state.wrapS = this.wrapS;
+        }
+
+        if (this.wrapT !== this.state.wrapT) {
+            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+            this.state.wrapT = this.wrapT;
+        }
+
+        if (this.image) {
+
+            if (this.image.width) {
+                this.width = this.image.width;
+                this.height = this.image.height;
             }
 
-            if (this.image) {
+            // TODO: all sides if cubemap
+            // gl.TEXTURE_CUBE_MAP_POSITIVE_X
+            
+            // TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
+            if (this.gl.renderer.isWebgl2 || ArrayBuffer.isView(this.image)) {
+                this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0 /* border */, this.format, this.type, this.image);
+            } else {
+                this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image);
+            }
 
-                if (this.image.width) {
-                    this.width = this.image.width;
-                    this.height = this.image.height;
-                }
+            // TODO: support everything
+            // WebGL1:
+            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, ArrayBufferView? pixels);
+            // gl.texImage2D(target, level, internalformat, format, type, ImageData? pixels);
+            // gl.texImage2D(target, level, internalformat, format, type, HTMLImageElement? pixels);
+            // gl.texImage2D(target, level, internalformat, format, type, HTMLCanvasElement? pixels);
+            // gl.texImage2D(target, level, internalformat, format, type, HTMLVideoElement? pixels);
+            // gl.texImage2D(target, level, internalformat, format, type, ImageBitmap? pixels);
 
-                // TODO: all sides if cubemap
-                // gl.TEXTURE_CUBE_MAP_POSITIVE_X
+            // WebGL2:
+            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, GLintptr offset);
+            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, HTMLCanvasElement source);
+            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, HTMLImageElement source);
+            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, HTMLVideoElement source);
+            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, ImageBitmap source);
+            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, ImageData source);
+            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, ArrayBufferView srcData, srcOffset);
 
-                // TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
-                if (this.gl.renderer.isWebgl2 || ArrayBuffer.isView(this.image)) {
-                    this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0 /* border */, this.format, this.type, this.image);
+            if (this.generateMipmaps) {
+
+                // For WebGL1, if not a power of 2, turn off mips, set wrapping to clamp to edge and minFilter to linear
+                if (!this.gl.renderer.isWebgl2 && (!isPowerOf2(this.image.width) || !isPowerOf2(this.image.height))) {
+                    this.generateMipmaps = false;
+                    this.wrapS = this.wrapT = this.gl.CLAMP_TO_EDGE;
+                    this.minFilter = this.gl.LINEAR;
                 } else {
-                    this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image);
+                    this.gl.generateMipmap(this.target);
                 }
+            }
+        } else {
 
-                // TODO: support everything
-                // WebGL1:
-                // gl.texImage2D(target, level, internalformat, width, height, border, format, type, ArrayBufferView? pixels);
-                // gl.texImage2D(target, level, internalformat, format, type, ImageData? pixels);
-                // gl.texImage2D(target, level, internalformat, format, type, HTMLImageElement? pixels);
-                // gl.texImage2D(target, level, internalformat, format, type, HTMLCanvasElement? pixels);
-                // gl.texImage2D(target, level, internalformat, format, type, HTMLVideoElement? pixels);
-                // gl.texImage2D(target, level, internalformat, format, type, ImageBitmap? pixels);
+            if (this.width) {
 
-                // WebGL2:
-                // gl.texImage2D(target, level, internalformat, width, height, border, format, type, GLintptr offset);
-                // gl.texImage2D(target, level, internalformat, width, height, border, format, type, HTMLCanvasElement source);
-                // gl.texImage2D(target, level, internalformat, width, height, border, format, type, HTMLImageElement source);
-                // gl.texImage2D(target, level, internalformat, width, height, border, format, type, HTMLVideoElement source);
-                // gl.texImage2D(target, level, internalformat, width, height, border, format, type, ImageBitmap source);
-                // gl.texImage2D(target, level, internalformat, width, height, border, format, type, ImageData source);
-                // gl.texImage2D(target, level, internalformat, width, height, border, format, type, ArrayBufferView srcData, srcOffset);
-
-                // TODO: mipmap data textures?
-                if (this.generateMipmaps) {
-
-                    // For WebGL1, if not a power of 2, turn off mips, set wrapping to clamp to edge and minFilter to linear
-                    if (!this.gl.renderer.isWebgl2 && (!isPowerOf2(this.image.width) || !isPowerOf2(this.image.height))) {
-                        this.generateMipmaps = false;
-                        this.wrapS = this.wrapT = this.gl.CLAMP_TO_EDGE;
-                        this.minFilter = this.gl.LINEAR;
-                    } else {
-                        this.gl.generateMipmap(this.target);
-                    }
-                }
+                // image intentionally left null for RenderTarget
+                this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, null);
             } else {
 
-                if (this.width) {
-
-                    // image intentionally left null for RenderTarget
-                    this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, null);
-                } else {
-
-                    // Upload empty pixel if no image to avoid errors while image or video loading
-                    this.gl.texImage2D(this.target, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
-                }
-
+                // Upload empty pixel if no image to avoid errors while image or video loading
+                this.gl.texImage2D(this.target, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
             }
-            this.store.image = this.image;
 
-            // Call onUpdate if exists to close imageBitmap decoder
-            this.onUpdate && this.onUpdate();
         }
+        this.store.image = this.image;
+
+        this.onUpdate && this.onUpdate();
     }
 }
