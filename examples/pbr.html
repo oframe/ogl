@@ -76,8 +76,8 @@
 
                 // This whole effect lives in the fairly epic shader.
                 const program = new Program(gl, {
-                    vertexShader: PBRShader.vertex,
-                    fragmentShader: PBRShader.fragment,
+                    vertex: PBRShader.vertex,
+                    fragment: PBRShader.fragment,
                     uniforms: {
 
                         // Base color / albedo. This is used to determine both the diffuse and specular colors.
@@ -167,8 +167,8 @@
                 });
 
                 const program = new Program(gl, {
-                    vertexShader: PBRShader.vertex,
-                    fragmentShader: PBRShader.fragment,
+                    vertex: PBRShader.vertex,
+                    fragment: PBRShader.fragment,
                     uniforms: {
                         tBaseColor: {value: getTexture('assets/pbr/car-int-color.jpg')},
                         uBaseColor: {value: new Color([1, 1, 1])},
@@ -206,8 +206,8 @@
             function loadShadow() {
                 const geometry = new Plane(gl, 2.3);
                 const program = new Program(gl, {
-                    vertexShader: ShadowShader.vertex,
-                    fragmentShader: ShadowShader.fragment,
+                    vertex: ShadowShader.vertex,
+                    fragment: ShadowShader.fragment,
                     uniforms: {
                         tMap: {value: getTexture('assets/pbr/car-shadow.jpg')},
                     },

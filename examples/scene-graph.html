@@ -38,8 +38,8 @@
             const cubeGeometry = new Cube(gl, 0.3);
 
             const program = new Program(gl, {
-                vertexShader: SceneGraphShader.vertex,
-                fragmentShader: SceneGraphShader.fragment,
+                vertex: SceneGraphShader.vertex,
+                fragment: SceneGraphShader.fragment,
             });
 
             // The scene hierarchy is controlled by the Transform class

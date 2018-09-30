@@ -74,8 +74,8 @@
             });
 
             const program = new Program(gl, {
-                vertexShader: IndexedVsNonShader.vertex,
-                fragmentShader: IndexedVsNonShader.fragment,
+                vertex: IndexedVsNonShader.vertex,
+                fragment: IndexedVsNonShader.fragment,
                 uniforms: {
                     uTime: {value: 0},
                 },

@@ -45,8 +45,8 @@
             img.src = 'assets/macaw.jpg';
 
             const program = new Program(gl, {
-                vertexShader: OrbitControlsShader.vertex,
-                fragmentShader: OrbitControlsShader.fragment,
+                vertex: OrbitControlsShader.vertex,
+                fragment: OrbitControlsShader.fragment,
                 uniforms: {
                     tMap: {value: texture},
                 },

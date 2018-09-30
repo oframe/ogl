@@ -44,8 +44,8 @@
             img.src = 'assets/saddle.jpg';
 
             const program = new Program(gl, {
-                vertexShader: TexturesShader.vertex,
-                fragmentShader: TexturesShader.fragment,
+                vertex: TexturesShader.vertex,
+                fragment: TexturesShader.fragment,
                 uniforms: {
                     tMap: {value: texture},
                 },
@@ -94,8 +94,8 @@
             // video.setAttribute('playsinline', true);
 
             const videoProgram = new Program(gl, {
-                vertexShader: TexturesShader.vertex,
-                fragmentShader: TexturesShader.fragment,
+                vertex: TexturesShader.vertex,
+                fragment: TexturesShader.fragment,
                 uniforms: {
                     tMap: {value: videoTexture},
                 },

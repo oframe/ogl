@@ -49,8 +49,8 @@
             const geometry = new Sphere(gl, 1, 64);
 
             const program = new Program(gl, {
-                vertexShader: SkydomeShader.vertex,
-                fragmentShader: SkydomeShader.fragment,
+                vertex: SkydomeShader.vertex,
+                fragment: SkydomeShader.fragment,
                 uniforms: {
                     tMap: {value: texture},
                 },

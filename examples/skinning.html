@@ -93,8 +93,8 @@
             img.src = 'assets/snout.jpg';
 
             const program = new Program(gl, {
-                vertexShader: Shader.vertex,
-                fragmentShader: Shader.fragment,
+                vertex: Shader.vertex,
+                fragment: Shader.fragment,
                 uniforms: {
                     tMap: {value: texture},
                 },
@@ -124,8 +124,8 @@
             
             const geometry = new Plane(gl, 7);
             const program = new Program(gl, {
-                vertexShader: ShadowShader.vertex,
-                fragmentShader: ShadowShader.fragment,
+                vertex: ShadowShader.vertex,
+                fragment: ShadowShader.fragment,
                 uniforms: {
                     tMap: {value: texture},
                 },

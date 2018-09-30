@@ -88,7 +88,7 @@ Below renders a spinning black cube.
     const geometry = new Cube(gl);
 
     const program = new Program(gl, {
-        vertexShader: `
+        vertex: `
             attribute vec3 position;
 
             uniform mat4 modelViewMatrix;
@@ -98,7 +98,7 @@ Below renders a spinning black cube.
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
             `,
-        fragmentShader: `
+        fragment: `
             void main() {
                 gl_FragColor = vec4(1.0);
             }
@@ -143,8 +143,7 @@ Below is an **Extras** wish-list, and is still a work-in-progress as examples ar
  - [x] Sphere.js
  - [x] Orbit.js
  - [ ] Curve.js
- - [ ] Raycasting.js
- - [ ] Projection.js
+ - [x] Raycast.js
  - [ ] Post.js
  - [x] Skin.js
  - [x] Animation.js
@@ -184,7 +183,7 @@ For more advanced techniques, extra classes will be developed and contained with
 
 ### Interaction
  - [x] Orbit controls
- - [ ] Projection and Raycasting
+ - [x] Projection and Raycasting
  - [ ] Mouse Flowmap
 
 ### Shading

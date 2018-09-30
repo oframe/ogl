@@ -34,8 +34,8 @@
             });
 
             const program = new Program(gl, {
-                vertexShader: TriangleScreenShader.vertex,
-                fragmentShader: TriangleScreenShader.fragment,
+                vertex: TriangleScreenShader.vertex,
+                fragment: TriangleScreenShader.fragment,
                 uniforms: {
                     uTime: {value: 0},
                     uColor: {value: new Color([0.3, 0.2, 0.5])}

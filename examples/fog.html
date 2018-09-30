@@ -40,8 +40,8 @@
         img.src = 'assets/forest.jpg';
 
         const program = new Program(gl, {
-            vertexShader: FogShader.vertex,
-            fragmentShader: FogShader.fragment,
+            vertex: FogShader.vertex,
+            fragment: FogShader.fragment,
             uniforms: {
                 uTime: {value: 0},
                 tMap: {value: texture},

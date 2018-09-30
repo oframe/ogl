@@ -59,8 +59,8 @@
             img.src = 'assets/fonts/FiraSans-Bold.png';
 
             const program = new Program(gl, {
-                vertexShader: Shader.vertex,
-                fragmentShader: Shader.fragment,
+                vertex: Shader.vertex,
+                fragment: Shader.fragment,
                 uniforms: {
                     tMap: {value: texture},
                 },
