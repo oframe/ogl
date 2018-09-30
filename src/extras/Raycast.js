@@ -1,13 +1,13 @@
-// TODO: orthographic
+// TODO: test orthographic
+// TODO: add barycentric ?
 
 import {Vec3} from '../math/Vec3.js';
 import {Mat4} from '../math/Mat4.js';
-import {Quat} from '../math/Quat.js';
 
 const tempVec3a = new Vec3();
 const tempVec3b = new Vec3();
+const tempVec3c = new Vec3();
 const tempMat4 = new Mat4();
-const tempQuat = new Quat();
 
 export class Raycast {
     constructor(gl) {
@@ -29,26 +29,35 @@ export class Raycast {
         this.direction.sub(this.origin).normalize();
     }
 
-    intersectBoxes(meshes) {
+    intersectBounds(meshes) {
         if (!Array.isArray(meshes)) meshes = [meshes];
 
         const invWorldMat4 = tempMat4;
-        const invWorldQuat = tempQuat;
         const origin = tempVec3a;
         const direction = tempVec3b;
 
         const hits = [];
 
         meshes.forEach(mesh => {
-            if (!mesh.bounds) mesh.computeBoundingBox();
+            if (!mesh.bounds) {
+                if (mesh.raycast === 'sphere') { 
+                    mesh.computeBoundingSphere();
+                } else {
+                    mesh.computeBoundingBox();
+                }
+            }
 
             // Take world space ray and make it object space to align with bounding box
             invWorldMat4.inverse(mesh.worldMatrix);
-            invWorldMat4.getRotation(invWorldQuat);
             origin.copy(this.origin).applyMatrix4(invWorldMat4);
-            direction.copy(this.direction).applyQuaternion(invWorldQuat);
+            direction.copy(this.direction).transformDirection(invWorldMat4);
 
-            const distance = this.intersectBox(mesh.bounds, origin, direction);
+            let distance = 0;
+            if (mesh.raycast === 'sphere') { 
+                distance = this.intersectSphere(mesh.bounds, origin, direction);
+            } else {
+                distance = this.intersectBox(mesh.bounds, origin, direction);
+            }
             if (!distance) return;
 
             // Create object on mesh to avoid generating lots of objects
@@ -64,8 +73,24 @@ export class Raycast {
         return hits;
     }
 
-    intersectSphere() {
-        // Intersecting spheres takes less matrix calculation than boxes 
+    intersectSphere(sphere, origin = this.origin, direction = this.direction) {
+        const ray = tempVec3c;
+        ray.sub(sphere.center, origin);
+        const tca = ray.dot(direction);
+        const d2 = ray.dot(ray) - tca * tca;
+        const radius2 = sphere.radius * sphere.radius;
+
+        if (d2 > radius2) return 0;
+
+        const thc = Math.sqrt(radius2 - d2);
+        const t0 = tca - thc;
+        const t1 = tca + thc;
+
+        if (t0 < 0 && t1 < 0) return 0;
+
+        if (t0 < 0) return t1;
+
+        return t0;
     }
 
     // AABB - Axis aligned bounding box testing
@@ -85,27 +110,21 @@ export class Raycast {
         tYmin = ((invdiry >= 0 ? min.y : max.y) - origin.y) * invdiry;
         tYmax = ((invdiry >= 0 ? max.y : min.y) - origin.y) * invdiry;
     
-        if ((tmin > tYmax) || (tYmin > tmax)) return null;
+        if ((tmin > tYmax) || (tYmin > tmax)) return 0;
     
-        // These lines also handle the case where tmin or tmax is NaN
-        // (result of 0 * Infinity). x !== x returns true if x is NaN
         if ( tYmin > tmin || tmin !== tmin ) tmin = tYmin;
         if ( tYmax < tmax || tmax !== tmax ) tmax = tYmax;
     
         tZmin = ((invdirz >= 0 ? min.z : max.z) - origin.z) * invdirz;
         tZmax = ((invdirz >= 0 ? max.z : min.z) - origin.z) * invdirz;
     
-        if ((tmin > tZmax) || (tZmin > tmax)) return null;
+        if ((tmin > tZmax) || (tZmin > tmax)) return 0;
         if (tZmin > tmin || tmin !== tmin) tmin = tZmin;
         if (tZmax < tmax || tmax !== tmax) tmax = tZmax;
     
-        //return point closest to the ray (positive side)
-        if (tmax < 0) return null;
+        if (tmax < 0) return 0;
 
-        const t = tmin >= 0 ? tmin : tmax;
-        return t;
-        // return target.copy(this.direction).multiplyScalar(t).add(this.origin);
-        // return this.at( tmin >= 0 ? tmin : tmax, target );
+        return tmin >= 0 ? tmin : tmax;
     }
 }
 
