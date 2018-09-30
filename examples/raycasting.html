@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <title>O-GL • Projection and Raycasting</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info">Projection and Raycasting</div>
+    <script type="module">
+        import {Renderer, Camera, Transform, Program, Mesh, Vec2} from '../src/Core.js';
+        import {Plane, Sphere, Cube, Orbit, Raycast} from '../src/Extras.js';
+        import RaycastingShader from './shaders/RaycastingShader.js';
+
+        {
+            const renderer = new Renderer({dpr: 2});
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+            gl.clearColor(1, 1, 1, 1);
+
+            const camera = new Camera(gl);
+            camera.position.set(2, 1, 5);
+
+            const orbit = new Orbit(camera);
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height})
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+            const scene = new Transform();
+
+            const planeGeometry = new Plane(gl);
+            const sphereGeometry = new Sphere(gl);
+            const cubeGeometry = new Cube(gl);
+
+            const program = new Program(gl, {
+                vertex: RaycastingShader.vertex,
+                fragment: RaycastingShader.fragment,
+                cullFace: null,
+                uniforms: {
+                    uHit: {value: 0},
+                },
+            });
+
+            const plane = new Mesh(gl, {geometry: planeGeometry, program});
+            plane.position.set(0, 1.3, 0);
+            plane.setParent(scene);
+
+            const sphere = new Mesh(gl, {geometry: sphereGeometry, program});
+            sphere.setParent(scene);
+
+            const cube = new Mesh(gl, {geometry: cubeGeometry, program});
+            cube.position.set(0, -1.3, 0);
+            cube.setParent(scene);
+
+            // assign update functions to each mesh so they can share a program but
+            // still have unique uniforms by updating them just before being drawn
+            function updateHitUniform({mesh}) {
+                program.uniforms.uHit.value = mesh.isHit ? 1 : 0;
+            }
+            plane.onBeforeRender = updateHitUniform;
+            sphere.onBeforeRender = updateHitUniform;
+            cube.onBeforeRender = updateHitUniform;
+
+            requestAnimationFrame(update);
+            function update() {
+                requestAnimationFrame(update);
+                orbit.update();
+
+                renderer.render({scene, camera});
+            }
+
+            const mouse = new Vec2();
+
+            // Create a raycast object
+            const raycast = new Raycast(gl);
+
+            // Define an array of the meshes we want to test our ray against
+            const meshes = [plane, sphere, cube];
+
+            // By default, raycast.intersectBounds() tests against the bounding box.
+            // Set it to bounding sphere by adding a 'raycast' property set to 'sphere'
+            sphere.raycast = 'sphere';
+
+            document.addEventListener('mousemove', move, false);
+            function move(e) {
+                mouse.set(
+                    2.0 * (e.x / renderer.width) - 1.0,
+                    2.0 * (1.0 - e.y / renderer.height) - 1.0
+                );
+
+                // Update the ray's origin and direction using the camera and mouse
+                raycast.castMouse(camera, mouse);
+                
+                // Just for the feedback in this example - reset each mesh's hit to false
+                meshes.forEach(mesh => mesh.isHit = false);
+
+                // raycast.intersectBounds will test against the bounds of each mesh, and 
+                // return an array of intersected meshes in order of closest to farthest
+                const hits = raycast.intersectBounds(meshes);
+
+                // Update our feedback using this array
+                hits.forEach(mesh => mesh.isHit = true);
+            }
+        }
+    </script>
+</body>
+</html>
