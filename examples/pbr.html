@@ -41,9 +41,12 @@
             const scene = new Transform();
             scene.position.y = -0.4;
 
+            const textureCache = {};
             function getTexture(src, generateMipmaps = true) {
+                if (textureCache[src]) return textureCache[src];
                 const texture = new Texture(gl, {generateMipmaps});
                 const image = new Image();
+                textureCache[src] = texture;
                 image.onload = () => {
                     texture.image = image;
                 };

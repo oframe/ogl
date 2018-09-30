@@ -1,8 +1,16 @@
 import {Mat4} from '../math/Mat4.js';
 import {Vec3} from '../math/Vec3.js';
 
-// TODO: frustum culling ?
+// TODO: support frustum culling ?
 // TODO: Handle context loss https://www.khronos.org/webgl/wiki/HandlingContextLost
+// TODO: extend sorting to be more customisable
+// sort into 3 groups: 
+//     - opaque      (depthTest: true,  depthWrite: true)
+//          - then sort by program
+//              - then sort by z-depth (front to back)
+//                  - then sort by texture
+//     - transparent (depthTest: true,  depthWrite: false)
+//     - ui          (depthTest: false, depthWrite: false)
 
 // Not automatic - devs to use these methods manually
 // gl.colorMask( colorMask, colorMask, colorMask, colorMask );
@@ -54,6 +62,10 @@ export class Renderer {
         // initialise size values
         this.setSize(width, height);
 
+        // Store device parameters
+        this.parameters = {};
+        this.parameters.maxTextureUnits = this.gl.getParameter(this.gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+
         // gl state stores to avoid redundant calls on methods used internally
         this.state = {};
         this.state.blendFunc = {src: this.gl.ONE, dst: this.gl.ZERO};
@@ -66,6 +78,9 @@ export class Renderer {
         this.state.flipY = false;
         this.state.framebuffer = null;
         this.state.viewport = {width: null, height: null};
+        this.state.textureUnits = [];
+        this.state.textureUnitIndex = 0;
+        this.state.activeTextureUnit = 0;
 
         // store requested extensions
         this.extensions = {};
@@ -82,7 +97,7 @@ export class Renderer {
             this.getExtension('WEBGL_depth_texture');
         }
 
-        // Create method aliases using extension or native if available
+        // Create method aliases using extension (WebGL1) or native if available (WebGL2)
         this.vertexAttribDivisor = this.gl.renderer.getExtension('ANGLE_instanced_arrays', 'vertexAttribDivisor', 'vertexAttribDivisorANGLE');
         this.drawArraysInstanced = this.gl.renderer.getExtension('ANGLE_instanced_arrays', 'drawArraysInstanced', 'drawArraysInstancedANGLE');
         this.drawElementsInstanced = this.gl.renderer.getExtension('ANGLE_instanced_arrays', 'drawElementsInstanced', 'drawElementsInstancedANGLE');
@@ -167,6 +182,12 @@ export class Renderer {
         if (this.state.depthFunc === value) return;
         this.state.depthFunc = value;
         this.gl.depthFunc(value);
+    }
+
+    activeTexture(value) {
+        if (this.state.activeTextureUnit === value) return;
+        this.state.activeTextureUnit = value;
+        this.gl.activeTexture(this.gl.TEXTURE0 + value);
     }
 
     bindFramebuffer({target = this.gl.FRAMEBUFFER, buffer = null} = {}) {
@@ -293,10 +314,5 @@ export class Renderer {
                 node.draw({camera});
             });
         }
-
-        // SORTING using a proj matrix to get distance from cam
-        // _projScreenMatrix.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse );
-        // _frustum.setFromMatrix( _projScreenMatrix );
-        // culling
     }
 }

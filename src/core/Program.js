@@ -1,6 +1,5 @@
-// TODO: upload empty texture if null
-// TODO: upload identity matrix if null
-// TODO: texture units/locations
+// TODO: upload empty texture if null ? maybe not
+// TODO: upload identity matrix if null ?
 // TODO: sampler Cube
 
 let ID = 0;
@@ -87,6 +86,26 @@ export class Program {
             let attribute = gl.getActiveAttrib(this.program, aIndex);
             this.attributeLocations.set(attribute.name, gl.getAttribLocation(this.program, attribute.name));
         }
+
+        this.checkTextureUnits();
+    }
+
+    // Check to see if any of the allocated texture units are overlapping
+    checkTextureUnits() {
+        const assignedTextureUnits = [];
+        [...this.uniformLocations.keys()].every((activeUniform) => {
+            const uniform = this.uniforms[activeUniform.uniformName];
+            if (uniform && uniform.value && uniform.value.texture) {
+                if (assignedTextureUnits.indexOf(uniform.value.textureUnit) > -1) {
+
+                    // If reused, set flag to true to assign sequential units when drawn
+                    this.assignTextureUnits = true;
+                    return false;
+                }
+                assignedTextureUnits.push(uniform.value.textureUnit);
+            }
+            return true;
+        });
     }
 
     setBlendFunc(src, dst, srcAlpha, dstAlpha) {
@@ -124,6 +143,8 @@ export class Program {
         programActive = false,
         flipFaces = false,
     } = {}) {
+
+        // Used if this.assignTextureUnits is true, when texture units overlap
         let textureUnit = -1;
 
         // Avoid gl call if program already in use
@@ -135,8 +156,7 @@ export class Program {
         // Set only the active uniforms found in the shader
         this.uniformLocations.forEach((location, activeUniform) => {
             const name = activeUniform.uniformName;
-            
-            
+
             // get supplied uniform
             const uniform = this.uniforms[name];
             if (!uniform) {
@@ -147,25 +167,26 @@ export class Program {
             }
 
             if (uniform.value.texture) {
-                textureUnit++;
-                this.gl.activeTexture(this.gl.TEXTURE0 + textureUnit);
 
-                // bind texture and update any unset props
-                uniform.value.update();
+                // if texture units overlapped, will fallback to sequential unit assignment
+                textureUnit = this.assignTextureUnits ? textureUnit + 1 : uniform.value.textureUnit;
+                
+                // Check if texture needs to be updated
+                uniform.value.update(textureUnit);
 
-                // set uniform using texture unit instead of value
+                // texture will set its own texture unit
                 return setUniform(this.gl, activeUniform.type, location, textureUnit);
             }
 
+            // For texture arrays, pass an array of texture units instead of just one
             if (uniform.value.length && uniform.value[0].texture) {
                 const textureUnits = [];
                 uniform.value.forEach(value => {
-                    textureUnits.push(++textureUnit);
-                    this.gl.activeTexture(this.gl.TEXTURE0 + textureUnit);
-                    value.update();
+                    textureUnit = this.assignTextureUnits ? textureUnit + 1 : value.textureUnit;
+                    value.update(textureUnit);
+                    textureUnits.push(textureUnit);
                 });
                 
-                // For texture arrays, pass an array of texture units
                 return setUniform(this.gl, activeUniform.type, location, textureUnits);
             }
 
