@@ -9,8 +9,8 @@ const arrayCacheF32 = {};
 
 export class Program {
     constructor(gl, {
-        vertexShader,
-        fragmentShader,
+        vertex,
+        fragment,
         uniforms = {},
 
         transparent = false,
@@ -24,8 +24,8 @@ export class Program {
         this.uniforms = uniforms;
         this.id = ID++;
 
-        if (!vertexShader) console.warn('vertex shader not supplied');
-        if (!fragmentShader) console.warn('fragment shader not supplied');
+        if (!vertex) console.warn('vertex shader not supplied');
+        if (!fragment) console.warn('fragment shader not supplied');
 
         // Store program state
         this.transparent = transparent;
@@ -44,29 +44,33 @@ export class Program {
         }
 
         // compile vertex shader and log errors
-        this.vertexShader = gl.createShader(gl.VERTEX_SHADER);
-        gl.shaderSource(this.vertexShader, vertexShader);
-        gl.compileShader(this.vertexShader);
-        if (gl.getShaderInfoLog(this.vertexShader) !== '') {
-            console.warn(`${gl.getShaderInfoLog(this.vertexShader)}\nVertex Shader\n${addLineNumbers(vertexShader)}`);
+        const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vertexShader, vertex);
+        gl.compileShader(vertexShader);
+        if (gl.getShaderInfoLog(vertexShader) !== '') {
+            console.warn(`${gl.getShaderInfoLog(vertexShader)}\nVertex Shader\n${addLineNumbers(vertexShader)}`);
         }
 
         // compile fragment shader and log errors
-        this.fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-        gl.shaderSource(this.fragmentShader, fragmentShader);
-        gl.compileShader(this.fragmentShader);
-        if (gl.getShaderInfoLog(this.fragmentShader) !== '') {
-            console.warn(`${gl.getShaderInfoLog(this.fragmentShader)}\nFragment Shader\n${addLineNumbers(fragmentShader)}`);
+        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fragmentShader, fragment);
+        gl.compileShader(fragmentShader);
+        if (gl.getShaderInfoLog(fragmentShader) !== '') {
+            console.warn(`${gl.getShaderInfoLog(fragmentShader)}\nFragment Shader\n${addLineNumbers(fragmentShader)}`);
         }
 
         // compile program and log errors
         this.program = gl.createProgram();
-        gl.attachShader(this.program, this.vertexShader);
-        gl.attachShader(this.program, this.fragmentShader);
+        gl.attachShader(this.program, vertexShader);
+        gl.attachShader(this.program, fragmentShader);
         gl.linkProgram(this.program);
         if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
             return console.warn(gl.getProgramInfoLog(this.program));
         }
+
+        // Remove shader once linked
+        gl.deleteShader(vertexShader);
+        gl.deleteShader(fragmentShader);
 
         // Get active uniform locations
         this.uniformLocations = new Map();
@@ -178,7 +182,7 @@ export class Program {
                 return setUniform(this.gl, activeUniform.type, location, textureUnit);
             }
 
-            // For texture arrays, pass an array of texture units instead of just one
+            // For texture arrays, set uniform as an array of texture units instead of just one
             if (uniform.value.length && uniform.value[0].texture) {
                 const textureUnits = [];
                 uniform.value.forEach(value => {
@@ -199,8 +203,8 @@ export class Program {
 
     remove() {
         this.gl.deleteProgram(this.program);
-        this.gl.deleteShader(this.vertexShader);
-        this.gl.deleteShader(this.fragmentShader);
+        this.gl.deleteShader(vertexShader);
+        this.gl.deleteShader(fragmentShader);
     }
 }
 

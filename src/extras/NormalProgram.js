@@ -33,7 +33,7 @@ void main() {
 
 export function NormalProgram(gl) {
     return new Program(gl, {
-        vertexShader: vertex,
-        fragmentShader: fragment,
+        vertex: vertex,
+        fragment: fragment,
     });
 }

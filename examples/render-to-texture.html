@@ -48,8 +48,8 @@
             });
 
             const program = new Program(gl, {
-                vertexShader: RenderToTextureShader.vertex,
-                fragmentShader: RenderToTextureShader.fragment,
+                vertex: RenderToTextureShader.vertex,
+                fragment: RenderToTextureShader.fragment,
                 uniforms: {
                     tMap: {value: texture},
                 }
@@ -61,8 +61,8 @@
             const target = new RenderTarget(gl);
 
             const targetProgram = new Program(gl, {
-                vertexShader: RenderToTextureShader.vertex,
-                fragmentShader: RenderToTextureShader.fragment,
+                vertex: RenderToTextureShader.vertex,
+                fragment: RenderToTextureShader.fragment,
                 uniforms: {
                     tMap: {value: target.texture},
                 }

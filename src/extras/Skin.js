@@ -1,8 +1,8 @@
-import { Mesh } from '../core/Mesh.js';
-import { Transform } from '../core/Transform.js';
-import { Mat4 } from '../math/Mat4.js';
-import { Texture } from '../core/Texture.js';
-import { Animation } from './Animation.js';
+import {Mesh} from '../core/Mesh.js';
+import {Transform} from '../core/Transform.js';
+import {Mat4} from '../math/Mat4.js';
+import {Texture} from '../core/Texture.js';
+import {Animation} from './Animation.js';
 
 const tempMat4 = new Mat4();
 

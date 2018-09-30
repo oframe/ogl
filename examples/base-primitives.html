@@ -40,8 +40,8 @@
             const cubeGeometry = new Cube(gl);
 
             const program = new Program(gl, {
-                vertexShader: BasePrimitivesShader.vertex,
-                fragmentShader: BasePrimitivesShader.fragment,
+                vertex: BasePrimitivesShader.vertex,
+                fragment: BasePrimitivesShader.fragment,
 
                 // Don't cull faces so that plane is double sided
                 cullFace: null,

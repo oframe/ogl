@@ -39,8 +39,8 @@
             img.src = 'assets/acorn.jpg';
 
             const program = new Program(gl, {
-                vertexShader: InstancingShader.vertex,
-                fragmentShader: InstancingShader.fragment,
+                vertex: InstancingShader.vertex,
+                fragment: InstancingShader.fragment,
                 uniforms: {
                     uTime: {value: 0},
                     tMap: {value: texture},

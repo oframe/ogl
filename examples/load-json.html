@@ -40,8 +40,8 @@
             img.src = 'assets/fox.jpg';
 
             const program = new Program(gl, {
-                vertexShader: LoadJSONShader.vertex,
-                fragmentShader: LoadJSONShader.fragment,
+                vertex: LoadJSONShader.vertex,
+                fragment: LoadJSONShader.fragment,
                 uniforms: {
                     tMap: {value: texture},
                 },

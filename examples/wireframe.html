@@ -40,8 +40,8 @@
             img.src = 'assets/croissant.jpg';
 
             const program = new Program(gl, {
-                vertexShader: WireframeShader.vertex,
-                fragmentShader: WireframeShader.fragment,
+                vertex: WireframeShader.vertex,
+                fragment: WireframeShader.fragment,
                 uniforms: {
                     tMap: {value: texture},
                 },

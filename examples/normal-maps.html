@@ -47,8 +47,8 @@
             imgNormal.src = 'assets/granite-normal.jpg';
 
             const program = new Program(gl, {
-                vertexShader: NormalMapShader.vertex,
-                fragmentShader: NormalMapShader.fragment,
+                vertex: NormalMapShader.vertex,
+                fragment: NormalMapShader.fragment,
                 uniforms: {
                     tDiffuse: {value: textureDiffuse},
                     tNormal: {value: textureNormal},

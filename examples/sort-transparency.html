@@ -46,8 +46,8 @@
             img.src = 'assets/leaf.jpg';
 
             const program = new Program(gl, {
-                vertexShader: SortTransparencyShader.vertex,
-                fragmentShader: SortTransparencyShader.fragment,
+                vertex: SortTransparencyShader.vertex,
+                fragment: SortTransparencyShader.fragment,
                 uniforms: {
                     tMap: {value: texture},
                     uColor: {value: new Color('#3e9873')},

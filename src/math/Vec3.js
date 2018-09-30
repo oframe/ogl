@@ -143,5 +143,17 @@ export class Vec3 extends Float32Array {
 		this[1] = a[o + 1];
 		this[2] = a[o + 2];
 		return this;
-	}
+    }
+    
+    transformDirection(mat4) {
+        const x = this[0];
+        const y = this[1];
+        const z = this[2];
+
+        this[0] = mat4[0] * x + mat4[4] * y + mat4[8] * z;
+        this[1] = mat4[1] * x + mat4[5] * y + mat4[9] * z;
+        this[2] = mat4[2] * x + mat4[6] * y + mat4[10] * z;
+        
+        return this.normalize();
+    }
 }
