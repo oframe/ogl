@@ -32,7 +32,7 @@ Keeping the level of abstraction low helps to make the framework easier to under
 
 ## Install
 
-Use directly in your project with es6 modules and load directly in the browser - **no dev-stack required**.
+[Download](https://github.com/oframe/ogl/archive/master.zip) and [load directly in the browser](https://developers.google.com/web/fundamentals/primers/modules) using es6 modules - **no dev-stack required**.
 
 **or**
 

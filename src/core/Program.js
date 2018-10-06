@@ -48,7 +48,7 @@ export class Program {
         gl.shaderSource(vertexShader, vertex);
         gl.compileShader(vertexShader);
         if (gl.getShaderInfoLog(vertexShader) !== '') {
-            console.warn(`${gl.getShaderInfoLog(vertexShader)}\nVertex Shader\n${addLineNumbers(vertexShader)}`);
+            console.warn(`${gl.getShaderInfoLog(vertexShader)}\nVertex Shader\n${addLineNumbers(vertex)}`);
         }
 
         // compile fragment shader and log errors
@@ -56,7 +56,7 @@ export class Program {
         gl.shaderSource(fragmentShader, fragment);
         gl.compileShader(fragmentShader);
         if (gl.getShaderInfoLog(fragmentShader) !== '') {
-            console.warn(`${gl.getShaderInfoLog(fragmentShader)}\nFragment Shader\n${addLineNumbers(fragmentShader)}`);
+            console.warn(`${gl.getShaderInfoLog(fragmentShader)}\nFragment Shader\n${addLineNumbers(fragment)}`);
         }
 
         // compile program and log errors
