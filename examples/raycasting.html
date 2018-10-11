@@ -86,8 +86,8 @@
             const meshes = [plane, sphere, cube];
 
             // By default, raycast.intersectBounds() tests against the bounding box.
-            // Set it to bounding sphere by adding a 'raycast' property set to 'sphere'
-            sphere.raycast = 'sphere';
+            // Set it to bounding sphere by adding a 'raycast' property set to sphere geometry
+            sphere.geometry.raycast = 'sphere';
 
             document.addEventListener('mousemove', move, false);
             function move(e) {

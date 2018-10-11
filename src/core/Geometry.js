@@ -15,6 +15,10 @@
 // TODO: test updating attributes on the fly
 // TODO: add fallback for non vao support (ie)
 
+import {Vec3} from '../math/Vec3.js';
+
+const tempVec3 = new Vec3();
+
 let ID = 0;
 
 export class Geometry {
@@ -156,6 +160,65 @@ export class Geometry {
                 this.gl.drawArrays(mode, this.drawRange.start, this.drawRange.count);
             }
         }
+    }
+
+    computeBoundingBox(array) {
+
+        // Use position buffer if available
+        if (!array && this.attributes.position) array = this.attributes.position.data;
+        if (!array) console.warn('No position buffer found to compute bounds');
+
+        if (!this.bounds) {
+            this.bounds = {
+                min: new Vec3(),
+                max: new Vec3(),
+                center: new Vec3(),
+                scale: new Vec3(),
+                radius: Infinity,
+            };
+        }
+
+        const min = this.bounds.min;
+        const max = this.bounds.max;
+        const center = this.bounds.center;
+        const scale = this.bounds.scale;
+
+        min.set(+Infinity);
+        max.set(-Infinity);
+
+        for (let i = 0, l = array.length; i < l; i += 3) {
+            const x = array[i];
+            const y = array[i + 1];
+            const z = array[i + 2];
+
+            min.x = Math.min(x, min.x);
+            min.y = Math.min(y, min.y);
+            min.z = Math.min(z, min.z);
+
+            max.x = Math.max(x, max.x);
+            max.y = Math.max(y, max.y);
+            max.z = Math.max(z, max.z);
+        }
+
+        scale.sub(max, min);
+        center.add(min, max).divide(2);
+    }
+
+    computeBoundingSphere(array) {
+
+        // Use position buffer if available
+        if (!array && this.attributes.position) array = this.attributes.position.data;
+        if (!array) console.warn('No position buffer found to compute bounds');
+
+        if (!this.bounds) this.computeBoundingBox(array);
+
+        let maxRadiusSq = 0;
+        for (let i = 0, l = array.length; i < l; i += 3) {
+            tempVec3.fromArray(array, i);
+            maxRadiusSq = Math.max(maxRadiusSq, this.bounds.center.squaredDistance(tempVec3));
+        }
+
+        this.bounds.radius = Math.sqrt(maxRadiusSq);
     }
 
     remove() {
