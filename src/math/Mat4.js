@@ -137,6 +137,10 @@ export class Mat4 extends Float32Array {
         return this;
     }
 
+    getMaxScaleOnAxis() {
+        return Mat4Func.getMaxScaleOnAxis(this);
+    }
+
     lookAt(eye, target, up) {
         Mat4Func.targetTo(this, eye, target, up);
         return this;

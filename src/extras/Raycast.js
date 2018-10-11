@@ -39,13 +39,10 @@ export class Raycast {
         const hits = [];
 
         meshes.forEach(mesh => {
-            if (!mesh.bounds) {
-                if (mesh.raycast === 'sphere') { 
-                    mesh.computeBoundingSphere();
-                } else {
-                    mesh.computeBoundingBox();
-                }
-            }
+
+            // Create bounds
+            if (!mesh.geometry.bounds) mesh.geometry.computeBoundingBox();
+            if (mesh.geometry.raycast === 'sphere' && mesh.geometry.bounds === Infinity) mesh.geometry.computeBoundingSphere();
 
             // Take world space ray and make it object space to align with bounding box
             invWorldMat4.inverse(mesh.worldMatrix);
@@ -53,10 +50,10 @@ export class Raycast {
             direction.copy(this.direction).transformDirection(invWorldMat4);
 
             let distance = 0;
-            if (mesh.raycast === 'sphere') { 
-                distance = this.intersectSphere(mesh.bounds, origin, direction);
+            if (mesh.geometry.raycast === 'sphere') { 
+                distance = this.intersectSphere(mesh.geometry.bounds, origin, direction);
             } else {
-                distance = this.intersectBox(mesh.bounds, origin, direction);
+                distance = this.intersectBox(mesh.geometry.bounds, origin, direction);
             }
             if (!distance) return;
 
@@ -93,7 +90,7 @@ export class Raycast {
         return t0;
     }
 
-    // AABB - Axis aligned bounding box testing
+    // Ray AABB - Ray Axis aligned bounding box testing
     intersectBox(box, origin = this.origin, direction = this.direction) {
         let tmin, tmax, tYmin, tYmax, tZmin, tZmax;
     
@@ -112,15 +109,15 @@ export class Raycast {
     
         if ((tmin > tYmax) || (tYmin > tmax)) return 0;
     
-        if ( tYmin > tmin || tmin !== tmin ) tmin = tYmin;
-        if ( tYmax < tmax || tmax !== tmax ) tmax = tYmax;
+        if (tYmin > tmin) tmin = tYmin;
+        if (tYmax < tmax) tmax = tYmax;
     
         tZmin = ((invdirz >= 0 ? min.z : max.z) - origin.z) * invdirz;
         tZmax = ((invdirz >= 0 ? max.z : min.z) - origin.z) * invdirz;
     
         if ((tmin > tZmax) || (tZmin > tmax)) return 0;
-        if (tZmin > tmin || tmin !== tmin) tmin = tZmin;
-        if (tZmax < tmax || tmax !== tmax) tmax = tZmax;
+        if (tZmin > tmin) tmin = tZmin;
+        if (tZmax < tmax) tmax = tZmax;
     
         if (tmax < 0) return 0;
 

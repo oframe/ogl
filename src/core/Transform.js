@@ -7,6 +7,7 @@ export class Transform {
     constructor() {
         this.parent = null;
         this.children = [];
+        this.visible = true;
 
         this.matrix = new Mat4();
         this.worldMatrix = new Mat4();
@@ -22,20 +23,20 @@ export class Transform {
         this.quaternion.onChange = () => this.rotation.fromQuaternion(this.quaternion);
     }
 
-    setParent(parent, notifyChild = true) {
-        if (!parent && notifyChild) this.parent.removeChild(this, false);
+    setParent(parent, notifyParent = true) {
+        if (notifyParent && this.parent && parent !== this.parent) this.parent.removeChild(this, false);
         this.parent = parent;
-        if (parent && notifyChild) parent.addChild(this, false);
+        if (notifyParent && parent) parent.addChild(this, false);
     }
 
-    addChild(child, notifyParent = true) {
+    addChild(child, notifyChild = true) {
         if (!~this.children.indexOf(child)) this.children.push(child);
-        if (notifyParent) child.setParent(this, false);
+        if (notifyChild) child.setParent(this, false);
     }
 
-    removeChild(child, notifyParent = true) {
+    removeChild(child, notifyChild = true) {
         if (!!~this.children.indexOf(child)) this.children.splice(this.children.indexOf(child), 1);
-        if (notifyParent) child.setParent(null, false);
+        if (notifyChild) child.setParent(null, false);
     }
 
     updateMatrixWorld(force) {
@@ -59,7 +60,9 @@ export class Transform {
     }
 
     traverse(callback) {
-        callback(this);
+
+        // Return true in callback to stop traversing children
+        if (callback(this)) return;
         for (let i = 0, l = this.children.length; i < l; i ++) {
             this.children[i].traverse(callback);
         }
