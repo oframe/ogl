@@ -1,4 +1,4 @@
-// Based from ThreeJS' OrbitControls class, rewritten using es6 with some additions and subions.
+// Based from ThreeJS' OrbitControls class, rewritten using es6 with some additions and subtractions.
 // TODO: abstract event handlers so can be fed from other sources
 // TODO: make scroll zoom more accurate than just >/< zero
 

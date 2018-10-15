@@ -224,6 +224,16 @@ export class Renderer {
         }
     }
 
+    sortUI(a, b) {
+        if (a.renderOrder !== b.renderOrder) {
+            return a.renderOrder - b.renderOrder;
+        } else if (a.program.id !== b.program.id) {
+            return a.program.id - b.program.id;
+        } else {
+            return b.id - a.id;
+        }
+    }
+
     getRenderList({scene, camera, frustumCull, sort}) {
         let renderList = [];
 
@@ -270,7 +280,7 @@ export class Renderer {
 
             opaque.sort(this.sortOpaque);
             transparent.sort(this.sortTransparent);
-            ui.sort(this.sortTransparent);
+            ui.sort(this.sortUI);
 
             renderList = opaque.concat(transparent, ui);
         }
