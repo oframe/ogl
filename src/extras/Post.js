@@ -11,8 +11,14 @@ export class Post {
         height,
         dpr,
         autoResize = false,
+        wrapS = gl.CLAMP_TO_EDGE,
+        wrapT = gl.CLAMP_TO_EDGE,
+        minFilter = gl.LINEAR,
+        magFilter = gl.LINEAR,
     } = {}) {
         this.gl = gl;
+
+        this.options = {wrapS, wrapT, minFilter, magFilter};
 
         this.passes = [];
 
@@ -61,9 +67,11 @@ export class Post {
         // TODO: Destroy render targets if size changed and exists
 
         //create 
-        this.target = new RenderTarget(this.gl, {width, height});
-        this.ping = new RenderTarget(this.gl, {width, height});
-        this.pong = new RenderTarget(this.gl, {width, height});
+        this.options.width = width;
+        this.options.height = height;
+        this.target = new RenderTarget(this.gl, this.options);
+        this.ping = new RenderTarget(this.gl, this.options);
+        this.pong = new RenderTarget(this.gl, this.options);
     }
 
     // Uses same arguments as renderer.render

@@ -123,12 +123,12 @@ export class Texture {
         }
 
         if (this.wrapS !== this.state.wrapS) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_S, this.wrapS);
             this.state.wrapS = this.wrapS;
         }
 
         if (this.wrapT !== this.state.wrapT) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.wrapT);
             this.state.wrapT = this.wrapT;
         }
 
