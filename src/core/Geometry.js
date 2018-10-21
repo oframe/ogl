@@ -45,7 +45,10 @@ export class Geometry {
 
         // Set options
         attr.size = attr.size || 1;
-        attr.type = attr.type || key === 'index' ? this.gl.UNSIGNED_SHORT : this.gl.FLOAT;
+        attr.type = attr.type || 
+            attr.data.constructor === Float32Array ? this.gl.FLOAT : 
+            attr.data.constructor === Uint16Array ? this.gl.UNSIGNED_SHORT : 
+            this.gl.UNSIGNED_INT; // Uint32Array
         attr.target = key === 'index' ? this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER;
         attr.normalize = attr.normalize || false;
         attr.buffer = this.gl.createBuffer();

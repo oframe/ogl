@@ -4,12 +4,12 @@ import {Vec3} from '../math/Vec3.js';
 export class Sphere extends Geometry {
     constructor(gl, radius = 0.5, wSegs = 16, hSegs = Math.ceil(wSegs * 0.5), pStart = 0, pLength = Math.PI * 2, tStart = 0, tLength = Math.PI) {
         const num = (wSegs + 1) * (hSegs + 1);
-        const numIndices = wSegs * hSegs * 6;
+        const numIndices = wSegs * hSegs * 6 ;
 
         const position = new Float32Array(num * 3);
         const normal = new Float32Array(num * 3);
         const uv = new Float32Array(num * 2);
-        const index = new Uint16Array(numIndices);
+        const index = (numIndices > 65536) ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
 
         let i = 0;
         let iv = 0;

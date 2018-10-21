@@ -5,13 +5,13 @@ export class Plane extends Geometry {
 
         // Determine length of arrays
         const num = (wSegs + 1) * (hSegs + 1);
-        const numIndices = wSegs * hSegs;
+        const numIndices = wSegs * hSegs * 6;
 
         // Generate empty arrays once
         const position = new Float32Array(num * 3);
         const normal = new Float32Array(num * 3);
         const uv = new Float32Array(num * 2);
-        const index = new Uint16Array(numIndices * 6);
+        const index = (numIndices > 65536) ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
 
         Plane.buildPlane(position, normal, uv, index, width, height, 0, wSegs, hSegs);
 
