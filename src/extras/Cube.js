@@ -4,12 +4,12 @@ import {Plane} from './Plane.js';
 export class Cube extends Geometry {
     constructor(gl, width = 1, height = width, depth = width, wSegs = 1, hSegs = wSegs, dSegs = wSegs) {
         const num = (wSegs + 1) * (hSegs + 1) * 2 + (wSegs + 1) * (dSegs + 1) * 2 + (hSegs + 1) * (dSegs + 1) * 2;
-        const numIndices = wSegs * hSegs * 2 + wSegs * dSegs * 2 + hSegs * dSegs * 2;
+        const numIndices = (wSegs * hSegs * 2 + wSegs * dSegs * 2 + hSegs * dSegs * 2) * 6;
 
         const position = new Float32Array(num * 3);
         const normal = new Float32Array(num * 3);
         const uv = new Float32Array(num * 2);
-        const index = new Uint16Array(numIndices * 6);
+        const index = (numIndices > 65536) ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
 
         let i = 0;
         let ii = 0;
