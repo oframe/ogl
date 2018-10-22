@@ -10,7 +10,6 @@ export class Post {
         width,
         height,
         dpr,
-        autoResize = false,
         wrapS = gl.CLAMP_TO_EDGE,
         wrapT = gl.CLAMP_TO_EDGE,
         minFilter = gl.LINEAR,
@@ -27,7 +26,6 @@ export class Post {
             uv: {size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2])},
         });
 
-        if (autoResize) window.addEventListener('resize', this.resize, false);
         this.resize({width, height, dpr});
     }
 
