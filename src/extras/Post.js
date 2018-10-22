@@ -45,6 +45,8 @@ export class Post {
 
         const pass = {
             mesh, 
+            program,
+            uniforms,
             enabled,
             textureUniform,
         };
