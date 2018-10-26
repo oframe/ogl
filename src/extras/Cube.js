@@ -9,7 +9,7 @@ export class Cube extends Geometry {
         const position = new Float32Array(num * 3);
         const normal = new Float32Array(num * 3);
         const uv = new Float32Array(num * 2);
-        const index = (numIndices > 65536) ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
+        const index = (num > 65536) ? new Uint32Array(numIndices) : new Uint16Array(numIndices);
 
         let i = 0;
         let ii = 0;
