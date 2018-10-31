@@ -16,7 +16,7 @@
         import ParticlesShader from './shaders/ParticlesShader.js';
 
         {
-            const renderer = new Renderer();
+            const renderer = new Renderer({depth: false});
             const gl = renderer.gl;
             document.body.appendChild(gl.canvas);
             gl.clearColor(1, 1, 1, 1);

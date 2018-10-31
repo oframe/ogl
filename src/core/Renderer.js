@@ -71,6 +71,7 @@ export class Renderer {
         this.state.textureUnits = [];
         this.state.textureUnitIndex = 0;
         this.state.activeTextureUnit = 0;
+        this.state.boundBuffer = null;
 
         // store requested extensions
         this.extensions = {};

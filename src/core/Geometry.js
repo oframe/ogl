@@ -8,10 +8,7 @@
 // }
 
 // TODO: fit in transform feedback
-
 // TODO: when would I disableVertexAttribArray ?
-// TODO: do I need to unbind after drawing ?
-// TODO: test updating attributes on the fly
 // TODO: add fallback for non vao support (ie)
 
 import {Vec3} from '../math/Vec3.js';
@@ -19,6 +16,7 @@ import {Vec3} from '../math/Vec3.js';
 const tempVec3 = new Vec3();
 
 let ID = 0;
+let ATTR_ID = 0;
 
 export class Geometry {
     constructor(gl, attributes = {}) {
@@ -33,6 +31,9 @@ export class Geometry {
         this.gl.renderer.bindVertexArray(null);
         this.gl.renderer.currentGeometry = null;
 
+        // Alias for state store to avoid redundant calls for global state
+        this.glState = this.gl.renderer.state;
+
         // create the buffers
         for (let key in attributes) {
             this.addAttribute(key, attributes[key]);
@@ -43,6 +44,7 @@ export class Geometry {
         this.attributes[key] = attr;
 
         // Set options
+        attr.id = ATTR_ID++;
         attr.size = attr.size || 1;
         attr.type = attr.type || (
             attr.data.constructor === Float32Array ? this.gl.FLOAT : 
@@ -53,6 +55,7 @@ export class Geometry {
         attr.buffer = this.gl.createBuffer();
         attr.count = attr.data.length / attr.size;
         attr.divisor = !attr.instanced ? 0 : typeof attr.instanced === 'number' ? attr.instanced : 1;
+        attr.needsUpdate = false;
 
         // Push data to buffer
         this.updateAttribute(attr);
@@ -73,9 +76,14 @@ export class Geometry {
     }
 
     updateAttribute(attr) {
-        this.gl.bindBuffer(attr.target, attr.buffer);
+
+        // Already bound, prevent gl command
+        if (this.glState.boundBuffer !== attr.id) {
+            this.gl.bindBuffer(attr.target, attr.buffer);
+            this.glState.boundBuffer = attr.id;
+        }
         this.gl.bufferData(attr.target, attr.data, this.gl.STATIC_DRAW);
-        this.gl.bindBuffer(attr.target, null);
+        attr.needsUpdate = false;
     }
 
     setIndex(value) {
@@ -110,7 +118,8 @@ export class Geometry {
 
             const attr = this.attributes[name];
 
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, attr.buffer);
+            this.gl.bindBuffer(attr.target, attr.buffer);
+            this.glState.boundBuffer = attr.id;
             this.gl.vertexAttribPointer(
                 location,
                 attr.size,
@@ -148,6 +157,12 @@ export class Geometry {
             // Store so doesn't bind redundantly
             this.gl.renderer.currentGeometry = this.id;
         }
+
+        // Check if any attributes need updating
+        program.attributeLocations.forEach((location, name) => {
+            const attr = this.attributes[name];
+            if (attr.needsUpdate) this.updateAttribute(attr);
+        });
 
         if (this.isInstanced) {
             if (this.attributes.index) {
