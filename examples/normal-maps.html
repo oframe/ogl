@@ -14,7 +14,8 @@
     <script type="module">
         import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Vec2} from '../src/Core.js';
         import {Orbit, Sphere, Plane, Cube} from '../src/Extras.js';
-        import NormalMapShader from './shaders/NormalMapShader.js';
+        import NormalMapShader100 from './shaders/NormalMapShader100.js';
+        import NormalMapShader300 from './shaders/NormalMapShader300.js';
 
         {
             const renderer = new Renderer({dpr: 2});
@@ -46,9 +47,12 @@
             imgNormal.onload = () => textureNormal.image = imgNormal;
             imgNormal.src = 'assets/granite-normal.jpg';
 
+            // Get fallback shader for WebGL1 - needed for OES_standard_derivatives ext
+            const Shader = renderer.isWebgl2 ? NormalMapShader300 : NormalMapShader100;
+
             const program = new Program(gl, {
-                vertex: NormalMapShader.vertex,
-                fragment: NormalMapShader.fragment,
+                vertex: Shader.vertex,
+                fragment: Shader.fragment,
                 uniforms: {
                     tDiffuse: {value: textureDiffuse},
                     tNormal: {value: textureNormal},

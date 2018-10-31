@@ -28,6 +28,7 @@ export class Renderer {
         preserveDrawingBuffer = false,
         powerPreference = 'default',
         autoClear = true,
+        webgl = 2,
     } = {}) {
         const attributes = {alpha, depth, stencil, antialias, premultipliedAlpha, preserveDrawingBuffer, powerPreference};
         this.dpr = dpr;
@@ -38,8 +39,8 @@ export class Renderer {
         this.premultipliedAlpha = premultipliedAlpha;
         this.autoClear = autoClear;
 
-        // Attempt WebGL2, otherwise fallback to WebGL1
-        this.gl = canvas.getContext('webgl2', attributes);
+        // Attempt WebGL2 unless forced to 1, if not supported fallback to WebGL1
+        if (webgl === 2) this.gl = canvas.getContext('webgl2', attributes);
         this.isWebgl2 = !!this.gl;
         if (!this.gl) {
             this.gl = canvas.getContext('webgl', attributes) || canvas.getContext('experimental-webgl', attributes);

@@ -14,7 +14,8 @@
     <script type="module">
         import {Renderer, Transform, Camera, Geometry, Texture, Program, Mesh, Vec3, Color} from '../src/Core.js';
         import {Orbit, Plane} from '../src/Extras.js';
-        import PBRShader from './shaders/PBRShader.js';
+        import PBRShader100 from './shaders/PBRShader100.js';
+        import PBRShader300 from './shaders/PBRShader300.js';
         import ShadowShader from './shaders/ShadowShader.js';
 
         // Use this online tool to create the required IBL environment maps
@@ -54,6 +55,9 @@
                 return texture;
             }
 
+            // Get fallback shader for WebGL1 - needed for OES_standard_derivatives ext
+            const Shader = renderer.isWebgl2 ? PBRShader300 : PBRShader100;
+
             loadExterior();
             loadInterior();
             loadShadow();
@@ -76,8 +80,8 @@
 
                 // This whole effect lives in the fairly epic shader.
                 const program = new Program(gl, {
-                    vertex: PBRShader.vertex,
-                    fragment: PBRShader.fragment,
+                    vertex: Shader.vertex,
+                    fragment: Shader.fragment,
                     uniforms: {
 
                         // Base color / albedo. This is used to determine both the diffuse and specular colors.
@@ -167,8 +171,8 @@
                 });
 
                 const program = new Program(gl, {
-                    vertex: PBRShader.vertex,
-                    fragment: PBRShader.fragment,
+                    vertex: Shader.vertex,
+                    fragment: Shader.fragment,
                     uniforms: {
                         tBaseColor: {value: getTexture('assets/pbr/car-int-color.jpg')},
                         uBaseColor: {value: new Color([1, 1, 1])},
