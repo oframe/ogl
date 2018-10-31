@@ -8,7 +8,6 @@
 // }
 
 // TODO: fit in transform feedback
-// this.boundingBox.center
 
 // TODO: when would I disableVertexAttribArray ?
 // TODO: do I need to unbind after drawing ?
