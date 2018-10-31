@@ -34,7 +34,7 @@
 
             function resize() {
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height})
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
             }
             window.addEventListener('resize', resize, false);
             resize();
