@@ -174,7 +174,7 @@ export class Program {
 
                 // if texture units overlapped, will fallback to sequential unit assignment
                 textureUnit = this.assignTextureUnits ? textureUnit + 1 : uniform.value.textureUnit;
-                
+
                 // Check if texture needs to be updated
                 uniform.value.update(textureUnit);
 
@@ -182,16 +182,26 @@ export class Program {
                 return setUniform(this.gl, activeUniform.type, location, textureUnit);
             }
 
-            // For texture arrays, set uniform as an array of texture units instead of just one
-            if (uniform.value.length && uniform.value[0].texture) {
-                const textureUnits = [];
+            if (Array.isArray(uniform.value) && uniform.value.length) {
+
+                // For texture arrays, set uniform as an array of texture units instead of just one
+                if (uniform.value[0].texture) {
+                    const textureUnits = [];
+                    uniform.value.forEach(value => {
+                        textureUnit = this.assignTextureUnits ? textureUnit + 1 : value.textureUnit;
+                        value.update(textureUnit);
+                        textureUnits.push(textureUnit);
+                    });
+                    return setUniform(this.gl, activeUniform.type, location, textureUnits);
+                }
+
+                // for struct arrays, get uniform value by key
+                const key = activeUniform.name.split('.').pop();
                 uniform.value.forEach(value => {
-                    textureUnit = this.assignTextureUnits ? textureUnit + 1 : value.textureUnit;
-                    value.update(textureUnit);
-                    textureUnits.push(textureUnit);
+                    setUniform(this.gl, activeUniform.type, location, value[key]);
                 });
-                
-                return setUniform(this.gl, activeUniform.type, location, textureUnits);
+
+                return;
             }
 
             setUniform(this.gl, activeUniform.type, location, uniform.value);
