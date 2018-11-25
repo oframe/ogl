@@ -197,10 +197,8 @@ export class Program {
 
                 // for struct arrays, get uniform value by key
                 const key = activeUniform.name.split('.').pop();
-                uniform.value.forEach(value => {
-                    setUniform(this.gl, activeUniform.type, location, value[key]);
-                });
-
+                const index = Number(activeUniform.name.match(/\d+/));
+                setUniform(this.gl, activeUniform.type, location, uniform.value[index][key]);
                 return;
             }
 
