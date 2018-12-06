@@ -79,8 +79,19 @@ export class Program {
             let uniform = gl.getActiveUniform(this.program, uIndex);
             this.uniformLocations.set(uniform, gl.getUniformLocation(this.program, uniform.name));
 
-            // trim uniforms' names to omit array declarations
-            uniform.uniformName = uniform.name.split('[')[0];
+            // split uniforms' names to separate array and struct declarations
+            const split = uniform.name.match(/(\w+)/g);
+            
+            uniform.uniformName = split[0];
+            
+            if (split.length === 3) {
+                uniform.isStructArray = true;
+                uniform.structIndex = Number(split[1]);
+                uniform.structProperty = split[2];
+            } else if (split.length === 2 && isNaN(Number(split[1]))) {
+                uniform.isStruct = true;
+                uniform.structProperty = split[1];
+            }
         }
 
         // Get active attribute locations
@@ -96,20 +107,44 @@ export class Program {
 
     // Check to see if any of the allocated texture units are overlapping
     checkTextureUnits() {
+
         const assignedTextureUnits = [];
         [...this.uniformLocations.keys()].every((activeUniform) => {
-            const uniform = this.uniforms[activeUniform.uniformName];
-            if (uniform && uniform.value && uniform.value.texture) {
-                if (assignedTextureUnits.indexOf(uniform.value.textureUnit) > -1) {
+            let uniform = this.uniforms[activeUniform.uniformName];
 
-                    // If reused, set flag to true to assign sequential units when drawn
-                    this.assignTextureUnits = true;
-                    return false;
-                }
-                assignedTextureUnits.push(uniform.value.textureUnit);
+            if (activeUniform.isStruct) {
+                uniform = uniform[activeUniform.structProperty];
             }
+            if (activeUniform.isStructArray) {
+                uniform = uniform[activeUniform.structIndex][activeUniform.structProperty];
+            }
+
+            if (!(uniform && uniform.value)) return true;
+
+            // Texture array
+            if (uniform.value.length && uniform.value[0].texture) {
+                for (let i = 0; i < uniform.value.length - 1; i++) {
+                    if (!checkDuplicate(uniform.value[i])) return false;
+                }
+            }
+
+            if (uniform.value.texture) {
+                if (!checkDuplicate(uniform.value)) return false;
+            }
+
             return true;
         });
+
+        function checkDuplicate(value) {
+            if (assignedTextureUnits.indexOf(value.textureUnit) > -1) {
+
+                // If reused, set flag to true to assign sequential units when drawn
+                this.assignTextureUnits = true;
+                return false;
+            }
+            assignedTextureUnits.push(value.textureUnit);
+            return true;
+        }
     }
 
     setBlendFunc(src, dst, srcAlpha, dstAlpha) {
@@ -159,15 +194,27 @@ export class Program {
 
         // Set only the active uniforms found in the shader
         this.uniformLocations.forEach((location, activeUniform) => {
-            const name = activeUniform.uniformName;
+            let name = activeUniform.uniformName;
 
             // get supplied uniform
-            const uniform = this.uniforms[name];
-            if (!uniform) {
-                return console.warn(`Active uniform ${name} has not been supplied`);
+            let uniform = this.uniforms[name];
+
+            // For structs, get the specific property instead of the entire object
+            if (activeUniform.isStruct) {
+                uniform = uniform[activeUniform.structProperty];
+                name += `.${activeUniform.structProperty}`;
             }
+            if (activeUniform.isStructArray) {
+                uniform = uniform[activeUniform.structIndex][activeUniform.structProperty];
+                name += `[${activeUniform.structIndex}].${activeUniform.structProperty}`;
+            }
+
+            if (!uniform) {
+                return warn(`Active uniform ${name} has not been supplied`);
+            }
+
             if (uniform && uniform.value === undefined) {
-                return console.warn(`${name} uniform is missing a value parameter`);
+                return warn(`${name} uniform is missing a value parameter`);
             }
 
             if (uniform.value.texture) {
@@ -246,4 +293,12 @@ function flatten(array) {
     if (!value) arrayCacheF32[length] = value = new Float32Array(length);
     for (let i = 0; i < arrayLen; i++) value.set(array[i], i * valueLen);
     return value;
+}
+
+let warnCount = 0;
+function warn(message) {
+    if (warnCount > 100) return;
+    console.warn(message);
+    warnCount++;
+    if (warnCount > 100) console.warn('More than 100 program warnings - stopping logs.');
 }
