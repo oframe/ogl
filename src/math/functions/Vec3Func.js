@@ -564,6 +564,22 @@ export function rotateZ(out, a, b, c) {
 }
 
 /**
+ * Creates a new vec3 initialized with the given values
+ *
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @param {Number} z Z component
+ * @returns {vec3} a new 3D vector
+ */
+export function fromValues(x, y, z) {
+    let out = new Float32Array(3);
+    out[0] = x;
+    out[1] = y;
+    out[2] = z;
+    return out;
+}
+
+/**
  * Get the angle between two 3D vectors
  * @param {vec3} a The first operand
  * @param {vec3} b The second operand
