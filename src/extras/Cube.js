@@ -2,7 +2,19 @@ import {Geometry} from '../core/Geometry.js';
 import {Plane} from './Plane.js';
 
 export class Cube extends Geometry {
-    constructor(gl, width = 1, height = width, depth = width, wSegs = 1, hSegs = wSegs, dSegs = wSegs) {
+    constructor(gl, {
+        width = 1, 
+        height = 1, 
+        depth = 1, 
+        widthSegments = 1, 
+        heightSegments = 1,
+        depthSegments = 1,
+        attributes = {},
+    } = {}) {
+        const wSegs = widthSegments;
+        const hSegs = heightSegments;
+        const dSegs = depthSegments;
+
         const num = (wSegs + 1) * (hSegs + 1) * 2 + (wSegs + 1) * (dSegs + 1) * 2 + (hSegs + 1) * (dSegs + 1) * 2;
         const numIndices = (wSegs * hSegs * 2 + wSegs * dSegs * 2 + hSegs * dSegs * 2) * 6;
 
@@ -26,11 +38,13 @@ export class Cube extends Geometry {
         Plane.buildPlane(position, normal, uv, index, width, height, -depth, wSegs, hSegs, 0, 1, 2, -1, -1, i += (wSegs + 1) * (dSegs + 1), ii += wSegs * dSegs);
         Plane.buildPlane(position, normal, uv, index, width, height,  depth, wSegs, hSegs, 0, 1, 2,  1, -1, i += (wSegs + 1) * (hSegs + 1), ii += wSegs * hSegs);
 
-        super(gl, {
+        Object.assign(attributes, {
             position: {size: 3, data: position},
             normal: {size: 3, data: normal},
             uv: {size: 2, data: uv},
             index: {data: index},
-        });
+        }); 
+
+        super(gl, attributes);
     }
 }

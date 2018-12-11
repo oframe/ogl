@@ -15,7 +15,7 @@ export class Transform {
 
         this.position = new Vec3();
         this.quaternion = new Quat();
-        this.scale = new Vec3([1, 1, 1]);
+        this.scale = new Vec3(1);
         this.rotation = new Euler();
         this.up = new Vec3([0, 1, 0]);
 
@@ -48,9 +48,8 @@ export class Transform {
             force = true;
         }
 
-        let children = this.children;
-        for (let i = 0, l = children.length; i < l; i ++) {
-            children[i].updateMatrixWorld(force);
+        for (let i = 0, l = this.children.length; i < l; i ++) {
+            this.children[i].updateMatrixWorld(force);
         }
     }
 

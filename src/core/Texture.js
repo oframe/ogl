@@ -1,5 +1,4 @@
 // TODO: facilitate Compressed Textures
-// TODO: test data texture
 // TODO: cube map
 // TODO: delete texture
 // TODO: test if premultiplyAlpha is global or per texture 
