@@ -1,7 +1,15 @@
 import {Geometry} from '../core/Geometry.js';
 
 export class Plane extends Geometry {
-    constructor(gl, width = 1, height = width, wSegs = 1, hSegs = wSegs) {
+    constructor(gl, {
+        width = 1, 
+        height = 1, 
+        widthSegments = 1, 
+        heightSegments = 1,
+        attributes = {},
+    } = {}) {
+        const wSegs = widthSegments;
+        const hSegs = heightSegments;
 
         // Determine length of arrays
         const num = (wSegs + 1) * (hSegs + 1);
@@ -15,12 +23,14 @@ export class Plane extends Geometry {
 
         Plane.buildPlane(position, normal, uv, index, width, height, 0, wSegs, hSegs);
 
-        super(gl, {
+        Object.assign(attributes, {
             position: {size: 3, data: position},
             normal: {size: 3, data: normal},
             uv: {size: 2, data: uv},
             index: {data: index},
-        });
+        }); 
+
+        super(gl, attributes);
     }
 
     static buildPlane(position, normal, uv, index, width, height, depth, wSegs, hSegs,

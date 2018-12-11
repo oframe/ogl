@@ -2,7 +2,23 @@ import {Geometry} from '../core/Geometry.js';
 import {Vec3} from '../math/Vec3.js';
 
 export class Sphere extends Geometry {
-    constructor(gl, radius = 0.5, wSegs = 16, hSegs = Math.ceil(wSegs * 0.5), pStart = 0, pLength = Math.PI * 2, tStart = 0, tLength = Math.PI) {
+    constructor(gl, {
+        radius = 0.5, 
+        widthSegments = 16, 
+        heightSegments = Math.ceil(widthSegments * 0.5), 
+        phiStart = 0, 
+        phiLength = Math.PI * 2, 
+        thetaStart = 0, 
+        thetaLength = Math.PI,
+        attributes = {},
+    } = {}) {
+        const wSegs = widthSegments;
+        const hSegs = heightSegments;
+        const pStart = phiStart;
+        const pLength = phiLength;
+        const tStart = thetaStart;
+        const tLength = thetaLength;
+
         const num = (wSegs + 1) * (hSegs + 1);
         const numIndices = wSegs * hSegs * 6 ;
 
@@ -68,11 +84,13 @@ export class Sphere extends Geometry {
             }
         }
 
-        super(gl, {
+        Object.assign(attributes, {
             position: {size: 3, data: position},
             normal: {size: 3, data: normal},
             uv: {size: 2, data: uv},
             index: {data: index},
-        });
+        }); 
+
+        super(gl, attributes);
     }
 }

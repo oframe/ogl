@@ -65,7 +65,7 @@ import {Renderer, Camera, Transform, Program, Mesh} from './Core.js';
 import {Cube} from './Extras.js';
 ```
 
-Below renders a spinning black cube.
+Below renders a spinning white cube.
 
 ```js
 
@@ -142,12 +142,12 @@ Below is an **Extras** wish-list, and is still a work-in-progress as examples ar
  - [x] Cube.js
  - [x] Sphere.js
  - [x] Orbit.js
- - [ ] Curve.js
  - [x] Raycast.js
- - [ ] Post.js
+ - [x] Post.js
  - [x] Skin.js
  - [x] Animation.js
  - [x] Text.js
+ - [ ] Curve.js
 
 ## Examples wishlist
 

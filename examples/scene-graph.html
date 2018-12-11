@@ -34,8 +34,8 @@
             window.addEventListener('resize', resize, false);
             resize();
 
-            const sphereGeometry = new Sphere(gl, 0.15);
-            const cubeGeometry = new Cube(gl, 0.3);
+            const sphereGeometry = new Sphere(gl, {radius: 0.15});
+            const cubeGeometry = new Cube(gl, {width: 0.3, height: 0.3, depth: 0.3});
 
             const program = new Program(gl, {
                 vertex: SceneGraphShader.vertex,

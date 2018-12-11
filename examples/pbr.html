@@ -208,7 +208,7 @@
             }
 
             function loadShadow() {
-                const geometry = new Plane(gl, 2.3);
+                const geometry = new Plane(gl, {width: 2.3, height: 2.3});
                 const program = new Program(gl, {
                     vertex: ShadowShader.vertex,
                     fragment: ShadowShader.fragment,

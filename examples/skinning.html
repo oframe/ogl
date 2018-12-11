@@ -122,7 +122,7 @@
             img.onload = () => texture.image = img;
             img.src = 'assets/snout-shadow.jpg';
             
-            const geometry = new Plane(gl, 7);
+            const geometry = new Plane(gl, {width: 7, height: 7});
             const program = new Program(gl, {
                 vertex: ShadowShader.vertex,
                 fragment: ShadowShader.fragment,

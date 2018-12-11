@@ -46,7 +46,7 @@
             img.src = 'assets/sky.jpg';
 
             // Use Sphere geometry to render equirectangular textures
-            const geometry = new Sphere(gl, 1, 64);
+            const geometry = new Sphere(gl, {radius: 1, widthSegments: 64});
 
             const program = new Program(gl, {
                 vertex: SkydomeShader.vertex,

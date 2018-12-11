@@ -67,7 +67,7 @@
                 mesh.setParent(scene);
             }
 
-            const videoGeometry = new Cube(gl, 1.78, 1, 1.78);
+            const videoGeometry = new Cube(gl, {width: 1.78, height: 1, depth: 1.78});
 
             // Init empty texture while source loading
             const videoTexture = new Texture(gl, {
