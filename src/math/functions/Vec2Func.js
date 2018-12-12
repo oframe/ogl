@@ -174,8 +174,8 @@ export function scale(out, a, b) {
  * @returns {vec2} out
  */
 export function scaleAndAdd(out, a, b, scale) {
-    out[0] = a[0] + (b[0] * scale);
-    out[1] = a[1] + (b[1] * scale);
+    out[0] = a[0] + b[0] * scale;
+    out[1] = a[1] + b[1] * scale;
     return out;
 };
 
@@ -269,9 +269,9 @@ export function normalize(out, a) {
     if (len > 0) {
         //TODO: evaluate use of glm_invsqrt here?
         len = 1 / Math.sqrt(len);
-        out[0] = a[0] * len;
-        out[1] = a[1] * len;
     }
+    out[0] = a[0] * len;
+    out[1] = a[1] * len;
     return out;
 };
 
