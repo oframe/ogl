@@ -200,9 +200,9 @@ export function scale(out, a, b) {
  * @returns {vec3} out
  */
 export function scaleAndAdd(out, a, b, scale) {
-    out[0] = a[0] + (b[0] * scale);
-    out[1] = a[1] + (b[1] * scale);
-    out[2] = a[2] + (b[2] * scale);
+    out[0] = a[0] + b[0] * scale;
+    out[1] = a[1] + b[1] * scale;
+    out[2] = a[2] + b[2] * scale;
     return out;
 }
 
@@ -290,10 +290,10 @@ export function normalize(out, a) {
     if (len > 0) {
         //TODO: evaluate use of glm_invsqrt here?
         len = 1 / Math.sqrt(len);
-        out[0] = a[0] * len;
-        out[1] = a[1] * len;
-        out[2] = a[2] * len;
     }
+    out[0] = a[0] * len;
+    out[1] = a[1] * len;
+    out[2] = a[2] * len;
     return out;
 }
 
@@ -461,21 +461,31 @@ export function transformMat3(out, a, m) {
  * @returns {vec3} out
  */
 export function transformQuat(out, a, q) {
-    // benchmarks: http://jsperf.com/quaternion-transform-vec3-implementations
+    // benchmarks: https://jsperf.com/quaternion-transform-vec3-implementations-fixed
 
     let x = a[0], y = a[1], z = a[2];
     let qx = q[0], qy = q[1], qz = q[2], qw = q[3];
 
-    // calculate quat * vec
-    let ix = qw * x + qy * z - qz * y;
-    let iy = qw * y + qz * x - qx * z;
-    let iz = qw * z + qx * y - qy * x;
-    let iw = -qx * x - qy * y - qz * z;
-
-    // calculate result * inverse quat
-    out[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy;
-    out[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz;
-    out[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+    let uvx = qy * z - qz * y;
+    let uvy = qz * x - qx * z;
+    let uvz = qx * y - qy * x;
+    
+    let uuvx = qy * uvz - qz * uvy;
+    let uuvy = qz * uvx - qx * uvz;
+    let uuvz = qx * uvy - qy * uvx;
+    
+    let w2 = qw * 2;
+    uvx *= w2;
+    uvy *= w2;
+    uvz *= w2;
+    
+    uuvx *= 2;
+    uuvy *= 2;
+    uuvz *= 2;
+    
+    out[0] = x + uvx + uuvx;
+    out[1] = y + uvy + uuvy;
+    out[2] = z + uvz + uuvz;
     return out;
 }
 
