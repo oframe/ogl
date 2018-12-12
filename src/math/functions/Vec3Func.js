@@ -570,8 +570,8 @@ export function rotateZ(out, a, b, c) {
  * @returns {Number} The angle in radians
  */
 export function angle(a, b) {
-    let tempA = fromValues(a[0], a[1], a[2]);
-    let tempB = fromValues(b[0], b[1], b[2]);
+    let tempA = new Float32Array(a);
+    let tempB = new Float32Array(b);
 
     normalize(tempA, tempA);
     normalize(tempB, tempB);
