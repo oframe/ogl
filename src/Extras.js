@@ -2,6 +2,7 @@
 export {Plane} from './extras/Plane.js';
 export {Cube} from './extras/Cube.js';
 export {Sphere} from './extras/Sphere.js';
+export {Cylinder} from './extras/Cylinder.js';
 export {Orbit} from './extras/Orbit.js';
 export {Raycast} from './extras/Raycast.js';
 // export {Curve} from './extras/Curve.js';
