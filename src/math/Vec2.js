@@ -72,8 +72,7 @@ export class Vec2 extends Float32Array {
     }
 
     cross(va, vb) {
-        Vec2Func.cross(this, va, vb);
-        return this;
+        return Vec2Func.cross(va, vb);
     }
 
     scale(v) {
