@@ -56,7 +56,7 @@ export class Skin extends Mesh {
 
         // Store inverse of bind pose to calculate differences
         this.bones.forEach(bone => {
-            bone.bindInverse = new Mat4(bone.worldMatrix).inverse();
+            bone.bindInverse = new Mat4(...bone.worldMatrix).inverse();
         });
     }
 

@@ -1,9 +1,8 @@
 import * as Vec3Func from './functions/Vec3Func.js';
 
-export class Vec3 extends Float32Array {
-    constructor(array = [0, 0, 0]) {
-        if (!array.length) array = [array, array, array];
-        super(array);
+export class Vec3 extends Array {
+    constructor(x = 0, y = x, z = x) {
+        super(x, y, z);
         return this;
     }
 
@@ -70,21 +69,23 @@ export class Vec3 extends Float32Array {
         return this;
     }
 
-    length() {
+    // Can't use 'length' as Array.prototype uses it
+    len() {
         return Vec3Func.length(this);
     }
 
     distance(v) {
-        return Vec3Func.distance(this, v);
+        if (v) return Vec3Func.distance(this, v);
+        else return Vec3Func.length(this);
     }
 
+    squaredLen() {
+        return this.squaredDistance();
+    }
+    
     squaredDistance(v) {
         if (v) return Vec3Func.squaredDistance(this, v);
         else return Vec3Func.squaredLength(this);
-    }
-
-    squaredLength() {
-        return this.squaredDistance();
     }
 
     negate(v = this) {

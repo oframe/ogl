@@ -48,7 +48,7 @@ export function Orbit(object, {
     // Grab initial position values
     const offset = new Vec3();
     offset.copy(object.position).sub(this.target);
-    spherical.radius = sphericalTarget.radius = offset.length();
+    spherical.radius = sphericalTarget.radius = offset.distance();
     spherical.theta = sphericalTarget.theta = Math.atan2(offset.x, offset.z);
     spherical.phi = sphericalTarget.phi = Math.acos(Math.min(Math.max(offset.y / sphericalTarget.radius, -1), 1));
 
@@ -124,7 +124,7 @@ export function Orbit(object, {
     const pan = (deltaX, deltaY) => {
         let el = element === document ? document.body : element;
         tempVec3.copy(object.position).sub(this.target);
-        let targetDistance = tempVec3.length();
+        let targetDistance = tempVec3.distance();
         targetDistance *= Math.tan(((object.fov || 45) / 2) * Math.PI / 180.0);
         panLeft(2 * deltaX * targetDistance / el.clientHeight, object.matrix);
         panUp(2 * deltaY * targetDistance / el.clientHeight, object.matrix);

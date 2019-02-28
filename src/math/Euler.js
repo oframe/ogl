@@ -3,13 +3,11 @@ import {Mat4} from './Mat4.js';
 
 const tmpMat4 = new Mat4();
 
-export class Euler extends Float32Array {
-    constructor(array = [0, 0, 0], order = 'YXZ') {
-        super(3);
-        if (typeof array === 'string') array = this.hexToRGB(array);
+export class Euler extends Array {
+    constructor(x = 0, y = x, z = x, order = 'YXZ') {
+        super(x, y, z);
+        this.order = order;
         this.onChange = () => {};
-        this.set(...array);
-        this.reorder(order);
         return this;
     }
 

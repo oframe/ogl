@@ -1,8 +1,8 @@
 import * as QuatFunc from './functions/QuatFunc.js';
 
-export class Quat extends Float32Array {
-    constructor(array = [0, 0, 0, 1]) {
-        super(array);
+export class Quat extends Array {
+    constructor(x = 0, y = 0, z = 0, w = 1) {
+        super(x, y, z, w);
         this.onChange = () => {};
         return this;
     }

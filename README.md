@@ -11,7 +11,6 @@
     <a href="https://github.com/oframe/ogl/blob/master/LICENSE">
         <img src="https://img.shields.io/npm/l/ogl.svg" alt="license" />
     </a>
-
 </p>
 
 <p align="center"><b>Minimal WebGL framework.</b></p>
@@ -37,7 +36,7 @@ Keeping the level of abstraction low helps to make the framework easier to under
 **or**
 
 ```
-npm install ogl
+npm i ogl
 ```
 
 ## Examples

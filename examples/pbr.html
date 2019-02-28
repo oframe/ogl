@@ -88,7 +88,7 @@
                         tBaseColor: {value: getTexture('assets/pbr/car-ext-color.jpg')},
 
                         // This works as a multiplier for each channel in the texture above.
-                        uBaseColor: {value: new Color([1, 1, 1])},
+                        uBaseColor: {value: new Color(1, 1, 1)},
                         
                         // 'Roughness', 'Metalness' and 'Occlusion', each packed into their own channel (R, G, B) 
                         tRMO: {value: getTexture('assets/pbr/car-ext-rmo.jpg')},
@@ -146,7 +146,7 @@
                         uEnvSpecular: {value: 2},
                         
                         // One light is included, ideally to simulate the sun, and both specular and diffuse are calculated.
-                        uLightDirection: {value: new Color([0, 1, 1])},
+                        uLightDirection: {value: new Vec3(0, 1, 1)},
 
                         // Here I've pushed the white light beyond 1 to increase its effect.
                         uLightColor: {value: new Vec3(7)},
@@ -175,7 +175,7 @@
                     fragment: Shader.fragment,
                     uniforms: {
                         tBaseColor: {value: getTexture('assets/pbr/car-int-color.jpg')},
-                        uBaseColor: {value: new Color([1, 1, 1])},
+                        uBaseColor: {value: new Color(1, 1, 1)},
                         
                         tRMO: {value: getTexture('assets/pbr/car-int-rmo.jpg')},
                         uRoughness: {value: 1},
@@ -198,7 +198,7 @@
                         tEnvSpecular: {value: getTexture('assets/pbr/waterfall-specular-RGBM.png', false)},
                         uEnvSpecular: {value: 1.0},
                         
-                        uLightDirection: {value: new Color([1, 1, 1])},
+                        uLightDirection: {value: new Vec3(1, 1, 1)},
                         uLightColor: {value: new Vec3(7)},
                     },
                 });
