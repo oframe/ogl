@@ -51,6 +51,7 @@
             let meshes = []
 
             window.setMeshCount = function setMeshCount(count){
+
                 // sanitize input
                 count = parseInt(count) || 1000;
 
@@ -61,13 +62,14 @@
                 // create our meshes according to input
                 for (let i = 0; i < count; ++i){
                     let mesh = new Mesh(gl, {geometry: cubeGeometry, program});
+
                     // position meshes in a random position between -100 / +100 in each dimension
                     mesh.position.set(
-                        -100 + Math.random()*200,
-                        -100 + Math.random()*200,
-                        -100 + Math.random()*200
+                        -100 + Math.random() * 200,
+                        -100 + Math.random() * 200,
+                        -100 + Math.random() * 200
                     );
-                    mesh.rotation.set(Math.random()*3, Math.random()*3, Math.random()*3);
+                    mesh.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
                     scene.addChild(mesh);
                     meshes.push(mesh)
                 }

@@ -100,7 +100,7 @@ export class Camera extends Transform {
         this.frustum[5].set(m[3] + m[2], m[7] + m[6], m[11] + m[10]).constant = m[15] + m[14]; // -z (near)
 
         for (let i = 0; i < 6; i++) {
-            const invLen = 1.0 / this.frustum[i].length();
+            const invLen = 1.0 / this.frustum[i].distance();
             this.frustum[i].multiply(invLen);
             this.frustum[i].constant *= invLen;
         }

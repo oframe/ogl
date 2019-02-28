@@ -1,8 +1,12 @@
 import * as Mat3Func from './functions/Mat3Func.js';
 
-export class Mat3 extends Float32Array {
-    constructor(array = [1, 0, 0, 0, 1, 0, 0, 0, 1]) {
-        super(array);
+export class Mat3 extends Array {
+    constructor(
+        m00 = 1, m01 = 0, m02 = 0, 
+        m10 = 0, m11 = 1, m12 = 0, 
+        m20 = 0, m21 = 0, m22 = 1
+    ) {
+        super(m00, m01, m02, m10, m11, m12, m20, m21, m22);
         return this;
     }
 
