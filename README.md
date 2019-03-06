@@ -121,7 +121,7 @@ Below renders a spinning white cube.
 }
 ```
 
-For a simpler use, such as a full-screen shader, more of the core can be omitted as a scene graph and perspective matrices are unnecessary. 
+For a simpler use, such as a full-screen shader, more of the core can be omitted as a scene graph and projection matrices are unnecessary. 
 
 ```js
 import {Renderer, Geometry, Program, Mesh} from './Core.js';
