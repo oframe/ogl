@@ -136,7 +136,7 @@ export class Vec3 extends Array {
     }
 
     clone() {
-        return new Vec3(this);
+        return new Vec3(this[0], this[1], this[2]);
     }
 
     fromArray(a, o = 0) {

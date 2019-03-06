@@ -579,24 +579,29 @@ export function rotateZ(out, a, b, c) {
  * @param {vec3} b The second operand
  * @returns {Number} The angle in radians
  */
-export function angle(a, b) {
-    let tempA = new Float32Array(a);
-    let tempB = new Float32Array(b);
+export const angle = (function() {
+    const tempA = [0, 0, 0];
+    const tempB = [0, 0, 0];
 
-    normalize(tempA, tempA);
-    normalize(tempB, tempB);
+    return function(a, b) {
+        copy(tempA, a);
+        copy(tempB, b);
 
-    let cosine = dot(tempA, tempB);
+        normalize(tempA, tempA);
+        normalize(tempB, tempB);
 
-    if (cosine > 1.0) {
-        return 0;
-    }
-    else if (cosine < -1.0) {
-        return Math.PI;
-    } else {
-        return Math.acos(cosine);
-    }
-}
+        let cosine = dot(tempA, tempB);
+
+        if (cosine > 1.0) {
+            return 0;
+        }
+        else if (cosine < -1.0) {
+            return Math.PI;
+        } else {
+            return Math.acos(cosine);
+        }
+    };
+})();
 
 /**
  * Returns a string representation of a vector

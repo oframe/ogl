@@ -1,4 +1,3 @@
-import * as mat3 from './Mat3Func.js';
 import * as vec3 from './Vec3Func.js';
 import * as vec4 from './Vec4Func.js';
 
@@ -484,9 +483,9 @@ export const equals = vec4.equals;
  * @returns {quat} out
  */
 export const rotationTo = (function () {
-    let tmpvec3 = new Float32Array([0, 0, 0]);
-    let xUnitVec3 = new Float32Array([1, 0, 0]);
-    let yUnitVec3 = new Float32Array([0, 1, 0]);
+    const tmpvec3 = [0, 0, 0];
+    const xUnitVec3 = [1, 0, 0];
+    const yUnitVec3 = [0, 1, 0];
 
     return function (out, a, b) {
         let dot = vec3.dot(a, b);
@@ -526,8 +525,8 @@ export const rotationTo = (function () {
  * @returns {quat} out
  */
 export const sqlerp = (function () {
-    let temp1 = identity(new Float32Array(4));
-    let temp2 = identity(new Float32Array(4));
+    let temp1 = [0, 0, 0, 1];
+    let temp2 = [0, 0, 0, 1];
 
     return function (out, a, b, c, d, t) {
         slerp(temp1, a, d, t);
@@ -549,21 +548,21 @@ export const sqlerp = (function () {
  * @returns {quat} out
  */
 export const setAxes = (function () {
-    let matr = mat3.identity(new Float32Array(9));
+    const m = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 
     return function (out, view, right, up) {
-        matr[0] = right[0];
-        matr[3] = right[1];
-        matr[6] = right[2];
+        m[0] = right[0];
+        m[3] = right[1];
+        m[6] = right[2];
 
-        matr[1] = up[0];
-        matr[4] = up[1];
-        matr[7] = up[2];
+        m[1] = up[0];
+        m[4] = up[1];
+        m[7] = up[2];
 
-        matr[2] = -view[0];
-        matr[5] = -view[1];
-        matr[8] = -view[2];
+        m[2] = -view[0];
+        m[5] = -view[1];
+        m[8] = -view[2];
 
-        return normalize(out, fromMat3(out, matr));
+        return normalize(out, fromMat3(out, m));
     };
 })();
