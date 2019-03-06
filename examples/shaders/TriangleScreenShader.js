@@ -1,7 +1,4 @@
 const vertex = `
-precision highp float;
-precision highp int;
-
 attribute vec2 uv;
 attribute vec3 position;
 
@@ -15,7 +12,6 @@ void main() {
 
 const fragment = `
 precision highp float;
-precision highp int;
 
 uniform float uTime;
 uniform vec3 uColor;
