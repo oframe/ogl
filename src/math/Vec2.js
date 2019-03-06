@@ -122,7 +122,7 @@ export class Vec2 extends Array {
     }
 
     clone() {
-        return new Vec2(this);
+        return new Vec2(this[0], this[1]);
     }
 
     fromArray(a, o = 0) {
