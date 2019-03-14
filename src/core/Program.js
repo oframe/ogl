@@ -250,8 +250,6 @@ export class Program {
 
     remove() {
         this.gl.deleteProgram(this.program);
-        this.gl.deleteShader(vertexShader);
-        this.gl.deleteShader(fragmentShader);
     }
 }
 
