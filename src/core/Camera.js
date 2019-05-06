@@ -50,7 +50,7 @@ export class Camera extends Transform {
         far = this.far,
         left = -1,
         right = 1,
-        bottom = 1,
+        bottom = -1,
         top = 1,
     } = {}) {
         this.projectionMatrix.fromOrthogonal({left, right, bottom, top, near, far});
