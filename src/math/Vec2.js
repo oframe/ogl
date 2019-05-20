@@ -129,5 +129,11 @@ export class Vec2 extends Array {
 		this[0] = a[o];
 		this[1] = a[o + 1];
 		return this;
+    }
+    
+	toArray(a = [], o = 0) {
+		a[o] = this[0];
+		a[o + 1] = this[1];
+		return a;
 	}
 }

@@ -54,5 +54,13 @@ export class Vec4 extends Array {
 		this[2] = a[o + 2];
 		this[3] = a[o + 3];
 		return this;
+    }
+    
+	toArray(a = [], o = 0) {
+		a[o] = this[0];
+		a[o + 1] = this[1];
+		a[o + 2] = this[2];
+		a[o + 3] = this[3];
+		return a;
 	}
 }
