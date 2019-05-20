@@ -145,6 +145,13 @@ export class Vec3 extends Array {
 		this[2] = a[o + 2];
 		return this;
     }
+
+	toArray(a = [], o = 0) {
+		a[o] = this[0];
+		a[o + 1] = this[1];
+		a[o + 2] = this[2];
+		return a;
+	}
     
     transformDirection(mat4) {
         const x = this[0];
