@@ -124,12 +124,12 @@ export class Program {
             // Texture array
             if (uniform.value.length && uniform.value[0].texture) {
                 for (let i = 0; i < uniform.value.length - 1; i++) {
-                    if (!checkDuplicate(uniform.value[i])) return false;
+                    if (!checkDuplicate.call(this, uniform.value[i])) return false;
                 }
             }
 
             if (uniform.value.texture) {
-                if (!checkDuplicate(uniform.value)) return false;
+                if (!checkDuplicate.call(this, uniform.value)) return false;
             }
 
             return true;
