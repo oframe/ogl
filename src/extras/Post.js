@@ -91,7 +91,7 @@ export class Post {
             target: enabledPasses.length ? this.target : target,
             update,
             sort,
-            frustumCull
+            frustumCull,
         });
 
         enabledPasses.forEach((pass, i) => {
