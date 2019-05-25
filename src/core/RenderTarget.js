@@ -18,7 +18,9 @@ export class RenderTarget {
         wrapT = gl.CLAMP_TO_EDGE,
         minFilter = gl.LINEAR,
         magFilter = gl.LINEAR,
-
+        type = gl.UNSIGNED_BYTE,
+        format = gl.RGBA,
+        internalFormat = format,
     } = {}) {
         this.gl = gl;
         this.width = width;
@@ -33,7 +35,7 @@ export class RenderTarget {
         // create and attach required num of color textures
         for (let i = 0; i < color; i++) {
             this.textures.push(new Texture(gl, {
-                width, height, wrapS, wrapT, minFilter, magFilter,
+                width, height, wrapS, wrapT, minFilter, magFilter, type, format, internalFormat,
                 flipY: false,
                 generateMipmaps: false,
             }));
