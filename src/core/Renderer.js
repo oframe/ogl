@@ -69,19 +69,22 @@ export class Renderer {
         this.state.framebuffer = null;
         this.state.viewport = {width: null, height: null};
         this.state.textureUnits = [];
-        this.state.textureUnitIndex = 0;
         this.state.activeTextureUnit = 0;
         this.state.boundBuffer = null;
+        this.state.uniformLocations = new Map();
 
         // store requested extensions
         this.extensions = {};
 
-        if (!this.isWebgl2) {
-
-            // Initialise extra format types
+        // Initialise extra format types
+        if (this.isWebgl2) {
+            this.getExtension('EXT_color_buffer_float');
+            this.getExtension('OES_texture_float_linear');
+        } else {
             this.getExtension('OES_texture_float');
             this.getExtension('OES_texture_float_linear');
             this.getExtension('OES_texture_half_float');
+            this.getExtension('OES_texture_half_float_linear');
             this.getExtension('OES_element_index_uint');
             this.getExtension('OES_standard_derivatives');
             this.getExtension('EXT_sRGB');
@@ -89,12 +92,12 @@ export class Renderer {
         }
 
         // Create method aliases using extension (WebGL1) or native if available (WebGL2)
-        this.vertexAttribDivisor = this.gl.renderer.getExtension('ANGLE_instanced_arrays', 'vertexAttribDivisor', 'vertexAttribDivisorANGLE');
-        this.drawArraysInstanced = this.gl.renderer.getExtension('ANGLE_instanced_arrays', 'drawArraysInstanced', 'drawArraysInstancedANGLE');
-        this.drawElementsInstanced = this.gl.renderer.getExtension('ANGLE_instanced_arrays', 'drawElementsInstanced', 'drawElementsInstancedANGLE');
-        this.createVertexArray = this.gl.renderer.getExtension('OES_vertex_array_object', 'createVertexArray', 'createVertexArrayOES');
-        this.bindVertexArray = this.gl.renderer.getExtension('OES_vertex_array_object', 'bindVertexArray', 'bindVertexArrayOES');
-        this.deleteVertexArray = this.gl.renderer.getExtension('OES_vertex_array_object', 'deleteVertexArray', 'deleteVertexArrayOES');
+        this.vertexAttribDivisor = this.getExtension('ANGLE_instanced_arrays', 'vertexAttribDivisor', 'vertexAttribDivisorANGLE');
+        this.drawArraysInstanced = this.getExtension('ANGLE_instanced_arrays', 'drawArraysInstanced', 'drawArraysInstancedANGLE');
+        this.drawElementsInstanced = this.getExtension('ANGLE_instanced_arrays', 'drawElementsInstanced', 'drawElementsInstancedANGLE');
+        this.createVertexArray = this.getExtension('OES_vertex_array_object', 'createVertexArray', 'createVertexArrayOES');
+        this.bindVertexArray = this.getExtension('OES_vertex_array_object', 'bindVertexArray', 'bindVertexArrayOES');
+        this.deleteVertexArray = this.getExtension('OES_vertex_array_object', 'deleteVertexArray', 'deleteVertexArrayOES');
     }
 
     setSize(width, height) {
@@ -297,6 +300,7 @@ export class Renderer {
         update = true,
         sort = true,
         frustumCull = true,
+        clear,
     }) {
 
         if (target === null) {
@@ -311,10 +315,10 @@ export class Renderer {
             this.setViewport(target.width, target.height);
         }
 
-        if (this.autoClear) {
+        if (clear || (this.autoClear && clear !== false)) {
 
             // Ensure depth buffer writing is enabled so it can be cleared
-            if (this.depth) {
+            if (this.depth && (!target || !target.depth)) {
                 this.enable(this.gl.DEPTH_TEST);
                 this.setDepthMask(true);
             }
