@@ -249,7 +249,6 @@ export function Orbit(object, {
 
     const onMouseWheel = (e) => {
         if (!this.enabled || !enableZoom || (state !== STATE.NONE && state !== STATE.ROTATE)) return;
-        e.preventDefault();
         e.stopPropagation();
 
         if (e.deltaY < 0) {
