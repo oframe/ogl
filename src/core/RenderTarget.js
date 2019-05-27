@@ -1,6 +1,7 @@
 // TODO: multi target rendering
 // TODO: test stencil and depth
 // TODO: destroy
+// TODO: blit on resize?
 import {Texture} from './Texture.js';
 
 export class RenderTarget {
@@ -17,7 +18,7 @@ export class RenderTarget {
         wrapS = gl.CLAMP_TO_EDGE,
         wrapT = gl.CLAMP_TO_EDGE,
         minFilter = gl.LINEAR,
-        magFilter = gl.LINEAR,
+        magFilter = minFilter,
         type = gl.UNSIGNED_BYTE,
         format = gl.RGBA,
         internalFormat = format,
