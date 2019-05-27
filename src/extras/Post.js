@@ -84,7 +84,7 @@ export class Post {
         frustumCull = true,
     }) {
         const enabledPasses = this.passes.filter(pass => pass.enabled);
-
+        
         this.gl.renderer.render({
             scene,
             camera,
@@ -109,6 +109,7 @@ export class Post {
                     i == enabledPasses.length - 1 ? target : 
                     i % 2 ? this.pong : 
                     this.ping,
+                clear: false,
             });
         });
     }
