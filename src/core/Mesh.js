@@ -64,9 +64,9 @@ export class Mesh extends Transform {
         // determine if faces need to be flipped - when mesh scaled negatively
         let flipFaces = this.program.cullFace && this.worldMatrix.determinant() < 0;
 
-        // Check here if any bindings can be skipped. Geometry also needs to be rebound if different program
+        // Check here if any bindings can be skipped
         const programActive = this.gl.renderer.currentProgram === this.program.id;
-        const geometryBound = programActive && this.gl.renderer.currentGeometry === this.geometry.id;
+        const geometryBound = this.gl.renderer.currentGeometry === this.geometry.id;
 
         this.program.use({programActive, flipFaces});
         this.geometry.draw({mode: this.mode, program: this.program, geometryBound});
