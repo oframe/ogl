@@ -1,11 +1,10 @@
 // TODO: facilitate Compressed Textures
 // TODO: cube map
 // TODO: delete texture
-// TODO: test if premultiplyAlpha is global or per texture 
-// TODO: check if we need to bind texture - ID?
 // TODO: should I support anisotropy? Maybe a way to extend the update easily
 // TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
 // TODO: use texSubImage2D for updates
+// TODO: need? encoding = linearEncoding
 
 const emptyPixel = new Uint8Array(4);
 
@@ -28,12 +27,11 @@ export class Texture {
         minFilter = generateMipmaps ? gl.NEAREST_MIPMAP_LINEAR : gl.LINEAR,
         magFilter = gl.LINEAR,
         premultiplyAlpha = false,
+        unpackAlignment = 4,
         flipY = true,
         level = 0,
         width, // used for RenderTargets or Data Textures
         height = width,
-
-        // TODO: need? encoding = linearEncoding
     } = {}) {
         this.gl = gl;
         this.id = ID++;
@@ -49,6 +47,7 @@ export class Texture {
         this.wrapT = wrapT;
         this.generateMipmaps = generateMipmaps;
         this.premultiplyAlpha = premultiplyAlpha;
+        this.unpackAlignment = unpackAlignment;
         this.flipY = flipY;
         this.level = level;
         this.width = width;
@@ -68,9 +67,6 @@ export class Texture {
         this.state.magFilter = this.gl.LINEAR;
         this.state.wrapS = this.gl.REPEAT;
         this.state.wrapT = this.gl.REPEAT;
-
-        // TODO: test if premultiplyAlpha is global or per texture 
-        this.state.premultiplyAlpha = false;
     }
 
     bind() {
@@ -100,9 +96,14 @@ export class Texture {
             this.glState.flipY = this.flipY;
         }
 
-        if (this.premultiplyAlpha !== this.state.premultiplyAlpha) {
+        if (this.premultiplyAlpha !== this.glState.premultiplyAlpha) {
             this.gl.pixelStorei(this.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.premultiplyAlpha);
-            this.state.premultiplyAlpha = this.premultiplyAlpha;
+            this.glState.premultiplyAlpha = this.premultiplyAlpha;
+        }
+
+        if (this.unpackAlignment !== this.glState.unpackAlignment) {
+            this.gl.pixelStorei(this.gl.UNPACK_ALIGNMENT, this.unpackAlignment);
+            this.glState.unpackAlignment = this.unpackAlignment;
         }
 
         if (this.minFilter !== this.state.minFilter) {
@@ -174,6 +175,7 @@ export class Texture {
         } else {
 
             if (this.width) {
+
                 // image intentionally left null for RenderTarget
                 this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, null);
             } else {

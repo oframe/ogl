@@ -8,13 +8,11 @@ export class RenderTarget {
     constructor(gl, {
         width = gl.canvas.width,
         height = gl.canvas.height,
-
         target = gl.FRAMEBUFFER,
         color = 1, // number of color attachments
         depth = true,
         stencil = false,
         depthTexture = false, // note - stencil breaks
-
         wrapS = gl.CLAMP_TO_EDGE,
         wrapT = gl.CLAMP_TO_EDGE,
         minFilter = gl.LINEAR,
@@ -22,6 +20,8 @@ export class RenderTarget {
         type = gl.UNSIGNED_BYTE,
         format = gl.RGBA,
         internalFormat = format,
+        unpackAlignment,
+        premultiplyAlpha,
     } = {}) {
         this.gl = gl;
         this.width = width;
@@ -36,7 +36,8 @@ export class RenderTarget {
         // create and attach required num of color textures
         for (let i = 0; i < color; i++) {
             this.textures.push(new Texture(gl, {
-                width, height, wrapS, wrapT, minFilter, magFilter, type, format, internalFormat,
+                width, height, 
+                wrapS, wrapT, minFilter, magFilter, type, format, internalFormat, unpackAlignment, premultiplyAlpha,
                 flipY: false,
                 generateMipmaps: false,
             }));
