@@ -26,6 +26,16 @@ export class Post {
             uv: {size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2])},
         });
 
+        const fbo = this.fbo = {
+            read: null,
+            write: null,
+            swap: () => {
+                let temp = fbo.read;
+                fbo.read = fbo.write;
+                fbo.write = temp;
+            },
+        };
+
         this.resize({width, height, dpr});
     }
 
@@ -36,7 +46,7 @@ export class Post {
         textureUniform = 'tMap',
         enabled = true,
     } = {}) {
-        uniforms[textureUniform] = {value: this.target.texture};
+        uniforms[textureUniform] = {value: this.fbo.read.texture};
 
         const program = new Program(this.gl, {vertex, fragment, uniforms});
         const mesh = new Mesh(this.gl, {geometry: this.geometry, program});
@@ -64,14 +74,11 @@ export class Post {
         width = (this.width || this.gl.renderer.width) * dpr;
         height = (this.height || this.gl.renderer.height) * dpr;
 
-        // TODO: Destroy render targets if size changed and exists
-
-        //create 
         this.options.width = width;
         this.options.height = height;
-        this.target = new RenderTarget(this.gl, this.options);
-        this.ping = new RenderTarget(this.gl, this.options);
-        this.pong = new RenderTarget(this.gl, this.options);
+
+        this.fbo.read = new RenderTarget(this.gl, this.options);
+        this.fbo.write = new RenderTarget(this.gl, this.options);
     }
 
     // Uses same arguments as renderer.render
@@ -86,31 +93,20 @@ export class Post {
         const enabledPasses = this.passes.filter(pass => pass.enabled);
         
         this.gl.renderer.render({
-            scene,
-            camera,
-            target: enabledPasses.length ? this.target : target,
-            update,
-            sort,
-            frustumCull,
+            scene, camera,
+            target: enabledPasses.length ? this.fbo.write : target,
+            update, sort, frustumCull,
         });
+        this.fbo.swap();
 
         enabledPasses.forEach((pass, i) => {
-
-            // Set texture uniform to: 0 = target, 1 = ping, 2 = pong, 3 = ping, etc
-            pass.mesh.program.uniforms[pass.textureUniform].value = 
-                !i ? this.target.texture : 
-                i % 2 ? this.ping.texture : 
-                this.pong.texture;
-
-            // Render to: 0 = ping, 1 = pong, etc, last = screen
+            pass.mesh.program.uniforms[pass.textureUniform].value = this.fbo.read.texture;
             this.gl.renderer.render({
                 scene: pass.mesh, 
-                target: 
-                    i == enabledPasses.length - 1 ? target : 
-                    i % 2 ? this.pong : 
-                    this.ping,
+                target: i === enabledPasses.length - 1 ? target : this.fbo.write,
                 clear: false,
             });
+            this.fbo.swap();
         });
     }
 }
