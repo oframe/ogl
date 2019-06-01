@@ -1,6 +1,4 @@
-import {Mat4} from '../math/Mat4.js';
 import {Vec3} from '../math/Vec3.js';
-
 
 // TODO: Handle context loss https://www.khronos.org/webgl/wiki/HandlingContextLost
 
@@ -66,6 +64,7 @@ export class Renderer {
         this.state.depthFunc = this.gl.LESS;
         this.state.premultiplyAlpha = false;
         this.state.flipY = false;
+        this.state.unpackAlignment = 4;
         this.state.framebuffer = null;
         this.state.viewport = {width: null, height: null};
         this.state.textureUnits = [];
