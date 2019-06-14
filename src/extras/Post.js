@@ -14,6 +14,10 @@ export class Post {
         wrapT = gl.CLAMP_TO_EDGE,
         minFilter = gl.LINEAR,
         magFilter = gl.LINEAR,
+        geometry = new Geometry(gl, {
+            position: {size: 3, data: new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0])},
+            uv: {size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2])},
+        }),
     } = {}) {
         this.gl = gl;
 
@@ -21,10 +25,7 @@ export class Post {
 
         this.passes = [];
 
-        this.geometry = new Geometry(gl, {
-            position: {size: 3, data: new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0])},
-            uv: {size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2])},
-        });
+        this.geometry = geometry;
 
         const fbo = this.fbo = {
             read: null,
