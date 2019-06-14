@@ -24,6 +24,12 @@ export class Geometry {
         this.attributes = attributes;
         this.id = ID++;
 
+        // Store each program's VAO - can't share due to attribute location assignments
+        this.VAOs = {};
+
+        // toggle to not create VAOs, resulting in slower bind, but allowing geometry sharing between programs
+        this.useVAO = true;
+
         this.drawRange = {start: 0, count: 0};
         this.instancedCount = 0;
 
@@ -100,8 +106,8 @@ export class Geometry {
     }
 
     createVAO(program) {
-        this.vao = this.gl.renderer.createVertexArray();
-        this.gl.renderer.bindVertexArray(this.vao);
+        this.VAOs[program.id] = this.gl.renderer.createVertexArray();
+        this.gl.renderer.bindVertexArray(this.VAOs[program.id]);
         this.bindAttributes(program);
     }
 
@@ -142,20 +148,27 @@ export class Geometry {
     draw({
         program,
         mode = this.gl.TRIANGLES,
-        geometryBound = false,
     }) {
-        if (!geometryBound) {
+        if (this.useVAO) {
+            if (this.gl.renderer.currentGeometry !== `${this.id}_${program.id}`) {
 
-            // Create VAO on first draw. Needs to wait for program to get attribute locations
-            if (!this.vao) this.createVAO(program);
+                // Create VAO per program just once
+                if (!this.VAOs[program.id]) this.createVAO(program);
 
-            // TODO: add fallback for non vao support (ie)
+                // Bind program's VAO
+                this.gl.renderer.bindVertexArray(this.VAOs[program.id]);
 
-            // Bind if not already bound to program
-            this.gl.renderer.bindVertexArray(this.vao);
+                this.gl.renderer.currentGeometry = `${this.id}_${program.id}`;
+            }
+        } else {
+            if (this.gl.renderer.currentGeometry !== this.id) {
 
-            // Store so doesn't bind redundantly
-            this.gl.renderer.currentGeometry = this.id;
+                // Bind all attribs
+                this.bindAttributes(program);
+    
+                // Store so doesn't bind redundantly
+                this.gl.renderer.currentGeometry = this.id;
+            }
         }
 
         // Check if any attributes need updating

@@ -135,10 +135,10 @@ export class Program {
     }
 
     use({
-        programActive = false,
         flipFaces = false,
     } = {}) {
         let textureUnit = -1;
+        const programActive = this.gl.renderer.currentProgram === this.id;
 
         // Avoid gl call if program already in use
         if (!programActive) {
