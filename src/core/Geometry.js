@@ -2,7 +2,7 @@
 // {
 //     data - typed array eg UInt16Array for indices, Float32Array
 //     size - int default 1
-//     instanced - boolean default false. can pass true or divisor amount
+//     instanced - boolean default null. Pass divisor amount
 //     type - gl enum default gl.UNSIGNED_SHORT for 'index', gl.FLOAT for others
 //     normalize - boolean default false
 // }
@@ -24,11 +24,8 @@ export class Geometry {
         this.attributes = attributes;
         this.id = ID++;
 
-        // Store each program's VAO - can't share due to attribute location assignments
+        // Store one VAO per program attribute locations order
         this.VAOs = {};
-
-        // toggle to not create VAOs, resulting in slower bind, but allowing geometry sharing between programs
-        this.useVAO = true;
 
         this.drawRange = {start: 0, count: 0};
         this.instancedCount = 0;
@@ -60,7 +57,7 @@ export class Geometry {
         attr.normalize = attr.normalize || false;
         attr.buffer = this.gl.createBuffer();
         attr.count = attr.data.length / attr.size;
-        attr.divisor = !attr.instanced ? 0 : typeof attr.instanced === 'number' ? attr.instanced : 1;
+        attr.divisor = attr.instanced || 0;
         attr.needsUpdate = false;
 
         // Push data to buffer
@@ -106,8 +103,8 @@ export class Geometry {
     }
 
     createVAO(program) {
-        this.VAOs[program.id] = this.gl.renderer.createVertexArray();
-        this.gl.renderer.bindVertexArray(this.VAOs[program.id]);
+        this.VAOs[program.attributeOrder] = this.gl.renderer.createVertexArray();
+        this.gl.renderer.bindVertexArray(this.VAOs[program.attributeOrder]);
         this.bindAttributes(program);
     }
 
@@ -149,26 +146,11 @@ export class Geometry {
         program,
         mode = this.gl.TRIANGLES,
     }) {
-        if (this.useVAO) {
-            if (this.gl.renderer.currentGeometry !== `${this.id}_${program.id}`) {
-
-                // Create VAO per program just once
-                if (!this.VAOs[program.id]) this.createVAO(program);
-
-                // Bind program's VAO
-                this.gl.renderer.bindVertexArray(this.VAOs[program.id]);
-
-                this.gl.renderer.currentGeometry = `${this.id}_${program.id}`;
-            }
-        } else {
-            if (this.gl.renderer.currentGeometry !== this.id) {
-
-                // Bind all attribs
-                this.bindAttributes(program);
-    
-                // Store so doesn't bind redundantly
-                this.gl.renderer.currentGeometry = this.id;
-            }
+        if (this.gl.renderer.currentGeometry !== `${this.id}_${program.attributeOrder}`) {   
+            if (!this.VAOs[program.attributeOrder]) this.createVAO(program);
+            this.gl.renderer.bindVertexArray(this.VAOs[program.attributeOrder]);
+            
+            this.gl.renderer.currentGeometry = `${this.id}_${program.attributeOrder}`;
         }
 
         // Check if any attributes need updating

@@ -1,6 +1,7 @@
 // TODO: upload empty texture if null ? maybe not
 // TODO: upload identity matrix if null ?
 // TODO: sampler Cube
+// TODO: is aIndex ever not equal to gl.getAttribLocation
 
 let ID = 0;
 
@@ -96,10 +97,13 @@ export class Program {
 
         // Get active attribute locations
         this.attributeLocations = new Map();
+        this.attributeOrder = '';
         let numAttribs = gl.getProgramParameter(this.program, gl.ACTIVE_ATTRIBUTES);
         for (let aIndex = 0; aIndex < numAttribs; aIndex++) {
             let attribute = gl.getActiveAttrib(this.program, aIndex);
-            this.attributeLocations.set(attribute.name, gl.getAttribLocation(this.program, attribute.name));
+            // this.attributeLocations.set(attribute.name, gl.getAttribLocation(this.program, attribute.name));
+            this.attributeLocations.set(attribute.name, aIndex);
+            this.attributeOrder += attribute.name;
         }
     }
 
