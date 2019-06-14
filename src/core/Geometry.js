@@ -149,7 +149,6 @@ export class Geometry {
         if (this.gl.renderer.currentGeometry !== `${this.id}_${program.attributeOrder}`) {   
             if (!this.VAOs[program.attributeOrder]) this.createVAO(program);
             this.gl.renderer.bindVertexArray(this.VAOs[program.attributeOrder]);
-            
             this.gl.renderer.currentGeometry = `${this.id}_${program.attributeOrder}`;
         }
 
