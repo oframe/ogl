@@ -74,9 +74,9 @@
                     normal: {size: 3, data: new Float32Array(data.normal)},
 
                     // simply add the 'instanced' property to flag as an instanced attribute.
-                    // value can be either boolean or divisor number
-                    offset: {instanced: true, size: 3, data: offset},
-                    random: {instanced: true, size: 3, data: random},
+                    // set the value as the divisor number
+                    offset: {instanced: 1, size: 3, data: offset},
+                    random: {instanced: 1, size: 3, data: random},
                 });
 
                 mesh = new Mesh(gl, {geometry, program});
