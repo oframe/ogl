@@ -31,6 +31,7 @@ export class Vec3 extends Array {
     }
 
     set(x, y = x, z = x) {
+        if (x.length) return this.copy(x);
         Vec3Func.set(this, x, y, z);
         return this;
     }

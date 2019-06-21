@@ -44,9 +44,7 @@ export class Mat4 extends Array {
     }
 
     set(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) {
-        if (m00.length) {
-            return this.copy(m00);
-        }
+        if (m00.length) return this.copy(m00);
         Mat4Func.set(this, m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33);
         return this;
     }
