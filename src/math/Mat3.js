@@ -11,6 +11,7 @@ export class Mat3 extends Array {
     }
 
     set(m00, m01, m02, m10, m11, m12, m20, m21, m22) {
+        if (m00.length) return this.copy(m00);
         Mat3Func.set(this, m00, m01, m02, m10, m11, m12, m20, m21, m22);
         return this;
     }

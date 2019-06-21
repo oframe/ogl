@@ -23,6 +23,7 @@ export class Vec2 extends Array {
     }
 
     set(x, y = x) {
+        if (x.length) return this.copy(x);
         Vec2Func.set(this, x, y);
         return this;
     }
