@@ -123,6 +123,11 @@ export class Quat extends Array {
         return this;
     }
 
+    fromAxisAngle(axis, a) {
+        QuatFunc.setAxisAngle(this, axis, a);
+        return this;
+    }
+
     slerp(q, t) {
         QuatFunc.slerp(this, this, q, t);
         return this;
