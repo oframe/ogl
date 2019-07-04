@@ -13,7 +13,7 @@
     <div class="Info">Base Primitives - Plane, Cube, Sphere</div>
     <script type="module">
         import {Renderer, Camera, Transform, Program, Mesh} from '../src/Core.js';
-        import {Plane, Sphere, Cube} from '../src/Extras.js';
+        import {Plane, Sphere, Box} from '../src/Extras.js';
         import BasePrimitivesShader from './shaders/BasePrimitivesShader.js';
 
         {
@@ -37,7 +37,7 @@
 
             const planeGeometry = new Plane(gl);
             const sphereGeometry = new Sphere(gl);
-            const cubeGeometry = new Cube(gl);
+            const cubeGeometry = new Box(gl);
 
             const program = new Program(gl, {
                 vertex: BasePrimitivesShader.vertex,

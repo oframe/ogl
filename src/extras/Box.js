@@ -1,7 +1,7 @@
 import {Geometry} from '../core/Geometry.js';
 import {Plane} from './Plane.js';
 
-export class Cube extends Geometry {
+export class Box extends Geometry {
     constructor(gl, {
         width = 1, 
         height = 1, 

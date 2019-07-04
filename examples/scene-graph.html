@@ -13,7 +13,7 @@
     <div class="Info">Scene Graph Hierarchy</div>
     <script type="module">
         import {Renderer, Camera, Program, Transform, Mesh} from '../src/Core.js';
-        import {Sphere, Cube} from '../src/Extras.js';
+        import {Sphere, Box} from '../src/Extras.js';
         import SceneGraphShader from './shaders/SceneGraphShader.js';
 
         {
@@ -35,7 +35,7 @@
             resize();
 
             const sphereGeometry = new Sphere(gl, {radius: 0.15});
-            const cubeGeometry = new Cube(gl, {width: 0.3, height: 0.3, depth: 0.3});
+            const cubeGeometry = new Box(gl, {width: 0.3, height: 0.3, depth: 0.3});
 
             const program = new Program(gl, {
                 vertex: SceneGraphShader.vertex,
