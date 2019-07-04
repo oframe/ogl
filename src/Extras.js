@@ -1,6 +1,6 @@
 // Extras
 export {Plane} from './extras/Plane.js';
-export {Cube} from './extras/Cube.js';
+export {Box} from './extras/Box.js';
 export {Sphere} from './extras/Sphere.js';
 export {Cylinder} from './extras/Cylinder.js';
 export {Orbit} from './extras/Orbit.js';

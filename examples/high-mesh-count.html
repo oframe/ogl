@@ -18,7 +18,7 @@
     
     <script type="module">
         import {Renderer, Camera, Transform, Program, Mesh} from '../src/Core.js';
-        import {Cube} from '../src/Extras.js';
+        import {Box} from '../src/Extras.js';
         import BasePrimitivesShader from './shaders/BasePrimitivesShader.js';
 
         {
@@ -39,7 +39,7 @@
             const scene = new Transform();
 
             // Create base geometry
-            const cubeGeometry = new Cube(gl);
+            const cubeGeometry = new Box(gl);
 
             // Using the shader from the base primitive example
             const program = new Program(gl, {

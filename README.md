@@ -64,7 +64,7 @@ If you are using npm modules and a dev build pipeline, then importing is done di
 ```js
 
 import {Renderer, Camera, Transform, Program, Mesh} from './Core.js';
-import {Cube} from './Extras.js';
+import {Box} from './Extras.js';
 ```
 
 Below renders a spinning white cube.
@@ -87,7 +87,7 @@ Below renders a spinning white cube.
 
     const scene = new Transform();
 
-    const geometry = new Cube(gl);
+    const geometry = new Box(gl);
 
     const program = new Program(gl, {
         vertex: `

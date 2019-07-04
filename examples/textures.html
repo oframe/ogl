@@ -13,7 +13,7 @@
     <div class="Info">Textures. Model by Google Poly. Film by Studio Ghibli.</div>
     <script type="module">
         import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh} from '../src/Core.js';
-        import {Cube} from '../src/Extras.js';
+        import {Box} from '../src/Extras.js';
         import TexturesShader from './shaders/TexturesShader.js';
 
         {
@@ -67,7 +67,7 @@
                 mesh.setParent(scene);
             }
 
-            const videoGeometry = new Cube(gl, {width: 1.78, height: 1, depth: 1.78});
+            const videoGeometry = new Box(gl, {width: 1.78, height: 1, depth: 1.78});
 
             // Init empty texture while source loading
             const videoTexture = new Texture(gl, {

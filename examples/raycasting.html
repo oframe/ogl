@@ -13,7 +13,7 @@
     <div class="Info">Projection and Raycasting</div>
     <script type="module">
         import {Renderer, Camera, Transform, Program, Mesh, Vec2} from '../src/Core.js';
-        import {Plane, Sphere, Cube, Orbit, Raycast} from '../src/Extras.js';
+        import {Plane, Sphere, Box, Orbit, Raycast} from '../src/Extras.js';
         import RaycastingShader from './shaders/RaycastingShader.js';
 
         {
@@ -38,7 +38,7 @@
 
             const planeGeometry = new Plane(gl);
             const sphereGeometry = new Sphere(gl);
-            const cubeGeometry = new Cube(gl);
+            const cubeGeometry = new Box(gl);
 
             const program = new Program(gl, {
                 vertex: RaycastingShader.vertex,

@@ -13,7 +13,7 @@
     <div class="Info">Render to texture</div>
     <script type="module">
         import {Renderer, Camera, Transform, Texture, RenderTarget, Program, Mesh} from '../src/Core.js';
-        import {Cube} from '../src/Extras.js';
+        import {Box} from '../src/Extras.js';
         import RenderToTextureShader from './shaders/RenderToTextureShader.js';
 
         {
@@ -33,7 +33,7 @@
             window.addEventListener('resize', resize, false);
             resize();
 
-            const geometry = new Cube(gl);
+            const geometry = new Box(gl);
 
             // A little data texture with 4 colors just to keep things interesting
             const texture = new Texture(gl, {
