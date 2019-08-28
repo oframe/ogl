@@ -19,7 +19,39 @@
     <script type="module">
         import {Renderer, Camera, Transform, Program, Mesh} from '../src/Core.js';
         import {Box} from '../src/Extras.js';
-        import BasePrimitivesShader from './shaders/BasePrimitivesShader.js';
+        
+        const vertex = `
+            precision highp float;
+            precision highp int;
+
+            attribute vec3 position;
+            attribute vec3 normal;
+
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+            uniform mat3 normalMatrix;
+
+            varying vec3 vNormal;
+
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragment = `
+            precision highp float;
+            precision highp int;
+
+            varying vec3 vNormal;
+
+            void main() {
+                vec3 normal = normalize(vNormal);
+                float lighting = dot(normal, normalize(vec3(-0.3, 0.8, 0.6)));
+                gl_FragColor.rgb = vec3(0.2, 0.8, 1.0) + lighting * 0.1;
+                gl_FragColor.a = 1.0;
+            }
+        `;
 
         {
             const renderer = new Renderer({});
@@ -43,8 +75,8 @@
 
             // Using the shader from the base primitive example
             const program = new Program(gl, {
-                vertex: BasePrimitivesShader.vertex,
-                fragment: BasePrimitivesShader.fragment,
+                vertex,
+                fragment,
             });
 
             // mesh container
