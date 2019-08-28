@@ -14,8 +14,158 @@
     <script type="module">
         import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh} from '../src/Core.js';
         import {Orbit} from '../src/Extras.js';
-        import NormalMapShader100 from './shaders/NormalMapShader100.js';
-        import NormalMapShader300 from './shaders/NormalMapShader300.js';
+        
+        const vertex100 = `
+            precision highp float;
+            precision highp int;
+
+            attribute vec3 position;
+            attribute vec2 uv;
+            attribute vec3 normal;
+
+            uniform mat3 normalMatrix;
+            uniform mat4 modelMatrix;
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vMPos;
+
+            void main() {
+                vUv = uv;
+                vNormal = normalize(normalMatrix * normal);
+                vec4 mPos = modelMatrix * vec4(position, 1.0);
+                vMPos = mPos.xyz / mPos.w;
+
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragment100 = `
+            #extension GL_OES_standard_derivatives : enable
+
+            precision highp float;
+            precision highp int;
+
+            uniform mat4 viewMatrix;
+            uniform float uTime;
+            uniform sampler2D tDiffuse;
+
+            uniform sampler2D tNormal;
+            uniform float uNormalScale;
+            uniform float uNormalUVScale;
+
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vMPos;
+
+            vec3 getNormal() {
+                vec3 pos_dx = dFdx(vMPos.xyz);
+                vec3 pos_dy = dFdy(vMPos.xyz);
+                vec2 tex_dx = dFdx(vUv);
+                vec2 tex_dy = dFdy(vUv);
+
+                vec3 t = normalize(pos_dx * tex_dy.t - pos_dy * tex_dx.t);
+                vec3 b = normalize(-pos_dx * tex_dy.s + pos_dy * tex_dx.s);
+                mat3 tbn = mat3(t, b, normalize(vNormal));
+
+                vec3 n = texture2D(tNormal, vUv * uNormalUVScale).rgb * 2.0 - 1.0;
+                n.xy *= uNormalScale;
+                vec3 normal = normalize(tbn * n);
+
+                // Get world normal from view normal
+                return normalize((vec4(normal, 0.0) * viewMatrix).xyz);
+            }
+
+            void main() {
+                vec3 tex = texture2D(tDiffuse, vUv).rgb;
+
+                vec3 normal = getNormal();
+                
+                vec3 light = normalize(vec3(sin(uTime), 1.0, cos(uTime)));
+                float shading = dot(normal, light) * 0.5;
+                
+                gl_FragColor.rgb = tex + shading;
+                gl_FragColor.a = 1.0;
+            }
+        `;
+        
+        const vertex300 = `#version 300 es
+            precision highp float;
+            precision highp int;
+
+            in vec3 position;
+            in vec2 uv;
+            in vec3 normal;
+
+            uniform mat3 normalMatrix;
+            uniform mat4 modelMatrix;
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+
+            out vec2 vUv;
+            out vec3 vNormal;
+            out vec3 vMPos;
+
+            void main() {
+                vUv = uv;
+                vNormal = normalize(normalMatrix * normal);
+                vec4 mPos = modelMatrix * vec4(position, 1.0);
+                vMPos = mPos.xyz / mPos.w;
+
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragment300 = `#version 300 es
+            precision highp float;
+            precision highp int;
+
+            uniform mat4 viewMatrix;
+            uniform float uTime;
+            uniform sampler2D tDiffuse;
+
+            uniform sampler2D tNormal;
+            uniform float uNormalScale;
+            uniform float uNormalUVScale;
+
+            in vec2 vUv;
+            in vec3 vNormal;
+            in vec3 vMPos;
+
+            out vec4 FragColor;
+
+            vec3 getNormal() {
+                vec3 pos_dx = dFdx(vMPos.xyz);
+                vec3 pos_dy = dFdy(vMPos.xyz);
+                vec2 tex_dx = dFdx(vUv);
+                vec2 tex_dy = dFdy(vUv);
+
+                vec3 t = normalize(pos_dx * tex_dy.t - pos_dy * tex_dx.t);
+                vec3 b = normalize(-pos_dx * tex_dy.s + pos_dy * tex_dx.s);
+                mat3 tbn = mat3(t, b, normalize(vNormal));
+
+                vec3 n = texture(tNormal, vUv * uNormalUVScale).rgb * 2.0 - 1.0;
+                n.xy *= uNormalScale;
+                vec3 normal = normalize(tbn * n);
+
+                // Get world normal from view normal
+                return normalize((vec4(normal, 0.0) * viewMatrix).xyz);
+            }
+
+            void main() {
+                vec3 tex = texture(tDiffuse, vUv).rgb;
+
+                vec3 normal = getNormal();
+                
+                vec3 light = normalize(vec3(sin(uTime), 1.0, cos(uTime)));
+                float shading = dot(normal, light) * 0.5;
+                
+                FragColor.rgb = tex + shading;
+                FragColor.a = 1.0;
+            }
+        `;
 
         {
             const renderer = new Renderer({dpr: 2});
@@ -46,13 +196,12 @@
             const imgNormal = new Image();
             imgNormal.onload = () => textureNormal.image = imgNormal;
             imgNormal.src = 'assets/granite-normal.jpg';
-
-            // Get fallback shader for WebGL1 - needed for OES_standard_derivatives ext
-            const Shader = renderer.isWebgl2 ? NormalMapShader300 : NormalMapShader100;
-
+            
             const program = new Program(gl, {
-                vertex: Shader.vertex,
-                fragment: Shader.fragment,
+                
+                // Get fallback shader for WebGL1 - needed for OES_standard_derivatives ext
+                vertex: renderer.isWebgl2 ? vertex300 : vertex100,
+                fragment: renderer.isWebgl2 ? fragment300 : fragment100,
                 uniforms: {
                     tDiffuse: {value: textureDiffuse},
                     tNormal: {value: textureNormal},
