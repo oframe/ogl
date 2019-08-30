@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <title>O-GL • Mouse Flowmap</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info">Mouse Flowmap</div>
+    <script type="module">
+        import {Renderer, Geometry, Program, Texture, Mesh, Vec2} from '../src/Core.js';
+        import {Flowmap} from '../src/Extras.js';
+        
+        const vertex = `
+            attribute vec2 uv;
+            attribute vec2 position;
+
+            varying vec2 vUv;
+
+            void main() {
+                vUv = uv;
+                gl_Position = vec4(position, 0, 1);
+            }
+        `;
+
+        const fragment = `
+            precision highp float;
+            precision highp int;
+
+            uniform sampler2D tWater;
+            uniform sampler2D tFlow;
+            uniform float uTime;
+
+            varying vec2 vUv;
+
+            void main() {
+                
+                // R and G values are velocity in the x and y direction
+                // B value is the velocity length
+                vec3 flow = texture2D(tFlow, vUv).rgb;
+
+                // Use flow to adjust the uv lookup of a texture
+                vec2 uv = gl_FragCoord.xy / 600.0;
+                uv += flow.xy * 0.05;
+                vec3 tex = texture2D(tWater, uv).rgb;
+
+                // Oscillate between raw values and the affected texture above
+                tex = mix(tex, flow * 0.5 + 0.5, smoothstep( -0.3, 0.7, sin(uTime)));
+
+                gl_FragColor.rgb = tex;
+                gl_FragColor.a = 1.0;
+            }
+        `;
+
+        {
+            const renderer = new Renderer({dpr: 2});
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+
+            // Variable inputs to control flowmap
+            let aspect = 1;
+            const mouse = new Vec2(-1);
+            const velocity = new Vec2();
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                aspect = window.innerWidth / window.innerHeight;
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+            const flowmap = new Flowmap(gl);
+
+            // Triangle that includes -1 to 1 range for 'position', and 0 to 1 range for 'uv'.
+            const geometry = new Geometry(gl, {
+                position: {size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3])},
+                uv: {size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2])},
+            });
+
+            const texture = new Texture(gl, {wrapS: gl.REPEAT, wrapT: gl.REPEAT});
+            const img = new Image();
+            img.onload = () => texture.image = img;
+            img.src = 'assets/water.jpg';
+
+            const program = new Program(gl, {
+                vertex,
+                fragment,
+                uniforms: {
+                    uTime: {value: 0},
+                    tWater: {value: texture},
+
+                    // Note that the uniform is applied without using an object and value property
+                    // This is because the class alternates this texture between two render targets
+                    // and updates the value property after each render.
+                    tFlow: flowmap.uniform,
+                }
+            });
+
+            const mesh = new Mesh(gl, {geometry, program});
+
+            // Create handlers to get mouse position and velocity
+            const isTouchCapable = 'ontouchstart' in window;
+            if (isTouchCapable) {
+                window.addEventListener('touchstart', updateMouse, false);
+                window.addEventListener('touchmove', updateMouse, false);
+            } else {
+                window.addEventListener('mousemove', updateMouse, false);
+            }
+
+            let lastTime;
+            const lastMouse = new Vec2();
+            function updateMouse(e) {
+                if (e.changedTouches && e.changedTouches.length) {
+                    e.x = e.changedTouches[0].pageX;
+                    e.y = e.changedTouches[0].pageY;
+                }
+                if (e.x === undefined) {
+                    e.x = e.pageX;
+                    e.y = e.pageY;
+                }
+
+                // Get mouse value in 0 to 1 range, with y flipped
+                mouse.set(
+                    e.x / gl.renderer.width,
+                    1.0 - e.y / gl.renderer.height
+                );
+
+                // Calculate velocity
+                if (!lastTime) {
+                    
+                    // First frame
+                    lastTime = performance.now();
+                    lastMouse.set(e.x, e.y);
+                }
+                
+                const deltaX = e.x - lastMouse.x;
+                const deltaY = e.y - lastMouse.y;
+                
+                lastMouse.set(e.x, e.y);
+                
+                let time = performance.now();
+                
+                // Avoid dividing by 0
+                let delta = Math.max(14, time - lastTime);
+                lastTime = time;
+
+                velocity.x = deltaX / delta;
+                velocity.y = deltaY / delta;
+
+                // Flag update to prevent hanging velocity values when not moving
+                velocity.needsUpdate = true;
+            }
+
+            requestAnimationFrame(update);
+            function update(t) {
+                requestAnimationFrame(update);
+
+                // Reset velocity when mouse not moving
+                if (!velocity.needsUpdate) {
+                    mouse.set(-1);
+                    velocity.set(0);
+                }
+                velocity.needsUpdate = false;
+
+                // Update flowmap inputs
+                flowmap.aspect = aspect;
+                flowmap.mouse.copy(mouse);
+
+                // Ease velocity input, slower when fading out
+                flowmap.velocity.lerp(velocity, velocity.len ? 0.5 : 0.1);
+
+                flowmap.update();
+
+                program.uniforms.uTime.value = t * 0.001;
+
+                renderer.render({scene: mesh});
+            }
+        }
+    </script>
+</body>
+</html>
