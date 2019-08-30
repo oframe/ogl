@@ -1,6 +1,6 @@
 {
     "name": "ogl",
-    "version": "0.0.18",
+    "version": "0.0.19",
     "description": "WebGL Framework",
     "main": "src",
     "directories": {
@@ -19,7 +19,7 @@
     "author": {
         "name": "Nathan Gordon",
         "email": "gordonnl@gmail.com",
-        "url": "https://cinemont.com"
+        "url": "https://twitter.com/gordonnl"
     },
     "license": "MIT",
     "bugs": {
