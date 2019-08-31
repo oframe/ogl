@@ -66,9 +66,15 @@
             camera.position.set(0, 1, 5);
             camera.lookAt([0, 0, 0]);
 
+            const targetCamera = new Camera(gl, {fov: 35});
+            targetCamera.position.set(0, 1, 5);
+            targetCamera.lookAt([0, 0, 0]);
+
             function resize() {
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
+                
+                // Only update aspect of target camera, as first scene will be drawn to a square render target
+                targetCamera.perspective({aspect: gl.canvas.width / gl.canvas.height});
             }
             window.addEventListener('resize', resize, false);
             resize();
@@ -98,14 +104,17 @@
             // Create render target framebuffer.
             // Uses canvas size by default and doesn't automatically resize.
             // To resize, re-create target
-            const target = new RenderTarget(gl);
+            const target = new RenderTarget(gl, {
+                width: 512, 
+                height: 512,
+            });
 
             const targetProgram = new Program(gl, {
                 vertex,
                 fragment,
                 uniforms: {
                     tMap: {value: target.texture},
-                }
+                },
             });
 
             const mesh = new Mesh(gl, {geometry, program});
@@ -129,7 +138,7 @@
                 gl.clearColor(1, 1, 1, 1);
 
                 // Omit target to render to canvas
-                renderer.render({scene: targetMesh, camera});
+                renderer.render({scene: targetMesh, camera: targetCamera});
             }
         }
     </script>
