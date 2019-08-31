@@ -203,7 +203,7 @@ Any additional layers of abstraction will be included as **Extras**, and not par
 
 Below is an **Extras** wish-list, and is still a work-in-progress as examples are developed.
  - [x] Plane.js
- - [x] Cube.js
+ - [x] Box.js
  - [x] Sphere.js
  - [x] Cylinder.js
  - [x] Orbit.js
@@ -213,6 +213,8 @@ Below is an **Extras** wish-list, and is still a work-in-progress as examples ar
  - [x] Animation.js
  - [x] Text.js
  - [ ] Curve.js
+ - [x] Flowmap.js
+ - [x] NormalProgram.js
 
 ## Examples wishlist
 
@@ -222,7 +224,7 @@ In order to test the completeness of the framework, below is a wish-list that co
 
 It is an opinionated, comprehensive list of examples for any fully-fledged WebGL framework.
 
-Much inspired by ThreeJS' examples, they will serve as reference for how to achieve a wide range of techniques.
+Inspired by the effectiveness of ThreeJS' examples, they will serve as reference for how to achieve a wide range of techniques.
 
 For more advanced techniques, extra classes will be developed and contained within the 'Extras' folder of the framework.
 
