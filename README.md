@@ -271,6 +271,7 @@ For more advanced techniques, extra classes will be developed and contained with
  - [ ] Reflections
  - [ ] Shadow maps
  - [ ] Distortion (refraction)
+ - [x] Post Fluid Distortion
  - [ ] Effects - DOF (Depth Of Field) + light rays + tone mapping
 
 ### Animation
