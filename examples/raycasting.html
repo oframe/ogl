@@ -125,6 +125,7 @@
             sphere.geometry.raycast = 'sphere';
 
             document.addEventListener('mousemove', move, false);
+            document.addEventListener('touchmove', move, false);
             function move(e) {
                 mouse.set(
                     2.0 * (e.x / renderer.width) - 1.0,

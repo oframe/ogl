@@ -15,7 +15,7 @@ export class Post {
         minFilter = gl.LINEAR,
         magFilter = gl.LINEAR,
         geometry = new Geometry(gl, {
-            position: {size: 3, data: new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0])},
+            position: {size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3])},
             uv: {size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2])},
         }),
     } = {}) {
@@ -113,24 +113,24 @@ export class Post {
 }
 
 const defaultVertex = `
-attribute vec2 uv;
-attribute vec3 position;
+    attribute vec2 uv;
+    attribute vec2 position;
 
-varying vec2 vUv;
+    varying vec2 vUv;
 
-void main() {
-    vUv = uv;
-    gl_Position = vec4(position, 1.0);
-}
+    void main() {
+        vUv = uv;
+        gl_Position = vec4(position, 0, 1);
+    }
 `;
 
 const defaultFragment = `
-precision highp float;
+    precision highp float;
 
-uniform sampler2D tMap;
-varying vec2 vUv;
+    uniform sampler2D tMap;
+    varying vec2 vUv;
 
-void main() {
-    gl_FragColor = texture2D(tMap, vUv);
-}
+    void main() {
+        gl_FragColor = texture2D(tMap, vUv);
+    }
 `;

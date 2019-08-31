@@ -249,7 +249,7 @@ For more advanced techniques, extra classes will be developed and contained with
 ### Interaction
  - [x] Orbit controls
  - [x] Projection and Raycasting
- - [ ] Mouse Flowmap
+ - [x] Mouse Flowmap
 
 ### Shading
  - [x] Fog
@@ -266,6 +266,7 @@ For more advanced techniques, extra classes will be developed and contained with
 
 ### Frame Buffer
  - [x] Render to texture
+ - [x] Post FXAA (Fast Approximate Anti-Aliasing)
  - [ ] MRT (Multiple Render Targets)
  - [ ] Reflections
  - [ ] Shadow maps
@@ -278,3 +279,6 @@ For more advanced techniques, extra classes will be developed and contained with
 
 ### Stencil
  - [ ] Stencil Shadows and Mirror
+
+ ### Performance
+ - [x] High mesh count
