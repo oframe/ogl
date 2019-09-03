@@ -158,8 +158,8 @@
                 initialPositionData.set([
                     (Math.random() - 0.5) * 2.0,
                     (Math.random() - 0.5) * 2.0,
-                    0,
-                    1,
+                    0, // the Green and Alpha channels go unused in this example, however I set
+                    1, // unused Alpha to 1 so that texture is visible in WebGL debuggers
                 ], i * 4);
                 initialVelocityData.set([0, 0, 0, 1], i * 4);
                 random.set([
@@ -191,9 +191,9 @@
                 },
             });
 
-            // Now we can create out geometry, using the coordinates from above.
+            // Now we can create our geometry, using the coordinates from above.
             // We don't use the velocity or position data as attributes, 
-            // we will get this from the FBO textures.
+            // instead we will get this from the FBO textures in the shader.
             const geometry = new Geometry(gl, {
                 random: {size: 4, data: random},
 
