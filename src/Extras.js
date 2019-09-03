@@ -12,3 +12,4 @@ export {Animation} from './extras/Animation.js';
 export {Text} from './extras/Text.js';
 export {NormalProgram} from './extras/NormalProgram.js';
 export {Flowmap} from './extras/Flowmap.js';
+export {GPGPU} from './extras/GPGPU.js';
