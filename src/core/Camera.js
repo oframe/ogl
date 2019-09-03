@@ -107,6 +107,10 @@ export class Camera extends Transform {
     }
 
     frustumIntersectsMesh(node) {
+
+        // If no position attribute, treat as frustumCulled false
+        if (!node.geometry.attributes.position) return true;
+        
         if (!node.geometry.bounds || node.geometry.bounds.radius === Infinity) node.geometry.computeBoundingSphere();
 
         const center = tempVec3a;
