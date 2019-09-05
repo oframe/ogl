@@ -4,6 +4,7 @@
     "description": "WebGL Framework",
     "module": "dist/ogl.mjs",
     "main": "dist/ogl.js",
+    "unpkg": "dist/ogl.umd.js",
     "directories": {
         "example": "examples"
     },
