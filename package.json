@@ -1,6 +1,6 @@
 {
     "name": "ogl",
-    "version": "0.0.21",
+    "version": "0.0.22",
     "description": "WebGL Framework",
     "module": "dist/ogl.mjs",
     "main": "dist/ogl.js",
