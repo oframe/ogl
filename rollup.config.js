@@ -5,6 +5,6 @@ export default [{
   output: [
     { file: pkg.main, format: 'cjs' },
     { file: pkg.module, format: 'es' },
-    { file: pkg.browser, format: 'umd', name: 'ogl' }
+    { file: pkg.unpkg, format: 'umd', name: 'ogl' }
   ]
 }];
