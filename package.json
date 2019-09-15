@@ -1,10 +1,12 @@
 {
     "name": "ogl",
-    "version": "0.0.22",
+    "version": "0.0.23",
     "description": "WebGL Framework",
+    "main": "src/index.js",
+    "browser": "dist/ogl.js",
     "module": "dist/ogl.mjs",
-    "main": "dist/ogl.js",
     "unpkg": "dist/ogl.umd.js",
+    "sideEffects": false,
     "directories": {
         "example": "examples"
     },
