@@ -2,7 +2,7 @@
 // {
 //     data - typed array eg UInt16Array for indices, Float32Array
 //     size - int default 1
-//     instanced - boolean default null. Pass divisor amount
+//     instanced - default null. Pass divisor amount
 //     type - gl enum default gl.UNSIGNED_SHORT for 'index', gl.FLOAT for others
 //     normalize - boolean default false
 // }
