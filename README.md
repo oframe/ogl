@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://github.com/oframe/ogl/raw/master/examples/assets/ogl.png" alt="O-GL" width="510" />
+  <img src="https://github.com/oframe/ogl/raw/master/examples/assets/ogl.png" alt="OGL" width="510" />
 </p>
 
-<h1 align="center">O-GL</h1>
+<h1 align="center">OGL</h1>
 
 <p align="center">
     <a href="https://npmjs.org/package/ogl">
@@ -21,7 +21,7 @@
 
 [See Examples](https://oframe.github.io/ogl/examples)
 
-O-GL is a small, effective WebGL framework aimed at developers who like minimal layers of abstraction, and are comfortable creating their own shaders.
+OGL is a small, effective WebGL framework aimed at developers who like minimal layers of abstraction, and are comfortable creating their own shaders.
 
 With zero dependencies, the API shares many similarities with ThreeJS, however it is tightly coupled with WebGL and comes with much fewer features.
 
@@ -208,13 +208,15 @@ Below is an **Extras** wish-list, and is still a work-in-progress as examples ar
  - [x] Cylinder.js
  - [x] Orbit.js
  - [x] Raycast.js
+ - [ ] Curve.js
  - [x] Post.js
  - [x] Skin.js
  - [x] Animation.js
  - [x] Text.js
- - [ ] Curve.js
- - [x] Flowmap.js
  - [x] NormalProgram.js
+ - [x] Flowmap.js
+ - [x] GPGPU.js
+ - [x] Polyline.js
 
 ## Examples wishlist
 
@@ -240,7 +242,7 @@ For more advanced techniques, extra classes will be developed and contained with
  - [ ] Particle Depth Sort
  - [ ] Frustum culling
  - [ ] LODs (Level Of Detail)
- - [ ] Thick Lines
+ - [x] Polylines
  - [ ] Load GLTF (Graphics Language Transmission Format)
 
 ### Scene
