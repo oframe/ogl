@@ -11,7 +11,7 @@ const EPSILON = 0.000001;
  * @param {vec3} a vector to calculate length of
  * @returns {Number} length of a
  */
-export function length(a: Vec3) {
+export function length(a: number[] | Vec3) {
     let x = a[0];
     let y = a[1];
     let z = a[2];
@@ -287,7 +287,7 @@ export function inverse(out: Vec3, a: Vec3) {
  * @param {vec3} a vector to normalize
  * @returns {vec3} out
  */
-export function normalize(out: Vec3, a: Vec3) {
+export function normalize(out: number[] | Vec3, a: number[] | Vec3) {
     let x = a[0];
     let y = a[1];
     let z = a[2];
@@ -321,7 +321,7 @@ export function dot(a: Vec3, b: Vec3) {
  * @param {vec3} b the second operand
  * @returns {vec3} out
  */
-export function cross(out: Vec3, a: Vec3, b: Vec3) {
+export function cross(out: number[], a: number[], b: number[]) {
     let ax = a[0], ay = a[1], az = a[2];
     let bx = b[0], by = b[1], bz = b[2];
 

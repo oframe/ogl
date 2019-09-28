@@ -1,7 +1,7 @@
 // TODO : support more color formats - e.g 0xffffff
 
-export class Color extends Array {
-    constructor(r = 0, g = 0, b = 0) {
+export class Color extends Array<number> {
+    constructor(r: string | number = 0, g = 0, b = 0) {
         if (typeof r === 'string') [r, g, b] = Color.hexToRGB(r);
         super(r, g, b);
         return this;

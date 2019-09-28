@@ -9,6 +9,19 @@ let ID = 0;
 // cache of typed arrays used to flatten uniform arrays
 const arrayCacheF32 = {};
 
+/**
+ * WebGL augmentations
+ */
+declare global {
+    interface WebGLActiveInfo {
+        uniformName: string;
+        isStruct: boolean;
+        isStructArray: boolean;
+        structIndex: number;
+        structProperty: string;
+    }
+}
+
 export interface ProgramOptions {
     vertex: string;
     fragment: string;
@@ -51,6 +64,8 @@ export class Program {
 
     program: WebGLProgram;
     uniformLocations: Map<any, any>;
+    attributeOrder: string;
+    attributeLocations: Map<any, any>;
 
     constructor(gl: OGLRenderingContext, {
         vertex,

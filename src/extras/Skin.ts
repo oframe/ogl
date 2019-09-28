@@ -1,18 +1,39 @@
-import {Mesh} from '../core/Mesh.js';
-import {Transform} from '../core/Transform.js';
-import {Mat4} from '../math/Mat4.js';
-import {Texture} from '../core/Texture.js';
-import {Animation} from './Animation.js';
+import { Mesh } from '../core/Mesh';
+import { Transform } from '../core/Transform';
+import { Mat4 } from '../math/Mat4';
+import { Texture } from '../core/Texture';
+import { Animation } from './Animation';
+import { OGLRenderingContext } from '../core/Renderer';
+import { Camera } from '../core/Camera';
+import { Geometry } from '../core/Geometry';
+import { Program } from '../core/Program';
 
 const tempMat4 = new Mat4();
 
+export interface SkinOptions {
+    rig: any;
+    geometry: Geometry;
+    program: Program;
+    mode: GLenum;
+}
+
 export class Skin extends Mesh {
+    gl: OGLRenderingContext;
+    root: Transform;
+
+    bones: any[]; // TODO: define all bone properties instead of 'any'
+    boneTexture: Texture;
+    boneTextureSize: number;
+    boneMatrices: Float32Array;
+
+    animations: any[];
+
     constructor(gl, {
         rig,
         geometry,
         program,
         mode = gl.TRIANGLES,
-    } = {}) {
+    }: Partial<SkinOptions> = {}) {
         super(gl, {geometry, program, mode});
 
         this.createBones(rig);
@@ -29,7 +50,7 @@ export class Skin extends Mesh {
 
         // Create root so that can simply update world matrix of whole skeleton
         this.root = new Transform();
-        
+
         // Create bones
         this.bones = [];
         if (!rig.bones || !rig.bones.length) return;
@@ -43,7 +64,7 @@ export class Skin extends Mesh {
 
             this.bones.push(bone);
         };
-        
+
         // Once created, set the hierarchy
         rig.bones.forEach((data, i) => {
             this.bones[i].name = data.name;
@@ -96,7 +117,9 @@ export class Skin extends Mesh {
 
     draw({
         camera,
-    } = {}) {
+    }: Partial<{
+        camera: Camera
+    }> = {}) {
 
         // Update world matrices manually, as not part of scene graph
         this.root.updateMatrixWorld(true);

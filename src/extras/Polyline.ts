@@ -1,20 +1,47 @@
-import {Geometry} from '../core/Geometry.js';
-import {Program} from '../core/Program.js';
-import {Mesh} from '../core/Mesh.js';
-import {Vec2} from '../math/Vec2.js';
-import {Vec3} from '../math/Vec3.js';
-import {Color} from '../math/Color.js';
+import { Geometry } from '../core/Geometry';
+import { Program } from '../core/Program';
+import { Mesh } from '../core/Mesh';
+import { Vec2 } from '../math/Vec2';
+import { Vec3 } from '../math/Vec3';
+import { Color } from '../math/Color';
+import { OGLRenderingContext } from '../core/Renderer';
+import { Uniform } from './Flowmap';
 
 const tmp = new Vec3();
 
 export class Polyline {
+    gl: OGLRenderingContext;
+
+    points: any[];
+    count: number;
+    uniforms: { [name: string]: Uniform }; // TODO: define type
+
+    position: Float32Array;
+    prev: Float32Array;
+    next: Float32Array;
+
+    resolution: Uniform<Vec2>;
+    dpr: Uniform<number>;
+    thickness: Uniform<number>;
+    color: Uniform<Color>;
+    program: Program;
+
+    geometry: Geometry;
+    mesh: Mesh;
+
     constructor(gl, {
         points, // Array of Vec3s
         vertex = defaultVertex,
         fragment = defaultFragment,
         uniforms = {},
         attributes = {}, // For passing in custom attribs
-    }) {
+    }: Partial<{
+        points: any;
+        vertex: string;
+        fragment: string;
+        uniforms: { [name: string]: Uniform };
+        attributes: any;
+    }>) {
         this.gl = gl;
         this.points = points;
         this.count = points.length;
@@ -64,7 +91,7 @@ export class Polyline {
             fragment,
             uniforms,
         });
-        
+
         this.mesh = new Mesh(gl, {geometry, program});
     }
 
@@ -133,15 +160,15 @@ const defaultVertex = `
         vec4 nextPos = mvp * vec4(next, 1);
         vec4 prevPos = mvp * vec4(prev, 1);
 
-        vec2 aspect = vec2(uResolution.x / uResolution.y, 1);    
+        vec2 aspect = vec2(uResolution.x / uResolution.y, 1);
         vec2 currentScreen = current.xy / current.w * aspect;
         vec2 nextScreen = nextPos.xy / nextPos.w * aspect;
         vec2 prevScreen = prevPos.xy / prevPos.w * aspect;
-    
+
         vec2 dir1 = normalize(currentScreen - prevScreen);
         vec2 dir2 = normalize(nextScreen - currentScreen);
         vec2 dir = normalize(dir1 + dir2);
-    
+
         vec2 normal = vec2(-dir.y, dir.x);
         normal /= max(0.3, dot(normal, vec2(-dir1.y, dir1.x)));
         normal /= aspect;
@@ -150,7 +177,7 @@ const defaultVertex = `
         float pixelWidth = current.w * pixelWidthRatio;
         normal *= pixelWidth * uThickness;
         current.xy -= normal * side;
-    
+
         return current;
     }
 
@@ -164,7 +191,7 @@ const defaultFragment = `
     precision highp float;
 
     uniform vec3 uColor;
-    
+
     varying vec2 vUv;
 
     void main() {

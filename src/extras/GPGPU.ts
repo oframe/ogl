@@ -1,10 +1,24 @@
-import {Geometry} from '../core/Geometry.js';
-import {Program} from '../core/Program.js';
-import {Mesh} from '../core/Mesh.js';
-import {Texture} from '../core/Texture.js';
-import {RenderTarget} from '../core/RenderTarget.js';
+import { Geometry } from '../core/Geometry';
+import { Program } from '../core/Program';
+import { Mesh } from '../core/Mesh';
+import { Texture } from '../core/Texture';
+import { RenderTarget } from '../core/RenderTarget';
+import { OGLRenderingContext } from '../core/Renderer';
+import { FlowmapMask, Uniform } from './Flowmap';
 
 export class GPGPU {
+    gl: OGLRenderingContext;
+
+    passes: any[];
+    geometry: Geometry;
+    dataLength: number;
+
+    size: number;
+    coords: Float32Array;
+
+    fbo: FlowmapMask;
+    uniform: Uniform;
+
     constructor(gl, {
 
         // Always pass in array of vec4s (RGBA values within texture)
@@ -62,10 +76,10 @@ export class GPGPU {
 
         // Create FBOs
         const options = {
-            width: this.size, 
-            height: this.size, 
-            type: gl.renderer.isWebgl2 ? gl.HALF_FLOAT : 
-                gl.renderer.extensions['OES_texture_half_float'] ? gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES : 
+            width: this.size,
+            height: this.size,
+            type: gl.renderer.isWebgl2 ? gl.HALF_FLOAT :
+                gl.renderer.extensions['OES_texture_half_float'] ? gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES :
                 gl.UNSIGNED_BYTE,
             format: gl.RGBA,
             internalFormat: gl.renderer.isWebgl2 ? gl.RGBA16F : gl.RGBA,
@@ -98,7 +112,7 @@ export class GPGPU {
         const mesh = new Mesh(this.gl, {geometry: this.geometry, program});
 
         const pass = {
-            mesh, 
+            mesh,
             program,
             uniforms,
             enabled,
@@ -114,7 +128,7 @@ export class GPGPU {
 
         enabledPasses.forEach((pass, i) => {
             this.gl.renderer.render({
-                scene: pass.mesh, 
+                scene: pass.mesh,
                 target: this.fbo.write,
                 clear: false,
             });

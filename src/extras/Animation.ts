@@ -10,6 +10,12 @@ const nextRot = new Quat();
 const nextScl = new Vec3();
 
 export class Animation {
+    objects: any[]; // TODO: which type?
+    data: any;      // TODO: which type?
+    elapsed: number;
+    weight: number;
+    duration: number;
+
     constructor({objects, data}) {
         this.objects = objects;
         this.data = data;
@@ -18,7 +24,7 @@ export class Animation {
         this.duration = data.frames.length - 1;
     }
 
-    update(totalWeight = 1, isSet) {
+    update(totalWeight = 1, isSet: boolean) {
         const weight = isSet ? 1 : this.weight / totalWeight;
         const elapsed = this.elapsed % this.duration;
 

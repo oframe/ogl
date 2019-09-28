@@ -1,12 +1,35 @@
 // TODO: Destroy render targets if size changed and exists
 
-import {Geometry} from '../core/Geometry.js';
-import {Program} from '../core/Program.js';
-import {Mesh} from '../core/Mesh.js';
-import {RenderTarget} from '../core/RenderTarget.js';
+import { Geometry } from '../core/Geometry';
+import { Program } from '../core/Program';
+import { Mesh } from '../core/Mesh';
+import { RenderTarget } from '../core/RenderTarget';
+import { OGLRenderingContext } from '../core/Renderer';
+import { FlowmapMask } from './Flowmap';
+
+export interface PostOptions { // TODO: reuse this interface somewhere else?
+    width?: number;
+    height?: number;
+
+    wrapS: GLenum;
+    wrapT: GLenum;
+    minFilter: GLenum;
+    magFilter: GLenum;
+}
 
 export class Post {
-    constructor(gl, {
+    gl: OGLRenderingContext;
+    width: number;
+    height: number;
+    dpr: number;
+
+    options: PostOptions;
+    passes: any[];
+
+    geometry: Geometry;
+    fbo: FlowmapMask;
+
+    constructor(gl: OGLRenderingContext, {
         width,
         height,
         dpr,
@@ -18,7 +41,12 @@ export class Post {
             position: {size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3])},
             uv: {size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2])},
         }),
-    } = {}) {
+    }: Partial<{
+        width: number;
+        height: number;
+        dpr: number;
+        geometry: Geometry;
+    } & PostOptions> = {}) {
         this.gl = gl;
 
         this.options = {wrapS, wrapT, minFilter, magFilter};
@@ -53,7 +81,7 @@ export class Post {
         const mesh = new Mesh(this.gl, {geometry: this.geometry, program});
 
         const pass = {
-            mesh, 
+            mesh,
             program,
             uniforms,
             enabled,
@@ -64,7 +92,15 @@ export class Post {
         return pass;
     }
 
-    resize({width, height, dpr} = {}) {
+    resize({
+        width,
+        height,
+        dpr
+    }: Partial<{
+        width: number;
+        height: number;
+        dpr: number;
+    }> = {}) {
         if (dpr) this.dpr = dpr;
         if (width) {
             this.width = width;
@@ -92,7 +128,7 @@ export class Post {
         frustumCull = true,
     }) {
         const enabledPasses = this.passes.filter(pass => pass.enabled);
-        
+
         this.gl.renderer.render({
             scene, camera,
             target: enabledPasses.length ? this.fbo.write : target,
@@ -103,7 +139,7 @@ export class Post {
         enabledPasses.forEach((pass, i) => {
             pass.mesh.program.uniforms[pass.textureUniform].value = this.fbo.read.texture;
             this.gl.renderer.render({
-                scene: pass.mesh, 
+                scene: pass.mesh,
                 target: i === enabledPasses.length - 1 ? target : this.fbo.write,
                 clear: false,
             });

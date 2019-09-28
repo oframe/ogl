@@ -2,10 +2,48 @@
 // TODO: test stencil and depth
 // TODO: destroy
 // TODO: blit on resize?
-import {Texture} from './Texture.js';
+import { Texture } from './Texture';
+import { OGLRenderingContext } from './Renderer';
+
+export interface RenderOptions {
+    width: number;
+    height: number;
+    target: GLenum;
+    color: number;
+    depth: boolean;
+    wrapS: GLenum;
+    wrapT: GLenum;
+    minFilter: GLenum;
+    magFilter: GLenum;
+    type: GLenum;
+    format: GLenum;
+    internalFormat: GLenum;
+    unpackAlignment: number;
+    premultiplyAlpha: boolean;
+}
+
+export interface RenderTargetOptions extends RenderOptions {
+    stencil: boolean;
+    depthTexture: boolean;
+}
 
 export class RenderTarget {
-    constructor(gl, {
+    gl: OGLRenderingContext;
+    width: number;
+    height: number;
+
+    buffer: WebGLBuffer;
+    target: number;
+
+    textures: Texture[] = [];
+    texture: Texture;
+
+    depthTexture: Texture;
+    depthBuffer: WebGLRenderbuffer;
+    stencilBuffer: WebGLRenderbuffer;
+    depthStencilBuffer: WebGLRenderbuffer;
+
+    constructor(gl: OGLRenderingContext, {
         width = gl.canvas.width,
         height = gl.canvas.height,
         target = gl.FRAMEBUFFER,
@@ -22,7 +60,7 @@ export class RenderTarget {
         internalFormat = format,
         unpackAlignment,
         premultiplyAlpha,
-    } = {}) {
+    }: Partial<RenderTargetOptions> = {}) {
         this.gl = gl;
         this.width = width;
         this.height = height;
@@ -30,13 +68,11 @@ export class RenderTarget {
         this.target = target;
         this.gl.bindFramebuffer(this.target, this.buffer);
 
-        this.textures = [];
-
         // TODO: multi target rendering
         // create and attach required num of color textures
         for (let i = 0; i < color; i++) {
             this.textures.push(new Texture(gl, {
-                width, height, 
+                width, height,
                 wrapS, wrapT, minFilter, magFilter, type, format, internalFormat, unpackAlignment, premultiplyAlpha,
                 flipY: false,
                 generateMipmaps: false,

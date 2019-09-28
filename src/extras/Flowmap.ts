@@ -1,16 +1,47 @@
-import {RenderTarget} from '../core/RenderTarget.js';
-import {Geometry} from '../core/Geometry.js';
-import {Program} from '../core/Program.js';
-import {Mesh} from '../core/Mesh.js';
-import {Vec2} from '../math/Vec2.js';
+import { RenderTarget } from '../core/RenderTarget';
+import { Geometry } from '../core/Geometry';
+import { Program } from '../core/Program';
+import { Mesh } from '../core/Mesh';
+import { Vec2 } from '../math/Vec2';
+import { OGLRenderingContext } from '../core/Renderer';
+import { Texture } from '../core/Texture';
+import { Color } from '../math/Color';
+
+export interface FlowMapOptions {
+    size: number;
+    falloff: number;
+    alpha: number;
+    dissipation: number;
+}
+
+export interface FlowmapMask { // TODO: rename this interface? it's used in GPGPU too
+    read?: RenderTarget;
+    write?: RenderTarget,
+    swap: () => void;
+}
+
+export interface Uniform<T = number | boolean | Texture | Color | Vec2> { // TODO: move this interface elsewhere. GPGPU.ts maybe?
+    value: T;
+}
 
 export class Flowmap {
+    gl: OGLRenderingContext;
+
+    aspect: number;
+    mouse: Vec2;
+    velocity: Vec2;
+
+    mesh: Mesh;
+    mask: FlowmapMask;
+
+    uniform: Uniform;
+
     constructor(gl, {
         size = 128, // default size of the render targets
         falloff = 0.3, // size of the stamp, percentage of the size
         alpha = 1, // opacity of the stamp
         dissipation = 0.98, // affects the speed that the stamp fades. Closer to 1 is slower
-    } = {}) {
+    }: Partial<FlowMapOptions> = {}) {
         const _this = this;
         this.gl = gl;
 
@@ -44,10 +75,10 @@ export class Flowmap {
             let supportLinearFiltering = gl.renderer.extensions[`OES_texture_${gl.renderer.isWebgl2 ? `` : `half_`}float_linear`];
 
             const options = {
-                width: size, 
-                height: size, 
-                type: gl.renderer.isWebgl2 ? gl.HALF_FLOAT : 
-                    gl.renderer.extensions['OES_texture_half_float'] ? gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES : 
+                width: size,
+                height: size,
+                type: gl.renderer.isWebgl2 ? gl.HALF_FLOAT :
+                    gl.renderer.extensions['OES_texture_half_float'] ? gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES :
                     gl.UNSIGNED_BYTE,
                 format: gl.RGBA,
                 internalFormat: gl.renderer.isWebgl2 ? gl.RGBA16F : gl.RGBA,
@@ -122,7 +153,7 @@ const fragment = `
     uniform float uFalloff;
     uniform float uAlpha;
     uniform float uDissipation;
-    
+
     uniform float uAspect;
     uniform vec2 uMouse;
     uniform vec2 uVelocity;

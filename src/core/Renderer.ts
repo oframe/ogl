@@ -1,5 +1,8 @@
-import {Vec3} from '../math/Vec3.js';
-import { Geometry } from './Geometry.js';
+import { Vec3 } from '../math/Vec3';
+import { Geometry } from './Geometry';
+import { RenderTarget } from './RenderTarget';
+import { Camera } from './Camera';
+import { Transform } from './Transform';
 
 // TODO: Handle context loss https://www.khronos.org/webgl/wiki/HandlingContextLost
 
@@ -18,7 +21,12 @@ export type OGLRenderingContext = WebGL2RenderingContext & {
     canvas: HTMLCanvasElement; // force HTMLCanvasElement (w/o OffscreenCanvas)
 }
 
-export type RendererState = any;       // TODO: create interface with all options
+export type RendererState = { // TODO: fill all interface options
+    textureUnits: any;
+
+    premultiplyAlpha: boolean;
+    unpackAlignment: boolean;
+} & any; // TODO: remove 'any'
 export type RendererParams = any;      // TODO: create interface with all options
 export type RendererExtensions = any;  // TODO: create interface with all options
 
@@ -59,6 +67,7 @@ export class Renderer {
     extensions: RendererExtensions;
 
     currentGeometry: string;
+    currentProgram: number;
 
     vertexAttribDivisor: Function;
     drawArraysInstanced: Function;
@@ -354,7 +363,15 @@ export class Renderer {
         sort = true,
         frustumCull = true,
         clear,
-    }) {
+    }: Partial<{
+        scene: Transform,
+        camera: Camera,
+        target: RenderTarget,
+        update: boolean,
+        sort: boolean,
+        frustumCull: boolean,
+        clear: boolean,
+    }>) {
 
         if (target === null) {
 

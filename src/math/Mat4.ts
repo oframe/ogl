@@ -93,7 +93,17 @@ export class Mat4 extends Array<number> {
         return this;
     }
 
-    fromPerspective({fov, aspect, near, far} = {}) {
+    fromPerspective({
+        fov,
+        aspect,
+        near,
+        far
+    }: Partial<{
+        fov: number;
+        aspect: number;
+        near: number;
+        far: number;
+    }> = {}) {
         Mat4Func.perspective(this, fov, aspect, near, far);
         return this;
     }

@@ -1,3 +1,5 @@
+import { Mat4 } from "../Mat4";
+
 const EPSILON = 0.000001;
 
 /**
@@ -1202,7 +1204,7 @@ export function frustum(out, left, right, bottom, top, near, far) {
  * @param {number} far Far bound of the frustum
  * @returns {mat4} out
  */
-export function perspective(out, fovy, aspect, near, far) {
+export function perspective(out: Mat4, fovy: number, aspect: number, near: number, far: number) {
     let f = 1.0 / Math.tan(fovy / 2);
     let nf = 1 / (near - far);
     out[0] = f / aspect;

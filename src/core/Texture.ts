@@ -1,3 +1,6 @@
+import { OGLRenderingContext, RendererState } from "./Renderer";
+import { RenderOptions } from "./RenderTarget";
+
 // TODO: facilitate Compressed Textures
 // TODO: cube map
 // TODO: delete texture
@@ -14,8 +17,57 @@ function isPowerOf2(value) {
 
 let ID = 0;
 
+export interface TextureState {
+    minFilter: GLenum;
+    magFilter: GLenum;
+    wrapS: GLenum;
+    wrapT: GLenum;
+}
+
+export interface TextureStore {
+    image?: HTMLCanvasElement | HTMLImageElement;
+}
+
+export interface TextureOptions extends RenderOptions {
+    image?: HTMLCanvasElement | HTMLImageElement;
+    flipY: boolean;
+    level: number;
+    generateMipmaps: boolean;
+}
+
 export class Texture {
-    constructor(gl, {
+    gl: OGLRenderingContext;
+    id: number;
+    glState: Partial<RendererState>;
+
+    store: Partial<TextureStore>;
+    state: TextureState;
+
+    image: HTMLCanvasElement | HTMLImageElement;
+    target: GLenum;
+
+    type: GLenum;
+    format: GLenum;
+    internalFormat: GLenum;
+    minFilter: GLenum;
+    magFilter: GLenum;
+    wrapS: GLenum;
+    wrapT: GLenum;
+    generateMipmaps: boolean;
+    premultiplyAlpha: boolean;
+    unpackAlignment: GLenum;
+    flipY: boolean;
+    level: GLenum;
+    width: number;
+    height: number;
+
+    texture: WebGLTexture;
+
+    needsUpdate: boolean;
+
+    onUpdate: () => void;
+
+    constructor(gl: OGLRenderingContext, {
         image,
         target = gl.TEXTURE_2D,
         type = gl.UNSIGNED_BYTE,
@@ -32,7 +84,7 @@ export class Texture {
         level = 0,
         width, // used for RenderTargets or Data Textures
         height = width,
-    } = {}) {
+    }: Partial<TextureOptions> = {}) {
         this.gl = gl;
         this.id = ID++;
 
@@ -62,11 +114,12 @@ export class Texture {
         this.glState = this.gl.renderer.state;
 
         // State store to avoid redundant calls for per-texture state
-        this.state = {};
-        this.state.minFilter = this.gl.NEAREST_MIPMAP_LINEAR;
-        this.state.magFilter = this.gl.LINEAR;
-        this.state.wrapS = this.gl.REPEAT;
-        this.state.wrapT = this.gl.REPEAT;
+        this.state = {
+            minFilter: this.gl.NEAREST_MIPMAP_LINEAR,
+            magFilter: this.gl.LINEAR,
+            wrapS: this.gl.REPEAT,
+            wrapT: this.gl.REPEAT,
+        };
     }
 
     bind() {
@@ -135,7 +188,7 @@ export class Texture {
 
             // TODO: all sides if cubemap
             // gl.TEXTURE_CUBE_MAP_POSITIVE_X
-            
+
             // TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
             if (this.gl.renderer.isWebgl2 || ArrayBuffer.isView(this.image)) {
                 this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0 /* border */, this.format, this.type, this.image);

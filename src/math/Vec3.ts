@@ -40,31 +40,31 @@ export class Vec3 extends Array<number> {
         return this;
     }
 
-    copy(v) {
+    copy(v: Vec3) {
         Vec3Func.copy(this, v);
         return this;
     }
 
-    add(va, vb) {
+    add(va: Vec3, vb?: Vec3) {
         if (vb) Vec3Func.add(this, va, vb);
         else Vec3Func.add(this, this, va);
         return this;
     }
 
-    sub(va, vb) {
+    sub(va: Vec3, vb?: Vec3) {
         if (vb) Vec3Func.subtract(this, va, vb);
         else Vec3Func.subtract(this, this, va);
         return this;
     }
 
-    multiply(v) {
-        if (v.length) Vec3Func.multiply(this, this, v);
+    multiply(v: Vec3 | number) {
+        if (v instanceof Vec3) Vec3Func.multiply(this, this, v);
         else Vec3Func.scale(this, this, v);
         return this;
     }
 
-    divide(v) {
-        if (v.length) Vec3Func.divide(this, this, v);
+    divide(v: Vec3 | number) {
+        if (v instanceof Vec3) Vec3Func.divide(this, this, v);
         else Vec3Func.scale(this, this, 1 / v);
         return this;
     }
@@ -151,7 +151,7 @@ export class Vec3 extends Array<number> {
 		return this;
     }
 
-	toArray(a: number[] = [], o: number = 0) {
+	toArray(a: Float32Array | number[] = [], o: number = 0) {
 		a[o] = this[0];
 		a[o + 1] = this[1];
 		a[o + 2] = this[2];

@@ -1,6 +1,6 @@
 import * as Vec2Func from './functions/Vec2Func.js';
 
-export class Vec2 extends Array {
+export class Vec2 extends Array<number> {
     constructor(x = 0, y = x) {
         super(x, y);
         return this;
@@ -76,7 +76,7 @@ export class Vec2 extends Array {
         return this.squaredDistance();
     }
 
-    squaredDistance(v) {
+    squaredDistance(v?: Vec2) {
         if (v) return Vec2Func.squaredDistance(this, v);
         else return Vec2Func.squaredLength(this);
     }
@@ -131,7 +131,7 @@ export class Vec2 extends Array {
 		this[1] = a[o + 1];
 		return this;
     }
-    
+
 	toArray(a = [], o = 0) {
 		a[o] = this[0];
 		a[o + 1] = this[1];

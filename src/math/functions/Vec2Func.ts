@@ -1,3 +1,5 @@
+import { Vec2 } from "../Vec2";
+
 const EPSILON = 0.000001;
 
 /**
@@ -199,7 +201,7 @@ export function distance(a, b) {
  * @param {vec2} b the second operand
  * @returns {Number} squared distance between a and b
  */
-export function squaredDistance(a, b) {
+export function squaredDistance(a: Vec2, b: Vec2) {
     var x = b[0] - a[0],
         y = b[1] - a[1];
     return x * x + y * y;

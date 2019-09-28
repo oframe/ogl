@@ -2,16 +2,17 @@
 // TODO: abstract event handlers so can be fed from other sources
 // TODO: make scroll zoom more accurate than just >/< zero
 
-import {Vec3} from '../math/Vec3.js';
-import {Vec2} from '../math/Vec2.js';
+import { Vec3 } from '../math/Vec3';
+import { Vec2 } from '../math/Vec2';
+import { Transform } from '../core/Transform';
 
 const STATE = {NONE: -1, ROTATE: 0, DOLLY: 1, PAN: 2, DOLLY_PAN: 3};
 const tempVec3 = new Vec3();
 const tempVec2a = new Vec2();
 const tempVec2b = new Vec2();
 
-export function Orbit(object, {
-    element = document,
+export function Orbit(object: Transform, {
+    element = document.body,
     enabled = true,
     target = new Vec3(),
     ease = 0.25,
@@ -122,12 +123,11 @@ export function Orbit(object, {
     }
 
     const pan = (deltaX, deltaY) => {
-        let el = element === document ? document.body : element;
         tempVec3.copy(object.position).sub(this.target);
         let targetDistance = tempVec3.distance();
         targetDistance *= Math.tan(((object.fov || 45) / 2) * Math.PI / 180.0);
-        panLeft(2 * deltaX * targetDistance / el.clientHeight, object.matrix);
-        panUp(2 * deltaY * targetDistance / el.clientHeight, object.matrix);
+        panLeft(2 * deltaX * targetDistance / element.clientHeight, object.matrix);
+        panUp(2 * deltaY * targetDistance / element.clientHeight, object.matrix);
     };
 
     function dolly(dollyScale) {
@@ -137,9 +137,8 @@ export function Orbit(object, {
     function handleMoveRotate(x, y) {
         tempVec2a.set(x, y);
         tempVec2b.sub(tempVec2a, rotateStart).multiply(rotateSpeed);
-        let el = element === document ? document.body : element;
-        sphericalDelta.theta -= 2 * Math.PI * tempVec2b.x / el.clientHeight;
-        sphericalDelta.phi -= 2 * Math.PI * tempVec2b.y / el.clientHeight;
+        sphericalDelta.theta -= 2 * Math.PI * tempVec2b.x / element.clientHeight;
+        sphericalDelta.phi -= 2 * Math.PI * tempVec2b.y / element.clientHeight;
         rotateStart.copy(tempVec2a);
     }
 

@@ -10,6 +10,8 @@ export class Transform {
 
     matrix = new Mat4();
     worldMatrix = new Mat4();
+
+    worldMatrixNeedsUpdate: boolean;
     matrixAutoUpdate = true;
 
     position = new Vec3();
