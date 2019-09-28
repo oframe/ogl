@@ -12,8 +12,8 @@
 <body>
     <div class="Info">Indexed vs Non-Indexed</div>
     <script type="module">
-        import {Renderer, Camera, Transform, Geometry, Program, Mesh} from '../src/Core.js';
-        
+        import {Renderer, Camera, Transform, Geometry, Program, Mesh} from '../lib/Core.js';
+
         const vertex = `
             precision highp float;
             precision highp int;
@@ -28,7 +28,7 @@
 
             void main() {
                 vUv = uv;
-                
+
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
         `;

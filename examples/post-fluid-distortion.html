@@ -12,7 +12,7 @@
 <body>
     <div class="Info">Post Fluid Distortion. Based on shaders by <a href="https://github.com/PavelDoGreat/WebGL-Fluid-Simulation" target="_blank">Pavel Dobryakov</a></div>
     <script type="module">
-        import {Renderer, Camera, RenderTarget, Geometry, Program, Texture, Mesh, Color, Vec2} from '../src/Core.js';
+        import {Renderer, Camera, RenderTarget, Geometry, Program, Texture, Mesh, Color, Vec2} from '../lib/Core.js';
         import {Box, NormalProgram, Post} from '../src/Extras.js';
 
         const fragment = `
@@ -332,13 +332,13 @@
 
             // Get supported formats and types for FBOs
             let supportLinearFiltering = gl.renderer.extensions[`OES_texture_${gl.renderer.isWebgl2 ? `` : `half_`}float_linear`];
-            const halfFloat = gl.renderer.isWebgl2 ? gl.HALF_FLOAT : 
-                gl.renderer.extensions['OES_texture_half_float'] ? gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES : 
+            const halfFloat = gl.renderer.isWebgl2 ? gl.HALF_FLOAT :
+                gl.renderer.extensions['OES_texture_half_float'] ? gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES :
                 gl.UNSIGNED_BYTE;
-            
+
             const filtering = supportLinearFiltering ? gl.LINEAR : gl.NEAREST;
             let rgba, rg, r;
-        
+
             if (gl.renderer.isWebgl2) {
                 rgba = getSupportedFormat(gl, gl.RGBA16F, gl.RGBA, halfFloat);
                 rg = getSupportedFormat(gl, gl.RG16F, gl.RG, halfFloat);
@@ -408,7 +408,7 @@
 
             // Create fluid simulation programs
             const clearProgram = new Mesh(gl, {
-                geometry: triangle, 
+                geometry: triangle,
                 program: new Program(gl, {
                     vertex: baseVertex,
                     fragment: clearShader,
@@ -423,7 +423,7 @@
             });
 
             const splatProgram = new Mesh(gl, {
-                geometry: triangle, 
+                geometry: triangle,
                 program: new Program(gl, {
                     vertex: baseVertex,
                     fragment: splatShader,
@@ -441,7 +441,7 @@
             });
 
             const advectionProgram = new Mesh(gl, {
-                geometry: triangle, 
+                geometry: triangle,
                 program: new Program(gl, {
                     vertex: baseVertex,
                     fragment: supportLinearFiltering ? advectionShader : advectionManualFilteringShader,
@@ -459,7 +459,7 @@
             });
 
             const divergenceProgram = new Mesh(gl, {
-                geometry: triangle, 
+                geometry: triangle,
                 program: new Program(gl, {
                     vertex: baseVertex,
                     fragment: divergenceShader,
@@ -473,7 +473,7 @@
             });
 
             const curlProgram = new Mesh(gl, {
-                geometry: triangle, 
+                geometry: triangle,
                 program: new Program(gl, {
                     vertex: baseVertex,
                     fragment: curlShader,
@@ -487,7 +487,7 @@
             });
 
             const vorticityProgram = new Mesh(gl, {
-                geometry: triangle, 
+                geometry: triangle,
                 program: new Program(gl, {
                     vertex: baseVertex,
                     fragment: vorticityShader,
@@ -504,7 +504,7 @@
             });
 
             const pressureProgram = new Mesh(gl, {
-                geometry: triangle, 
+                geometry: triangle,
                 program: new Program(gl, {
                     vertex: baseVertex,
                     fragment: pressureShader,
@@ -519,7 +519,7 @@
             });
 
             const gradienSubtractProgram = new Mesh(gl, {
-                geometry: triangle, 
+                geometry: triangle,
                 program: new Program(gl, {
                     vertex: baseVertex,
                     fragment: gradientSubtractShader,
@@ -558,14 +558,14 @@
 
                 if (!lastMouse.isInit) {
                     lastMouse.isInit = true;
-                    
+
                     // First input
                     lastMouse.set(e.x, e.y);
                 }
-                
+
                 const deltaX = e.x - lastMouse.x;
                 const deltaY = e.y - lastMouse.y;
-                
+
                 lastMouse.set(e.x, e.y);
 
                 // Add if the mouse is moving
@@ -691,7 +691,7 @@
 
                 pressureProgram.program.uniforms.uDivergence.value = divergence.texture;
 
-                for (let i = 0; i < iterations; i++) {                
+                for (let i = 0; i < iterations; i++) {
                     pressureProgram.program.uniforms.uPressure.value = pressure.read.texture;
 
                     gl.renderer.render({
@@ -750,7 +750,7 @@
                 mesh.rotation.x -= 0.005;
 
                 pass.uniforms.uTime.value = t * 0.001;
-                
+
                 // Replace Renderer.render with post.render. Use the same arguments.
                 post.render({scene: mesh, camera});
             }

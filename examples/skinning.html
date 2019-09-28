@@ -12,7 +12,7 @@
 <body>
     <div class="Info">Skinning. Model by <a href="https://artella.lpages.co/artella-lily-snout-giveaway/" target="_blank">Carlos Quintero and Zach Baharov</a>.</div>
     <script type="module">
-        import {Renderer, Transform, Camera, Geometry, Texture, Program, Mesh} from '../src/Core.js';
+        import {Renderer, Transform, Camera, Geometry, Texture, Program, Mesh} from '../lib/Core.js';
         import {Orbit, Plane, Skin} from '../src/Extras.js';
 
         const vertex = `
@@ -104,7 +104,7 @@
                 gl_FragColor.a = 1.0;
             }
         `;
-        
+
         const shadowVertex = `
             precision highp float;
 
@@ -118,7 +118,7 @@
 
             void main() {
                 vUv = uv;
-                
+
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
         `;
@@ -132,7 +132,7 @@
 
             void main() {
                 float shadow = texture2D(tMap, vUv).g;
-                
+
                 gl_FragColor.rgb = vec3(0.0);
                 gl_FragColor.a = shadow;
             }
@@ -177,13 +177,13 @@
             //         ],
             //         bindPose: {
             //             ... for the following properties, values concatenated for all bones, arranged in order of bones array
-            //             position: [x1, y1, z1, x2, y2, z2, ...], 
+            //             position: [x1, y1, z1, x2, y2, z2, ...],
             //             quaternion: [x1, y1, z1, w1, x2, y2, z2, w2, ...],
             //             scale: [x1, y1, z1, x2, y2, z2, ...],
             //         },
             //     },
             // }
-            
+
             const animationData = await (await fetch(`assets/snout-anim.json`)).json();
             // Animation JSON format
             // data is expected to be baked for each frame, therefore duration is derived
@@ -192,7 +192,7 @@
             //     frames: [
             //         {
             //             ... identical format to bindPose above, values are concatenated
-            //             position: [x1, y1, z1, x2, y2, z2, ...], 
+            //             position: [x1, y1, z1, x2, y2, z2, ...],
             //             quaternion: [x1, y1, z1, w1, x2, y2, z2, w2, ...],
             //             scale: [x1, y1, z1, x2, y2, z2, ...],
             //         },
@@ -230,7 +230,7 @@
             skin.scale.set(0.01);
             skin.position.y = -1;
 
-            // Helper function to add animation to skin's bones. 
+            // Helper function to add animation to skin's bones.
             // The Animation class can be used directly for any hierarchy - is not solely for bones.
             animation = skin.addAnimation(animationData);
         }
@@ -242,7 +242,7 @@
             const img = new Image();
             img.onload = () => texture.image = img;
             img.src = 'assets/snout-shadow.jpg';
-            
+
             const geometry = new Plane(gl, {width: 7, height: 7});
             const program = new Program(gl, {
                 vertex: shadowVertex,
@@ -265,7 +265,7 @@
             requestAnimationFrame(update);
 
             // Control animation but updating the elapsed value.
-            // It uses modulo to repeat the animation range, 
+            // It uses modulo to repeat the animation range,
             // so below is playing a never-ending loop.
             if (animation) animation.elapsed += 0.1;
 

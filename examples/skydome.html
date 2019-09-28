@@ -12,9 +12,9 @@
 <body>
     <div class="Info">Skydome. Image credit <a href="https://www.flickr.com/photos/charlesashaw/6264765128" target="_blank">charlesashaw</a>.</div>
     <script type="module">
-        import {Renderer, Geometry, Program, Mesh, Camera, Transform, Texture} from '../src/Core.js';
+        import {Renderer, Geometry, Program, Mesh, Camera, Transform, Texture} from '../lib/Core.js';
         import {Sphere, Orbit} from '../src/Extras.js';
-        
+
         const vertex = `
             precision highp float;
             precision highp int;
@@ -44,7 +44,7 @@
 
             void main() {
                 vec3 tex = texture2D(tMap, vUv).rgb;
-                
+
                 gl_FragColor.rgb = tex;
                 gl_FragColor.a = 1.0;
             }

@@ -12,9 +12,9 @@
 <body>
     <div class="Info">Mouse Flowmap. Texture by <a href="https://www.deviantart.com/berserkitty/art/Seamless-Cartoon-styled-Water-Texture-743787929" target="_blank">BerserKitty</a></div>
     <script type="module">
-        import {Renderer, Geometry, Program, Texture, Mesh, Vec2} from '../src/Core.js';
+        import {Renderer, Geometry, Program, Texture, Mesh, Vec2} from '../lib/Core.js';
         import {Flowmap} from '../src/Extras.js';
-        
+
         const vertex = `
             attribute vec2 uv;
             attribute vec2 position;
@@ -38,7 +38,7 @@
             varying vec2 vUv;
 
             void main() {
-                
+
                 // R and G values are velocity in the x and y direction
                 // B value is the velocity length
                 vec3 flow = texture2D(tFlow, vUv).rgb;
@@ -131,19 +131,19 @@
 
                 // Calculate velocity
                 if (!lastTime) {
-                    
+
                     // First frame
                     lastTime = performance.now();
                     lastMouse.set(e.x, e.y);
                 }
-                
+
                 const deltaX = e.x - lastMouse.x;
                 const deltaY = e.y - lastMouse.y;
-                
+
                 lastMouse.set(e.x, e.y);
-                
+
                 let time = performance.now();
-                
+
                 // Avoid dividing by 0
                 let delta = Math.max(14, time - lastTime);
                 lastTime = time;

@@ -12,9 +12,9 @@
 <body>
     <div class="Info">GPGPU Particles (General-Purpose computing on Graphics Processing Units)</div>
     <script type="module">
-        import {Renderer, Camera, Geometry, Program, Texture, Mesh, Vec2} from '../src/Core.js';
+        import {Renderer, Camera, Geometry, Program, Texture, Mesh, Vec2} from '../lib/Core.js';
         import {GPGPU} from '../src/Extras.js';
-        
+
         const vertex = `
             precision highp float;
 
@@ -34,7 +34,7 @@
                 // Get position from texture, rather than attribute
                 vec4 position = texture2D(tPosition, coords);
                 vVelocity = texture2D(tVelocity, coords);
-                
+
                 // Add some subtle random oscillating so it never fully stops
                 position.xy += sin(vec2(uTime) * vRandom.wy + vRandom.xz * 6.28) * vRandom.zy * 0.1;
 
@@ -85,7 +85,7 @@
                 vec4 velocity = texture2D(tVelocity, vUv);
 
                 position.xy += velocity.xy * 0.01;
-                                
+
                 // Keep in bounds
                 vec2 limits = vec2(1);
                 position.xy += (1.0 - step(-limits.xy, position.xy)) * limits.xy * 2.0;
@@ -143,7 +143,7 @@
 
             // The number of particles will determine how large the GPGPU textures are,
             // and therefore how expensive the GPU calculations will be.
-            // Below I'm using 65536 to use every pixel of a 256x256 texture. If I used one more (65537), 
+            // Below I'm using 65536 to use every pixel of a 256x256 texture. If I used one more (65537),
             // it would need to use a 512x512 texture - the GPU would then perform calculations for each pixel,
             // meaning that nearly 3/4 of the texture (196607 pixels) would be redundant.
             const numParticles = 65536;
@@ -192,7 +192,7 @@
             });
 
             // Now we can create our geometry, using the coordinates from above.
-            // We don't use the velocity or position data as attributes, 
+            // We don't use the velocity or position data as attributes,
             // instead we will get this from the FBO textures in the shader.
             const geometry = new Geometry(gl, {
                 random: {size: 4, data: random},

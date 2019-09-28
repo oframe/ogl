@@ -12,7 +12,7 @@
 <body>
     <div class="Info">Post FXAA (Fast Approximate Anti-Aliasing)</div>
     <script type="module">
-        import {Renderer, Camera, Program, Mesh, Vec2} from '../src/Core.js';
+        import {Renderer, Camera, Program, Mesh, Vec2} from '../lib/Core.js';
         import {Post, Box, NormalProgram} from '../src/Extras.js';
 
         const fragment = `
@@ -38,16 +38,16 @@
                 float lM  = dot(texture2D(tex, uv).rgb, l);
                 float lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
                 float lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
-                
+
                 vec2 dir = vec2(
                     -((lNW + lNE) - (lSW + lSE)),
                      ((lNW + lSW) - (lNE + lSE))
                 );
-                
+
                 float dirReduce = max((lNW + lNE + lSW + lSE) * 0.03125, 0.0078125);
                 float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
                 dir = min(vec2(8, 8), max(vec2(-8, -8), dir * rcpDirMin)) * pixel;
-                
+
                 vec3 rgbA = 0.5 * (
                     texture2D(tex, uv + dir * (1.0 / 3.0 - 0.5)).rgb +
                     texture2D(tex, uv + dir * (2.0 / 3.0 - 0.5)).rgb);
@@ -96,7 +96,7 @@
             function resize() {
                 renderer.setSize(window.innerWidth, window.innerHeight);
                 camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-                
+
                 // Need to resize post as render targets need to be re-created
                 post.resize();
                 resolution.value.set(gl.canvas.width, gl.canvas.height);
@@ -110,7 +110,7 @@
             // Add pass like you're creating a Program. Then use the 'enabled'
             // property to toggle the pass.
             const pass = post.addPass({
-                
+
                 // If not passed in, pass will use the default vertex/fragment
                 // shaders found within the class.
                 fragment,
@@ -125,7 +125,7 @@
 
                 mesh.rotation.y -= 0.005;
                 mesh.rotation.x -= 0.01;
-                
+
                 // Replace Renderer.render with post.render. Use the same arguments.
                 post.render({scene: mesh, camera});
             }

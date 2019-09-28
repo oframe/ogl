@@ -12,9 +12,9 @@
 <body>
     <div class="Info">Projection and Raycasting</div>
     <script type="module">
-        import {Renderer, Camera, Transform, Program, Mesh, Vec2} from '../src/Core.js';
+        import {Renderer, Camera, Transform, Program, Mesh, Vec2} from '../lib/Core.js';
         import {Plane, Sphere, Box, Orbit, Raycast} from '../src/Extras.js';
-        
+
         const vertex = `
             precision highp float;
             precision highp int;
@@ -134,11 +134,11 @@
 
                 // Update the ray's origin and direction using the camera and mouse
                 raycast.castMouse(camera, mouse);
-                
+
                 // Just for the feedback in this example - reset each mesh's hit to false
                 meshes.forEach(mesh => mesh.isHit = false);
 
-                // raycast.intersectBounds will test against the bounds of each mesh, and 
+                // raycast.intersectBounds will test against the bounds of each mesh, and
                 // return an array of intersected meshes in order of closest to farthest
                 const hits = raycast.intersectBounds(meshes);
 

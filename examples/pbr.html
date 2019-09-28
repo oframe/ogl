@@ -12,9 +12,9 @@
 <body>
     <div class="Info" style="color: #fff;">PBR (Physically Based Rendering). Model by <a href="https://sketchfab.com/slava" target="_blank">Slava Z</a></div>
     <script type="module">
-        import {Renderer, Transform, Camera, Geometry, Texture, Program, Mesh, Vec3, Color} from '../src/Core.js';
+        import {Renderer, Transform, Camera, Geometry, Texture, Program, Mesh, Vec3, Color} from '../lib/Core.js';
         import {Orbit, Plane} from '../src/Extras.js';
-        
+
         const vertex100 = `
             precision highp float;
             precision highp int;
@@ -155,7 +155,7 @@
                 float level0 = floor(blend);
                 float level1 = min(ENV_LODS, level0 + 1.0);
                 blend -= level0;
-                
+
                 // Sample the specular env map atlas depending on the roughness value
                 vec2 uvSpec = cartesianToPolar(reflection);
                 uvSpec.y /= 2.0;
@@ -174,7 +174,7 @@
                 vec3 specularLight = mix(specular0, specular1, blend);
 
                 diffuse = diffuseLight * diffuseColor;
-                
+
                 // Bit of extra reflection for smooth materials
                 float reflectivity = pow((1.0 - roughness), 2.0) * 0.05;
                 specular = specularLight * (specularColor * brdf.x + brdf.y + reflectivity);
@@ -214,7 +214,7 @@
 
                 vec3 diffuseContrib = (1.0 - F) * (diffuseColor / PI);
                 vec3 specContrib = F * G * D / (4.0 * NdL * NdV);
-                
+
                 // Shading based off lights
                 vec3 color = NdL * uLightColor * (diffuseContrib + specContrib);
 
@@ -245,7 +245,7 @@
 
                 // Convert to sRGB to display
                 gl_FragColor.rgb = linearToSRGB(color);
-                
+
                 // Apply uAlpha uniform at the end to overwrite any specular additions on transparent surfaces
                 gl_FragColor.a = alpha * uAlpha;
             }
@@ -391,7 +391,7 @@
                 float level0 = floor(blend);
                 float level1 = min(ENV_LODS, level0 + 1.0);
                 blend -= level0;
-                
+
                 // Sample the specular env map atlas depending on the roughness value
                 vec2 uvSpec = cartesianToPolar(reflection);
                 uvSpec.y /= 2.0;
@@ -410,7 +410,7 @@
                 vec3 specularLight = mix(specular0, specular1, blend);
 
                 diffuse = diffuseLight * diffuseColor;
-                
+
                 // Bit of extra reflection for smooth materials
                 float reflectivity = pow((1.0 - roughness), 2.0) * 0.05;
                 specular = specularLight * (specularColor * brdf.x + brdf.y + reflectivity);
@@ -450,7 +450,7 @@
 
                 vec3 diffuseContrib = (1.0 - F) * (diffuseColor / PI);
                 vec3 specContrib = F * G * D / (4.0 * NdL * NdV);
-                
+
                 // Shading based off lights
                 vec3 color = NdL * uLightColor * (diffuseContrib + specContrib);
 
@@ -481,12 +481,12 @@
 
                 // Convert to sRGB to display
                 FragColor.rgb = linearToSRGB(color);
-                
+
                 // Apply uAlpha uniform at the end to overwrite any specular additions on transparent surfaces
                 FragColor.a = alpha * uAlpha;
             }
         `;
-        
+
         const shadowVertex = `
             precision highp float;
 
@@ -500,7 +500,7 @@
 
             void main() {
                 vUv = uv;
-                
+
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
         `;
@@ -514,7 +514,7 @@
 
             void main() {
                 float shadow = texture2D(tMap, vUv).g;
-                
+
                 gl_FragColor.rgb = vec3(0.0);
                 gl_FragColor.a = shadow;
             }
@@ -579,7 +579,7 @@
 
                 // This whole effect lives in the fairly epic shader.
                 const program = new Program(gl, {
-                    
+
                     // Get fallback shader for WebGL1 - needed for OES_standard_derivatives ext
                     vertex: renderer.isWebgl2 ? vertex300 : vertex100,
                     fragment: renderer.isWebgl2 ? fragment300 : fragment100,
@@ -590,50 +590,50 @@
 
                         // This works as a multiplier for each channel in the texture above.
                         uBaseColor: {value: new Color(1, 1, 1)},
-                        
-                        // 'Roughness', 'Metalness' and 'Occlusion', each packed into their own channel (R, G, B) 
+
+                        // 'Roughness', 'Metalness' and 'Occlusion', each packed into their own channel (R, G, B)
                         tRMO: {value: getTexture('assets/pbr/car-ext-rmo.jpg')},
 
                         // The following are multipliers to the above values
                         uRoughness: {value: 1},
                         uMetallic: {value: 1},
                         uOcclusion: {value: 1},
-                        
+
                         // Just a regular normal map
                         tNormal: {value: getTexture('assets/pbr/car-ext-normal.jpg')},
                         uNormalScale: {value: 0.5},
                         uNormalUVScale: {value: 1},
-                
+
                         // Emissive color is added at the very end to simulate light sources.
                         tEmissive: {value: getTexture('assets/pbr/car-ext-emissive.jpg')},
                         uEmissive: {value: 1},
-                        
+
                         // Initial opacity is taken from the green channel of the map below.
                         // If a transparent area is smooth, the specular may increase the opacity.
                         // This is done to simulate specular reflections on transparent surfaces like glass.
                         tOpacity: {value: getTexture('assets/pbr/car-ext-opacity.jpg')},
-                      
+
                         // uAlpha is an overall alpha control. It is applied right at the end to hide the geometry.
                         // Specular reflections will not affect this value, unlike above.
                         uAlpha: {value: 1},
-                        
+
                         // This Look Up Table is used to calculate the BRDF (Bidirectional reflectance distribution function)
-                        // coefficients used in the shader more efficiently. 
+                        // coefficients used in the shader more efficiently.
                         // It is based on the roughness and fresnel grazing angle.
                         tLUT: {value: getTexture('assets/pbr/lut.png', false)},
-                        
-                        // The following two environment maps are the most important inputs. 
+
+                        // The following two environment maps are the most important inputs.
                         // They can be generated using this online tool https://oframe.github.io/ibl-converter/
                         // They are equirectangular (a sphere mapped to a rectangle) maps used for lighting the model.
                         // Instead of just relying on lights, we use these textures as IBL (image-based lighting), which
-                        // is like having thousands of lights in a scene. 
+                        // is like having thousands of lights in a scene.
                         // In order to get more realistic results, we use a HDR (high dynamic range) image as an input,
                         // so instead of values being limited between 0 and 1, they can go higher (up to 6 in this implementation).
-                        // These images have been converted to an RGBM structure (where the rgb channels multiply with the 
+                        // These images have been converted to an RGBM structure (where the rgb channels multiply with the
                         // alpha channel to recapture their original HDR value), as this allows us to store it in an 8 bit PNG.
-                        
-                        // The first of the two maps is the diffuse irradiance. It's a small, blurry texture used to give 
-                        // ambient/diffuse lighting to the model. 
+
+                        // The first of the two maps is the diffuse irradiance. It's a small, blurry texture used to give
+                        // ambient/diffuse lighting to the model.
                         tEnvDiffuse: {value: getTexture('assets/pbr/waterfall-diffuse-RGBM.png', false)},
 
                         // The second is the pre-filtered specular vertical atlas. It's basically 7 environment maps
@@ -645,7 +645,7 @@
 
                         // This is a multiplier to the amount of specular. Especially useful if you don't have an HDR map.
                         uEnvSpecular: {value: 2},
-                        
+
                         // One light is included, ideally to simulate the sun, and both specular and diffuse are calculated.
                         uLightDirection: {value: new Vec3(0, 1, 1)},
 
@@ -679,28 +679,28 @@
                     uniforms: {
                         tBaseColor: {value: getTexture('assets/pbr/car-int-color.jpg')},
                         uBaseColor: {value: new Color(1, 1, 1)},
-                        
+
                         tRMO: {value: getTexture('assets/pbr/car-int-rmo.jpg')},
                         uRoughness: {value: 1},
                         uMetallic: {value: 1},
                         uOcclusion: {value: 1},
-                        
+
                         tNormal: {value: getTexture('assets/pbr/car-int-normal.jpg')},
                         uNormalScale: {value: 0.5},
                         uNormalUVScale: {value: 1},
-                        
+
                         tEmissive: {value: getTexture('assets/pbr/black.jpg')},
                         uEmissive: {value: 1},
-                        
+
                         tOpacity: {value: getTexture('assets/pbr/white.jpg')},
                         uAlpha: {value: 1},
-                        
+
                         tLUT: {value: getTexture('assets/pbr/lut.png', false)},
-                        
+
                         tEnvDiffuse: {value: getTexture('assets/pbr/waterfall-diffuse-RGBM.png', false)},
                         tEnvSpecular: {value: getTexture('assets/pbr/waterfall-specular-RGBM.png', false)},
                         uEnvSpecular: {value: 1.0},
-                        
+
                         uLightDirection: {value: new Vec3(1, 1, 1)},
                         uLightColor: {value: new Vec3(7)},
                     },

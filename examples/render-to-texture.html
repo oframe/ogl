@@ -12,9 +12,9 @@
 <body>
     <div class="Info">Render to texture</div>
     <script type="module">
-        import {Renderer, Camera, Transform, Texture, RenderTarget, Program, Mesh} from '../src/Core.js';
+        import {Renderer, Camera, Transform, Texture, RenderTarget, Program, Mesh} from '../lib/Core.js';
         import {Box} from '../src/Extras.js';
-        
+
         const vertex = `
             precision highp float;
             precision highp int;
@@ -33,7 +33,7 @@
             void main() {
                 vUv = uv;
                 vNormal = normalize(normalMatrix * normal);
-                
+
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
         `;
@@ -72,7 +72,7 @@
 
             function resize() {
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                
+
                 // Only update aspect of target camera, as first scene will be drawn to a square render target
                 targetCamera.perspective({aspect: gl.canvas.width / gl.canvas.height});
             }
@@ -106,7 +106,7 @@
             // Uses canvas size by default and doesn't automatically resize.
             // To resize, re-create target
             const target = new RenderTarget(gl, {
-                width: 512, 
+                width: 512,
                 height: 512,
             });
 
