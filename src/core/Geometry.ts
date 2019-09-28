@@ -12,23 +12,44 @@
 // TODO: add fallback for non vao support (ie)
 
 import {Vec3} from '../math/Vec3.js';
+import { OGLRenderingContext, RendererState } from './Renderer.js';
 
 const tempVec3 = new Vec3();
 
 let ID = 0;
 let ATTR_ID = 0;
 
+export interface Bounds {
+    min: Vec3;
+    max: Vec3;
+    center: Vec3;
+    scale: Vec3;
+    radius: number;
+}
+
 export class Geometry {
-    constructor(gl, attributes = {}) {
+    gl: OGLRenderingContext;
+    attributes: {[key: string]: any};
+    id: number;
+
+    VAOs: any;
+    vao: any; // ?? doesn't seem to be used.
+
+    drawRange = { start: 0, count: 0 };
+    instancedCount = 0;
+
+    isInstanced?: boolean;
+    glState: RendererState;
+
+    bounds: Bounds;
+
+    constructor(gl: OGLRenderingContext, attributes: {[key: string]: any} = {}) {
         this.gl = gl;
         this.attributes = attributes;
         this.id = ID++;
 
         // Store one VAO per program attribute locations order
         this.VAOs = {};
-
-        this.drawRange = {start: 0, count: 0};
-        this.instancedCount = 0;
 
         // Unbind current VAO so that new buffers don't get added to active mesh
         this.gl.renderer.bindVertexArray(null);
@@ -50,8 +71,8 @@ export class Geometry {
         attr.id = ATTR_ID++;
         attr.size = attr.size || 1;
         attr.type = attr.type || (
-            attr.data.constructor === Float32Array ? this.gl.FLOAT : 
-            attr.data.constructor === Uint16Array ? this.gl.UNSIGNED_SHORT : 
+            attr.data.constructor === Float32Array ? this.gl.FLOAT :
+            attr.data.constructor === Uint16Array ? this.gl.UNSIGNED_SHORT :
             this.gl.UNSIGNED_INT); // Uint32Array
         attr.target = key === 'index' ? this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER;
         attr.normalize = attr.normalize || false;
@@ -146,7 +167,7 @@ export class Geometry {
         program,
         mode = this.gl.TRIANGLES,
     }) {
-        if (this.gl.renderer.currentGeometry !== `${this.id}_${program.attributeOrder}`) {   
+        if (this.gl.renderer.currentGeometry !== `${this.id}_${program.attributeOrder}`) {
             if (!this.VAOs[program.attributeOrder]) this.createVAO(program);
             this.gl.renderer.bindVertexArray(this.VAOs[program.attributeOrder]);
             this.gl.renderer.currentGeometry = `${this.id}_${program.attributeOrder}`;
@@ -215,7 +236,7 @@ export class Geometry {
         center.add(min, max).divide(2);
     }
 
-    computeBoundingSphere(array) {
+    computeBoundingSphere(array?: number[]) {
 
         // Use position buffer if available
         if (!array && this.attributes.position) array = this.attributes.position.data;

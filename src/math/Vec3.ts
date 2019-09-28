@@ -1,6 +1,10 @@
 import * as Vec3Func from './functions/Vec3Func.js';
+import { Mat4 } from './Mat4.js';
+import { Quat } from './Quat.js';
 
-export class Vec3 extends Array {
+export class Vec3 extends Array<number> {
+    constant: number;
+
     constructor(x = 0, y = x, z = x) {
         super(x, y, z);
         return this;
@@ -75,7 +79,7 @@ export class Vec3 extends Array {
         return Vec3Func.length(this);
     }
 
-    distance(v) {
+    distance(v?: Vec3) {
         if (v) return Vec3Func.distance(this, v);
         else return Vec3Func.length(this);
     }
@@ -83,8 +87,8 @@ export class Vec3 extends Array {
     squaredLen() {
         return this.squaredDistance();
     }
-    
-    squaredDistance(v) {
+
+    squaredDistance(v?: Vec3) {
         if (v) return Vec3Func.squaredDistance(this, v);
         else return Vec3Func.squaredLength(this);
     }
@@ -94,12 +98,12 @@ export class Vec3 extends Array {
         return this;
     }
 
-    cross(va, vb) {
+    cross(va: Vec3, vb: Vec3) {
         Vec3Func.cross(this, va, vb);
         return this;
     }
 
-    scale(v) {
+    scale(v: number) {
         Vec3Func.scale(this, this, v);
         return this;
     }
@@ -109,29 +113,29 @@ export class Vec3 extends Array {
         return this;
     }
 
-    dot(v) {
+    dot(v: Vec3) {
         return Vec3Func.dot(this, v);
     }
 
-    equals(v) {
+    equals(v: Vec3) {
         return Vec3Func.exactEquals(this, v);
     }
 
-    applyMatrix4(mat4) {
+    applyMatrix4(mat4: Mat4) {
         Vec3Func.transformMat4(this, this, mat4);
         return this;
     }
 
-    applyQuaternion(q) {
+    applyQuaternion(q: Quat) {
         Vec3Func.transformQuat(this, this, q);
         return this;
     }
 
-    angle(v) {
+    angle(v: Vec3) {
         return Vec3Func.angle(this, v);
     }
 
-    lerp(v, t) {
+    lerp(v: Vec3, t: number) {
         Vec3Func.lerp(this, this, v, t);
         return this;
     }
@@ -140,21 +144,21 @@ export class Vec3 extends Array {
         return new Vec3(this[0], this[1], this[2]);
     }
 
-    fromArray(a, o = 0) {
+    fromArray(a: number[], o: number = 0) {
 		this[0] = a[o];
 		this[1] = a[o + 1];
 		this[2] = a[o + 2];
 		return this;
     }
 
-	toArray(a = [], o = 0) {
+	toArray(a: number[] = [], o: number = 0) {
 		a[o] = this[0];
 		a[o + 1] = this[1];
 		a[o + 2] = this[2];
 		return a;
 	}
-    
-    transformDirection(mat4) {
+
+    transformDirection(mat4: Mat4) {
         const x = this[0];
         const y = this[1];
         const z = this[2];
@@ -162,7 +166,7 @@ export class Vec3 extends Array {
         this[0] = mat4[0] * x + mat4[4] * y + mat4[8] * z;
         this[1] = mat4[1] * x + mat4[5] * y + mat4[9] * z;
         this[2] = mat4[2] * x + mat4[6] * y + mat4[10] * z;
-        
+
         return this.normalize();
     }
 }

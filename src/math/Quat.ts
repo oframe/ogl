@@ -1,6 +1,8 @@
-import * as QuatFunc from './functions/QuatFunc.js';
+import * as QuatFunc from './functions/QuatFunc';
 
-export class Quat extends Array {
+export class Quat extends Array<number> {
+    onChange: () => void;
+
     constructor(x = 0, y = 0, z = 0, w = 1) {
         super(x, y, z, w);
         this.onChange = () => {};
@@ -140,7 +142,7 @@ export class Quat extends Array {
 		this[3] = a[o + 3];
 		return this;
     }
-    
+
 	toArray(a = [], o = 0) {
 		a[o] = this[0];
 		a[o + 1] = this[1];

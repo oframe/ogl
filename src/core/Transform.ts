@@ -1,23 +1,25 @@
-import {Vec3} from '../math/Vec3.js';
-import {Quat} from '../math/Quat.js';
-import {Mat4} from '../math/Mat4.js';
-import {Euler} from '../math/Euler.js';
+import { Vec3 } from '../math/Vec3';
+import { Quat } from '../math/Quat';
+import { Mat4 } from '../math/Mat4';
+import { Euler } from '../math/Euler';
 
 export class Transform {
+    parent: Transform = null;
+    children: Transform[] = [];
+    visible: boolean = true;
+
+    matrix = new Mat4();
+    worldMatrix = new Mat4();
+    matrixAutoUpdate = true;
+
+    position = new Vec3();
+    quaternion = new Quat();
+    scale = new Vec3(1);
+    rotation = new Euler();
+    up = new Vec3(0, 1, 0);
+
     constructor() {
         this.parent = null;
-        this.children = [];
-        this.visible = true;
-
-        this.matrix = new Mat4();
-        this.worldMatrix = new Mat4();
-        this.matrixAutoUpdate = true;
-
-        this.position = new Vec3();
-        this.quaternion = new Quat();
-        this.scale = new Vec3(1);
-        this.rotation = new Euler();
-        this.up = new Vec3(0, 1, 0);
 
         this.rotation.onChange = () => this.quaternion.fromEuler(this.rotation);
         this.quaternion.onChange = () => this.rotation.fromQuaternion(this.quaternion);
@@ -39,7 +41,7 @@ export class Transform {
         if (notifyChild) child.setParent(null, false);
     }
 
-    updateMatrixWorld(force) {
+    updateMatrixWorld(force?: boolean) {
         if (this.matrixAutoUpdate) this.updateMatrix();
         if (this.worldMatrixNeedsUpdate || force) {
             if (this.parent === null) this.worldMatrix.copy(this.matrix);

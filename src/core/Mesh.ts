@@ -1,18 +1,54 @@
-import {Transform} from './Transform.js';
-import {Mat3} from '../math/Mat3.js';
-import {Mat4} from '../math/Mat4.js';
+import { Transform } from './Transform';
+import { Mat3 } from '../math/Mat3';
+import { Mat4 } from '../math/Mat4';
+import { Geometry } from './Geometry';
+import { Program } from './Program';
+import { Camera } from './Camera';
 
 let ID = 0;
 
+export interface MeshOptions {
+    geometry: Geometry;
+    program: Program;
+    mode: GLenum;
+    frustumCulled: boolean;
+    renderOrder: number;
+}
+
+export interface DrawOptions {
+    camera: Camera;
+}
+
+export interface MeshRenderCallbackOptions {
+    mesh: Mesh;
+    camera: Camera;
+}
+
 export class Mesh extends Transform {
-    constructor(gl, {
+    gl: WebGL2RenderingContext;
+    id: number;
+
+    geometry: Geometry;
+    program: Program;
+    mode: GLenum;
+    frustumCulled: boolean;
+    renderOrder: number;
+
+    modelViewMatrix = new Mat4();
+    normalMatrix = new Mat3();
+
+    onBeforeRender: (options: MeshRenderCallbackOptions) => void;
+    onAfterRender: (options: MeshRenderCallbackOptions) => void;
+
+    constructor(gl: WebGL2RenderingContext, {
         geometry,
         program,
         mode = gl.TRIANGLES,
         frustumCulled = true,
         renderOrder = 0,
-    } = {}) {
-        super(gl);
+    }: Partial<MeshOptions> = {}) {
+        super();
+
         this.gl = gl;
         this.id = ID++;
 
@@ -25,9 +61,6 @@ export class Mesh extends Transform {
 
         // Override sorting to force an order
         this.renderOrder = renderOrder;
-
-        this.modelViewMatrix = new Mat4();
-        this.normalMatrix = new Mat3();
 
         // Add empty matrix uniforms to program if unset
         if (!this.program.uniforms.modelMatrix) {
@@ -44,7 +77,7 @@ export class Mesh extends Transform {
 
     draw({
         camera,
-    } = {}) {
+    }: Partial<DrawOptions> = {}) {
         this.onBeforeRender && this.onBeforeRender({mesh: this, camera});
 
         // Set the matrix uniforms

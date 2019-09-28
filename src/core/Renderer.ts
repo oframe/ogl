@@ -1,4 +1,5 @@
 import {Vec3} from '../math/Vec3.js';
+import { Geometry } from './Geometry.js';
 
 // TODO: Handle context loss https://www.khronos.org/webgl/wiki/HandlingContextLost
 
@@ -12,7 +13,60 @@ import {Vec3} from '../math/Vec3.js';
 
 const tempVec3 = new Vec3();
 
+export type OGLRenderingContext = WebGL2RenderingContext & {
+    renderer?: Renderer;
+    canvas: HTMLCanvasElement; // force HTMLCanvasElement (w/o OffscreenCanvas)
+}
+
+export type RendererState = any;       // TODO: create interface with all options
+export type RendererParams = any;      // TODO: create interface with all options
+export type RendererExtensions = any;  // TODO: create interface with all options
+
+export interface RendererOptions {
+    canvas: HTMLCanvasElement;
+    width: number;
+    height: number;
+    dpr: number;
+    alpha: boolean;
+    depth: boolean;
+    stencil: boolean;
+    antialias: boolean;
+    premultipliedAlpha: boolean;
+    preserveDrawingBuffer: boolean;
+    powerPreference: string; //  'default', ...?
+    autoClear: boolean;
+    webgl: number;
+}
+
 export class Renderer {
+    gl: OGLRenderingContext;
+    isWebgl2: boolean;
+
+    dpr: number;
+    alpha: boolean;
+    color: boolean;
+    depth: boolean;
+    stencil: boolean;
+    premultipliedAlpha: boolean;
+    antialias: boolean;
+    autoClear: boolean;
+
+    width: number;
+    height: number;
+
+    parameters: RendererParams;
+    state: RendererState;
+    extensions: RendererExtensions;
+
+    currentGeometry: string;
+
+    vertexAttribDivisor: Function;
+    drawArraysInstanced: Function;
+    drawElementsInstanced: Function;
+    createVertexArray: Function;
+    bindVertexArray: Function;
+    deleteVertexArray: Function;
+
     constructor({
         canvas = document.createElement('canvas'),
         width = 300,
@@ -27,7 +81,7 @@ export class Renderer {
         powerPreference = 'default',
         autoClear = true,
         webgl = 2,
-    } = {}) {
+    }: Partial<RendererOptions> = {}) {
         const attributes = {alpha, depth, stencil, antialias, premultipliedAlpha, preserveDrawingBuffer, powerPreference};
         this.dpr = dpr;
         this.alpha = alpha;
@@ -38,10 +92,10 @@ export class Renderer {
         this.autoClear = autoClear;
 
         // Attempt WebGL2 unless forced to 1, if not supported fallback to WebGL1
-        if (webgl === 2) this.gl = canvas.getContext('webgl2', attributes);
+        if (webgl === 2) this.gl = canvas.getContext('webgl2', attributes) as OGLRenderingContext;
         this.isWebgl2 = !!this.gl;
         if (!this.gl) {
-            this.gl = canvas.getContext('webgl', attributes) || canvas.getContext('experimental-webgl', attributes);
+            this.gl = (canvas.getContext('webgl', attributes) || canvas.getContext('experimental-webgl', attributes)) as OGLRenderingContext;
         }
 
         // Attach renderer to gl so that all classes have access to internal state functions
@@ -189,10 +243,10 @@ export class Renderer {
         this.gl.bindFramebuffer(target, buffer);
     }
 
-    getExtension(extension, webgl2Func, extFunc) {
+    getExtension(extension: string, webgl2Func?: keyof WebGL2RenderingContext, extFunc?: string) {
 
         // if webgl2 function supported, return func bound to gl context
-        if (webgl2Func && this.gl[webgl2Func]) return this.gl[webgl2Func].bind(this.gl);
+        if (webgl2Func && this.gl[webgl2Func]) return (this.gl[webgl2Func] as Function).bind(this.gl);
 
         // fetch extension once only
         if (!this.extensions[extension]) {

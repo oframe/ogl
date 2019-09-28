@@ -32,7 +32,10 @@
         "url": "https://github.com/oframe/ogl/issues"
     },
     "devDependencies": {
-        "rollup": "^1.20.3"
+        "rollup": "^1.20.3",
+        "rollup-plugin-typescript": "^1.0.1",
+        "tslib": "^1.10.0",
+        "typescript": "^3.6.3"
     },
     "homepage": "https://github.com/oframe/ogl#readme"
 }

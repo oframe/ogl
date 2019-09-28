@@ -1,3 +1,5 @@
+import { OGLRenderingContext } from "./Renderer";
+
 // TODO: upload empty texture if null ? maybe not
 // TODO: upload identity matrix if null ?
 // TODO: sampler Cube
@@ -7,8 +9,50 @@ let ID = 0;
 // cache of typed arrays used to flatten uniform arrays
 const arrayCacheF32 = {};
 
+export interface ProgramOptions {
+    vertex: string;
+    fragment: string;
+    uniforms: {[name: string]: any};
+
+    transparent: boolean;
+    cullFace: GLenum;
+    frontFace : GLenum;
+    depthTest: boolean;
+    depthWrite: boolean;
+    depthFunc: GLenum;
+}
+
+export interface BlendFunc {
+    src?: GLenum;
+    dst?: GLenum;
+    srcAlpha?: number;
+    dstAlpha?: number;
+}
+
+export interface BlendEquation {
+    modeRGB?: number;
+    modeAlpha?: number;
+}
+
 export class Program {
-    constructor(gl, {
+    gl: OGLRenderingContext;
+    id: number;
+    uniforms: { [name: string]: any };
+
+    // Store program state
+    transparent: boolean;
+    cullFace: GLenum;
+    frontFace: GLenum;
+    depthTest: boolean;
+    depthWrite: boolean;
+    depthFunc: GLenum;
+    blendFunc: BlendFunc = {};
+    blendEquation: BlendEquation = {};
+
+    program: WebGLProgram;
+    uniformLocations: Map<any, any>;
+
+    constructor(gl: OGLRenderingContext, {
         vertex,
         fragment,
         uniforms = {},
@@ -19,7 +63,7 @@ export class Program {
         depthTest = true,
         depthWrite = true,
         depthFunc = gl.LESS,
-    } = {}) {
+    }: Partial<ProgramOptions> = {}) {
         this.gl = gl;
         this.uniforms = uniforms;
         this.id = ID++;
@@ -65,7 +109,8 @@ export class Program {
         gl.attachShader(this.program, fragmentShader);
         gl.linkProgram(this.program);
         if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
-            return console.warn(gl.getProgramInfoLog(this.program));
+            console.warn(gl.getProgramInfoLog(this.program));
+            return;
         }
 
         // Remove shader once linked
@@ -81,9 +126,9 @@ export class Program {
 
             // split uniforms' names to separate array and struct declarations
             const split = uniform.name.match(/(\w+)/g);
-            
+
             uniform.uniformName = split[0];
-            
+
             if (split.length === 3) {
                 uniform.isStructArray = true;
                 uniform.structIndex = Number(split[1]);
@@ -96,7 +141,7 @@ export class Program {
 
         // Get active attribute locations
         this.attributeLocations = new Map();
-        const locations = []; 
+        const locations = [];
         const numAttribs = gl.getProgramParameter(this.program, gl.ACTIVE_ATTRIBUTES);
         for (let aIndex = 0; aIndex < numAttribs; aIndex++) {
             const attribute = gl.getActiveAttrib(this.program, aIndex);
@@ -107,7 +152,7 @@ export class Program {
         this.attributeOrder = locations.join('');
     }
 
-    setBlendFunc(src, dst, srcAlpha, dstAlpha) {
+    setBlendFunc(src: GLenum, dst: GLenum, srcAlpha?: number, dstAlpha?: number) {
         this.blendFunc.src = src;
         this.blendFunc.dst = dst;
         this.blendFunc.srcAlpha = srcAlpha;
@@ -177,7 +222,7 @@ export class Program {
 
             if (uniform.value.texture) {
                 textureUnit = textureUnit + 1;
-                
+
                 // Check if texture needs to be updated
                 uniform.value.update(textureUnit);
                 return setUniform(this.gl, activeUniform.type, location, textureUnit);
@@ -191,7 +236,7 @@ export class Program {
                     value.update(textureUnit);
                     textureUnits.push(textureUnit);
                 });
-                
+
                 return setUniform(this.gl, activeUniform.type, location, textureUnits);
             }
 

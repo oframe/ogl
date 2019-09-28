@@ -1,6 +1,6 @@
 import * as Vec4Func from './functions/Vec4Func.js';
 
-export class Vec4 extends Array {
+export class Vec4 extends Array<number> {
     constructor(x = 0, y = x, z = x, w = x) {
         super(x, y, z, w);
         return this;
@@ -54,15 +54,15 @@ export class Vec4 extends Array {
         return this;
     }
 
-    fromArray(a, o = 0) {
+    fromArray(a: number[], o = 0) {
 		this[0] = a[o];
 		this[1] = a[o + 1];
 		this[2] = a[o + 2];
 		this[3] = a[o + 3];
 		return this;
     }
-    
-	toArray(a = [], o = 0) {
+
+	toArray(a: number[] = [], o = 0) {
 		a[o] = this[0];
 		a[o + 1] = this[1];
 		a[o + 2] = this[2];
