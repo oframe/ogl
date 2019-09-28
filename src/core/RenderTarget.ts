@@ -2,8 +2,8 @@
 // TODO: test stencil and depth
 // TODO: destroy
 // TODO: blit on resize?
-import { Texture } from './Texture';
-import { OGLRenderingContext } from './Renderer';
+import { Texture } from './Texture.js';
+import { OGLRenderingContext } from './Renderer.js';
 
 export interface RenderOptions {
     width: number;

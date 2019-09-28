@@ -11,7 +11,7 @@
 // TODO: when would I disableVertexAttribArray ?
 // TODO: add fallback for non vao support (ie)
 
-import {Vec3} from '../math/Vec3.js';
+import { Vec3 } from '../math/Vec3.js';
 import { OGLRenderingContext, RendererState } from './Renderer.js';
 
 const tempVec3 = new Vec3();

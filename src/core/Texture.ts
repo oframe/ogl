@@ -1,5 +1,5 @@
-import { OGLRenderingContext, RendererState } from "./Renderer";
-import { RenderOptions } from "./RenderTarget";
+import { OGLRenderingContext, RendererState } from "./Renderer.js";
+import { RenderOptions } from "./RenderTarget.js";
 
 // TODO: facilitate Compressed Textures
 // TODO: cube map

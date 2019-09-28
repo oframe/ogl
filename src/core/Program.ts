@@ -1,4 +1,4 @@
-import { OGLRenderingContext } from "./Renderer";
+import { OGLRenderingContext } from "./Renderer.js";
 
 // TODO: upload empty texture if null ? maybe not
 // TODO: upload identity matrix if null ?

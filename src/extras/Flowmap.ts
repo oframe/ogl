@@ -1,11 +1,11 @@
-import { RenderTarget } from '../core/RenderTarget';
-import { Geometry } from '../core/Geometry';
-import { Program } from '../core/Program';
-import { Mesh } from '../core/Mesh';
-import { Vec2 } from '../math/Vec2';
-import { OGLRenderingContext } from '../core/Renderer';
-import { Texture } from '../core/Texture';
-import { Color } from '../math/Color';
+import { RenderTarget } from '../core/RenderTarget.js';
+import { Geometry } from '../core/Geometry.js';
+import { Program } from '../core/Program.js';
+import { Mesh } from '../core/Mesh.js';
+import { Vec2 } from '../math/Vec2.js';
+import { OGLRenderingContext } from '../core/Renderer.js';
+import { Texture } from '../core/Texture.js';
+import { Color } from '../math/Color.js';
 
 export interface FlowMapOptions {
     size: number;

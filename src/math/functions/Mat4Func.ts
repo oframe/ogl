@@ -1,4 +1,4 @@
-import { Mat4 } from "../Mat4";
+import { Mat4 } from "../Mat4.js";
 
 const EPSILON = 0.000001;
 

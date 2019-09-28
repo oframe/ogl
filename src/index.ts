@@ -1,2 +1,2 @@
-export * from './Core';
-export * from './Extras';
+export * from './Core.js';
+export * from './Extras.js';

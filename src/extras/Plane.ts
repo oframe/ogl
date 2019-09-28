@@ -1,10 +1,10 @@
-import {Geometry} from '../core/Geometry.js';
+import { Geometry } from '../core/Geometry.js';
 
 export class Plane extends Geometry {
     constructor(gl, {
-        width = 1, 
-        height = 1, 
-        widthSegments = 1, 
+        width = 1,
+        height = 1,
+        widthSegments = 1,
         heightSegments = 1,
         attributes = {},
     } = {}) {
@@ -28,7 +28,7 @@ export class Plane extends Geometry {
             normal: {size: 3, data: normal},
             uv: {size: 2, data: uv},
             index: {data: index},
-        }); 
+        });
 
         super(gl, attributes);
     }

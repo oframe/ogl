@@ -1,7 +1,7 @@
-import { Vec3 } from '../math/Vec3';
-import { Quat } from '../math/Quat';
-import { Mat4 } from '../math/Mat4';
-import { Euler } from '../math/Euler';
+import { Vec3 } from '../math/Vec3.js';
+import { Quat } from '../math/Quat.js';
+import { Mat4 } from '../math/Mat4.js';
+import { Euler } from '../math/Euler.js';
 
 export class Transform {
     parent: Transform = null;

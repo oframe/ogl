@@ -1,12 +1,12 @@
-import { Mesh } from '../core/Mesh';
-import { Transform } from '../core/Transform';
-import { Mat4 } from '../math/Mat4';
-import { Texture } from '../core/Texture';
-import { Animation } from './Animation';
-import { OGLRenderingContext } from '../core/Renderer';
-import { Camera } from '../core/Camera';
-import { Geometry } from '../core/Geometry';
-import { Program } from '../core/Program';
+import { Mesh } from '../core/Mesh.js';
+import { Transform } from '../core/Transform.js';
+import { Mat4 } from '../math/Mat4.js';
+import { Texture } from '../core/Texture.js';
+import { Animation } from './Animation.js';
+import { OGLRenderingContext } from '../core/Renderer.js';
+import { Camera } from '../core/Camera.js';
+import { Geometry } from '../core/Geometry.js';
+import { Program } from '../core/Program.js';
 
 const tempMat4 = new Mat4();
 

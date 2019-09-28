@@ -2,9 +2,9 @@
 // TODO: abstract event handlers so can be fed from other sources
 // TODO: make scroll zoom more accurate than just >/< zero
 
-import { Vec3 } from '../math/Vec3';
-import { Vec2 } from '../math/Vec2';
-import { Transform } from '../core/Transform';
+import { Vec3 } from '../math/Vec3.js';
+import { Vec2 } from '../math/Vec2.js';
+import { Transform } from '../core/Transform.js';
 
 const STATE = {NONE: -1, ROTATE: 0, DOLLY: 1, PAN: 2, DOLLY_PAN: 3};
 const tempVec3 = new Vec3();

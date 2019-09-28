@@ -1,9 +1,9 @@
-import { Transform } from './Transform';
-import { Mat3 } from '../math/Mat3';
-import { Mat4 } from '../math/Mat4';
-import { Geometry } from './Geometry';
-import { Program } from './Program';
-import { Camera } from './Camera';
+import { Transform } from './Transform.js';
+import { Mat3 } from '../math/Mat3.js';
+import { Mat4 } from '../math/Mat4.js';
+import { Geometry } from './Geometry.js';
+import { Program } from './Program.js';
+import { Camera } from './Camera.js';
 
 let ID = 0;
 

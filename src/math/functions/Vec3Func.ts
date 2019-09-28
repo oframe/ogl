@@ -1,7 +1,7 @@
-import { Vec3 } from "../Vec3";
-import { Mat3 } from "../Mat3";
-import { Quat } from "../Quat";
-import { Mat4 } from "../Mat4";
+import { Vec3 } from "../Vec3.js";
+import { Mat3 } from "../Mat3.js";
+import { Quat } from "../Quat.js";
+import { Mat4 } from "../Mat4.js";
 
 const EPSILON = 0.000001;
 
@@ -25,7 +25,7 @@ export function length(a: number[] | Vec3) {
  * @param {vec3} a the source vector
  * @returns {vec3} out
  */
-export function copy(out: Vec3, a: Vec3) {
+export function copy(out: number[] | Vec3, a: number[] | Vec3) {
     out[0] = a[0];
     out[1] = a[1];
     out[2] = a[2];
@@ -309,7 +309,7 @@ export function normalize(out: number[] | Vec3, a: number[] | Vec3) {
  * @param {vec3} b the second operand
  * @returns {Number} dot product of a and b
  */
-export function dot(a: Vec3, b: Vec3) {
+export function dot(a: number[] | Vec3, b: number[] | Vec3) {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
@@ -585,8 +585,8 @@ export function rotateZ(out: Vec3, a: Vec3, b: Vec3, c: number) {
  * @returns {Number} The angle in radians
  */
 export const angle = (function() {
-    const tempA = new Vec3(0, 0, 0);
-    const tempB = new Vec3(0, 0, 0);
+    const tempA = [0, 0, 0];
+    const tempB = [0, 0, 0];
 
     return function(a: Vec3, b: Vec3) {
         copy(tempA, a);

@@ -1,4 +1,4 @@
-import * as Mat4Func from './functions/Mat4Func';
+import * as Mat4Func from './functions/Mat4Func.js';
 
 export class Mat4 extends Array<number> {
     constructor(

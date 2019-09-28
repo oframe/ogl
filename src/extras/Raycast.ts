@@ -1,10 +1,10 @@
 // TODO: test orthographic
 // TODO: add barycentric ?
 
-import { Vec3 } from '../math/Vec3';
-import { Mat4 } from '../math/Mat4';
-import { OGLRenderingContext } from '../core/Renderer';
-import { Camera } from '../core/Camera';
+import { Vec3 } from '../math/Vec3.js';
+import { Mat4 } from '../math/Mat4.js';
+import { OGLRenderingContext } from '../core/Renderer.js';
+import { Camera } from '../core/Camera.js';
 
 const tempVec3a = new Vec3();
 const tempVec3b = new Vec3();

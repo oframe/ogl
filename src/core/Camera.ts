@@ -1,7 +1,7 @@
-import { Transform } from './Transform';
-import { Mat4 } from '../math/Mat4';
-import { Vec3 } from '../math/Vec3';
-import { Mesh } from './Mesh';
+import { Transform } from './Transform.js';
+import { Mat4 } from '../math/Mat4.js';
+import { Vec3 } from '../math/Vec3.js';
+import { Mesh } from './Mesh.js';
 
 const tempMat4 = new Mat4();
 const tempVec3a = new Vec3();

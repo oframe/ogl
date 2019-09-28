@@ -1,4 +1,4 @@
-import { Vec2 } from "../Vec2";
+import { Vec2 } from "../Vec2.js";
 
 const EPSILON = 0.000001;
 
