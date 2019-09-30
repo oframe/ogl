@@ -11,6 +11,12 @@
     <a href="https://github.com/oframe/ogl/blob/master/LICENSE">
         <img src="https://img.shields.io/npm/l/ogl.svg" alt="license" />
     </a>
+    <a href="https://david-dm.org/oframe/ogl">
+        <img src="https://img.shields.io/david/oframe/ogl.svg" alt="dependencies" />
+    </a>
+    <a href="https://bundlephobia.com/result?p=ogl">
+        <img src="https://badgen.net/bundlephobia/minzip/ogl" alt="size" />
+    </a>
 </p>
 
 <p align="center"><b>Minimal WebGL framework.</b></p>
@@ -45,45 +51,58 @@ npm i ogl
 
 ## Weight
 
-Even though the source is completely modular, as a guide, below are the complete component download sizes.
+Even though the source is modular, as a guide, below are the complete component download sizes.
 
 Component | Size (gzipped)
 ------------ | -------------:
 Core | 6kb
 Math | 7kb
-Extras | 7kb
-Total | 20kb
+Extras | 8kb
+Total | 21kb
 
-It's worth noting that it's very rare that one would use all, or even many, of the extras. For simple uses, not even all of the Core files would be used, so with tree-shaking (recommend Rollup), one can expect the final size to be much lighter than the values above.
+With tree-shaking applied in a build step, one can expect the final size to be much lighter than the values above.
 
 ## Usage
 
-Importing can be done from two points of access for simplicity. These are `Core.js` and `Extras.js` - which relate to the component structure detailed below. *Note: this may cause some issues with certain bundlers when tree-shaking.*
-If you are using npm modules and a dev build pipeline, then importing is done directly from the `index.js` for all components, so this can be ignored.
+Importing can be done from one single entry point.
 
 ```js
+import {Renderer, Camera, Program, Mesh, Box} from './src/index.js';
+```
 
-import {Renderer, Camera, Transform, Program, Mesh} from './Core.js';
-import {Box} from './Extras.js';
+However, in the examples, two entry points are used for clarity. These are `Core.js` and `Extras.js` - which relate to the component structure outlined below.
+
+```js
+import {Renderer, Camera, Program, Mesh} from './src/Core.js';
+import {Box} from './src/Extras.js';
+```
+
+For CodeSandboxes or CodePens, jsdelivr can be used to provide CDN access to the npm deployment.
+
+```js
+import {Renderer, Camera, Program, Mesh, Box} from 'https://cdn.jsdelivr.net/npm/ogl/dist/ogl.mjs';
+
 ```
 
 Below renders a spinning white cube.
 
 ```js
-
 {
-    const renderer = new Renderer({
-        width: window.innerWidth,
-        height: window.innerHeight,
-    });
+    const renderer = new Renderer();
     const gl = renderer.gl;
     document.body.appendChild(gl.canvas);
 
-    const camera = new Camera(gl, {
-        fov: 35,
-        aspect: gl.canvas.width / gl.canvas.height,
-    });
+    const camera = new Camera(gl);
     camera.position.z = 5;
+
+    function resize() {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.perspective({
+            aspect: gl.canvas.width / gl.canvas.height,
+        });
+    }
+    window.addEventListener('resize', resize, false);
+    resize();
 
     const scene = new Transform();
 
@@ -121,10 +140,10 @@ Below renders a spinning white cube.
 }
 ```
 
-For a simpler use, such as a full-screen shader, more of the core can be omitted as a scene graph and projection matrices are unnecessary. 
+For a simpler use, such as a full-screen shader, more of the core can be omitted as a scene graph and projection matrices are not necessary. 
 
 ```js
-import {Renderer, Geometry, Program, Mesh} from './Core.js';
+import {Renderer, Geometry, Program, Mesh} from './src/index.js';
 
 {
     const renderer = new Renderer({
@@ -187,7 +206,7 @@ import {Renderer, Geometry, Program, Mesh} from './Core.js';
 
 In an attempt to keep things light and modular, the framework is split up into three components: **Math**, **Core**, and **Extras**.
 
-The **Math** component is based on [gl-matrix](http://glmatrix.net/), however also includes classes that extend Array for each of the module types. This technique was shown to me by [@damienmortini](https://twitter.com/damienmortini), and it creates a very efficient, yet still highly practical way of dealing with Math. 7kb when gzipped, it has no dependencies and can be used separately.
+The **Math** component is an extension of [gl-matrix](http://glmatrix.net/), providing instancable classes that extend Array for each of the module types. 7kb when gzipped, it has no dependencies and can be used separately.
 
 The **Core** is made up of the following:
  - Geometry.js
