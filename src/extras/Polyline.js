@@ -55,6 +55,7 @@ export class Polyline {
         if (!uniforms.uDPR) this.dpr = uniforms.uDPR = {value: 1};
         if (!uniforms.uThickness) this.thickness = uniforms.uThickness = {value: 1};
         if (!uniforms.uColor) this.color = uniforms.uColor = {value: new Color('#000')};
+        if (!uniforms.uMiter) this.miter = uniforms.uMiter = {value: 1};
 
         // Set size uniforms' values
         this.resize();
@@ -124,6 +125,7 @@ const defaultVertex = `
     uniform vec2 uResolution;
     uniform float uDPR;
     uniform float uThickness;
+    uniform float uMiter;
 
     varying vec2 vUv;
 
@@ -143,7 +145,7 @@ const defaultVertex = `
         vec2 dir = normalize(dir1 + dir2);
     
         vec2 normal = vec2(-dir.y, dir.x);
-        normal /= max(0.3, dot(normal, vec2(-dir1.y, dir1.x)));
+        normal /= mix(1.0, max(0.3, dot(normal, vec2(-dir1.y, dir1.x))), uMiter);
         normal /= aspect;
 
         float pixelWidthRatio = 1.0 / (uResolution.y / uDPR);
