@@ -28,18 +28,6 @@ export class Mesh extends Transform {
 
         this.modelViewMatrix = new Mat4();
         this.normalMatrix = new Mat3();
-
-        // Add empty matrix uniforms to program if unset
-        if (!this.program.uniforms.modelMatrix) {
-            Object.assign(this.program.uniforms, {
-                modelMatrix: {value: null},
-                viewMatrix: {value: null},
-                modelViewMatrix: {value: null},
-                normalMatrix: {value: null},
-                projectionMatrix: {value: null},
-                cameraPosition: {value: null},
-            });
-        }
     }
 
     draw({
@@ -49,6 +37,19 @@ export class Mesh extends Transform {
 
         // Set the matrix uniforms
         if (camera) {
+
+            // Add empty matrix uniforms to program if unset
+            if (!this.program.uniforms.modelMatrix) {
+                Object.assign(this.program.uniforms, {
+                    modelMatrix: {value: null},
+                    viewMatrix: {value: null},
+                    modelViewMatrix: {value: null},
+                    normalMatrix: {value: null},
+                    projectionMatrix: {value: null},
+                    cameraPosition: {value: null},
+                });
+            }
+
             this.program.uniforms.projectionMatrix.value = camera.projectionMatrix;
             this.program.uniforms.cameraPosition.value = camera.position;
             this.program.uniforms.viewMatrix.value = camera.viewMatrix;
