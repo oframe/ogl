@@ -221,7 +221,7 @@ function setUniform(gl, type, location, value) {
             if (arraysEqual(setValue, value)) return;
 
             // Update cached array values
-            setValue.set(value);
+            setValue.set ? setValue.set(value) : setArray(setValue, value);
             gl.renderer.state.uniformLocations.set(location, setValue);
         }
     } else {
@@ -275,6 +275,12 @@ function arraysEqual(a, b) {
 		if (a[i] !== b[i]) return false;
 	}
 	return true;
+}
+
+function setArray(a, b) {
+    for (let i = 0, l = a.length; i < l; i ++) {
+		a[i] = b[i];
+	}
 }
 
 let warnCount = 0;
