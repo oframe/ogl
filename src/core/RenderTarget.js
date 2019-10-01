@@ -26,6 +26,7 @@ export class RenderTarget {
         this.gl = gl;
         this.width = width;
         this.height = height;
+        this.depth = depth;
         this.buffer = this.gl.createFramebuffer();
         this.target = target;
         this.gl.bindFramebuffer(this.target, this.buffer);
