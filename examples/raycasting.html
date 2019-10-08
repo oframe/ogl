@@ -100,9 +100,9 @@
             function updateHitUniform({mesh}) {
                 program.uniforms.uHit.value = mesh.isHit ? 1 : 0;
             }
-            plane.onBeforeRender = updateHitUniform;
-            sphere.onBeforeRender = updateHitUniform;
-            cube.onBeforeRender = updateHitUniform;
+            plane.onBeforeRender(updateHitUniform);
+            sphere.onBeforeRender(updateHitUniform);
+            cube.onBeforeRender(updateHitUniform);
 
             requestAnimationFrame(update);
             function update() {
