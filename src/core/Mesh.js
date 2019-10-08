@@ -28,12 +28,25 @@ export class Mesh extends Transform {
 
         this.modelViewMatrix = new Mat4();
         this.normalMatrix = new Mat3();
+
+        this.beforeRenderCallbacks = [];
+        this.afterRenderCallbacks = [];
+    }
+
+    onBeforeRender(f) {
+        this.beforeRenderCallbacks.push(f);
+        return this;
+    }
+
+    onAfterRender(f) {
+        this.afterRenderCallbacks.push(f);
+        return this;
     }
 
     draw({
         camera,
     } = {}) {
-        this.onBeforeRender && this.onBeforeRender({mesh: this, camera});
+        this.beforeRenderCallbacks.forEach(f => f && f({mesh: this, camera}));
 
         // Set the matrix uniforms
         if (camera) {
@@ -68,6 +81,6 @@ export class Mesh extends Transform {
         this.program.use({flipFaces});
         this.geometry.draw({mode: this.mode, program: this.program});
 
-        this.onAfterRender && this.onAfterRender({mesh: this, camera});
+        this.afterRenderCallbacks.forEach(f => f && f({mesh: this, camera}));
     }
 }
