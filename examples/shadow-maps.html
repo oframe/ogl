@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <title>OGL • Shadow maps</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info">Shadow maps. Model by Google Poly</div>
+    <script type="module">
+        import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, RenderTarget} from '../src/Core.js';
+        import {Orbit, Plane} from '../src/Extras.js';
+        
+        const vertexDepth = `
+            attribute vec3 position;
+            attribute vec2 uv;
+
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+
+            void main() {
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragmentDepth = `
+            precision highp float;
+
+            vec4 packRGBA (float v) {
+                vec4 pack = fract(vec4(1.0, 255.0, 65025.0, 16581375.0) * v);
+                pack -= pack.yzww * vec2(1.0 / 255.0, 0.0).xxxy;
+                return pack;
+            }
+
+            void main() {
+                gl_FragColor = packRGBA(gl_FragCoord.z);
+            }
+        `;
+
+        const vertexColor = `
+            attribute vec3 position;
+            attribute vec2 uv;
+
+            uniform mat4 modelMatrix;
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+
+            uniform mat4 shadowViewMatrix;
+            uniform mat4 shadowProjectionMatrix;
+
+            varying vec2 vUv;
+            varying vec4 vLightNDC;
+
+            // Matrix to shift range from -1->1 to 0->1
+            const mat4 depthScaleMatrix = mat4(
+                0.5, 0, 0, 0, 
+                0, 0.5, 0, 0, 
+                0, 0, 0.5, 0, 
+                0.5, 0.5, 0.5, 1
+            );
+
+            void main() {
+                vUv = uv;
+                
+                // Calculate the NDC (normalized device coords) for the light to compare against shadowmap
+                vLightNDC = depthScaleMatrix * shadowProjectionMatrix * shadowViewMatrix * modelMatrix * vec4(position, 1.0);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragmentColor = `
+            precision highp float;
+
+            uniform sampler2D tMap;
+            uniform sampler2D tShadow;
+
+            varying vec2 vUv;
+            varying vec4 vLightNDC;
+
+            float unpackRGBA (vec4 v) {
+                return dot(v, 1.0 / vec4(1.0, 255.0, 65025.0, 16581375.0));
+            }
+
+            void main() {
+                vec3 tex = texture2D(tMap, vUv).rgb;
+
+                vec3 lightPos = vLightNDC.xyz / vLightNDC.w;
+
+                float bias = 0.0001;
+                float depth = lightPos.z - bias;
+                float occluder = unpackRGBA(texture2D(tShadow, lightPos.xy));
+
+                // Compare actual depth from light to the occluded depth rendered in the depth map
+                // If the occluded depth is smaller, we must be in shadow
+                float shadow = mix(0.2, 1.0, step(depth, occluder));
+
+                gl_FragColor.rgb = tex * shadow;
+                gl_FragColor.a = 1.0;
+            }
+        `;
+
+        {
+            const renderer = new Renderer({dpr: 2});
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+            gl.clearColor(1, 1, 1, 1);
+
+            const camera = new Camera(gl, {fov: 35});
+            camera.position.set(5, 4, 10);
+
+            const controls = new Orbit(camera);
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+            const scene = new Transform();
+
+            // Swap between the 'fov' and 'left/right/etc' lines to switch from an orthographic to perspective camera,
+            // and hence, directional light to spotlight projection.
+            const light = new Camera(gl, {
+                left: -3, right: 3, bottom: -3, top: 3,
+                // fov: 30,
+
+                near: 1,
+                far: 20,
+            });
+            light.position.set(3, 10, 3);
+            light.lookAt([0, 0, 0]);
+
+            // Render target to render the shadow depth map from the view of the light
+            const depthTarget = new RenderTarget(gl, {
+                width: 1024, 
+                height: 1024,
+            });
+
+            // Override program to render the depth to the above map
+            const programDepth = new Program(gl, {
+                vertex: vertexDepth,
+                fragment: fragmentDepth,
+                cullFace: null,
+            });
+
+            addAirplane();
+            addGround();
+
+            let airplane;
+            async function addAirplane() {
+                const texture = new Texture(gl);
+                const img = new Image();
+                img.onload = () => texture.image = img;
+                img.src = 'assets/airplane.jpg';
+
+                const program = new Program(gl, {
+                    vertex: vertexColor,
+                    fragment: fragmentColor,
+                    uniforms: {
+                        tMap: {value: texture},
+                    },
+                    cullFace: null,
+                });
+
+                const data = await (await fetch(`assets/airplane.json`)).json();
+
+                const geometry = new Geometry(gl, {
+                    position: {size: 3, data: new Float32Array(data.position)},
+                    uv: {size: 2, data: new Float32Array(data.uv)},
+                    normal: {size: 3, data: new Float32Array(data.normal)},
+                });
+
+                airplane = new Mesh(gl, {geometry, program});
+                airplane.setParent(scene);
+            }
+
+            function addGround() {
+                const texture = new Texture(gl);
+                const img = new Image();
+                img.onload = () => texture.image = img;
+                img.src = 'assets/water.jpg';
+
+                const program = new Program(gl, {
+                    vertex: vertexColor,
+                    fragment: fragmentColor,
+                    uniforms: {
+                        tMap: {value: texture},
+                    },
+                    cullFace: null,
+                });
+
+                const geometry = new Plane(gl);
+
+                const mesh = new Mesh(gl, {geometry, program});
+                mesh.rotation.x = Math.PI / 2;
+                mesh.scale.set(6);
+                mesh.position.y = -3;
+                mesh.setParent(scene);
+            }
+
+            requestAnimationFrame(update);
+            function update(t) {
+                requestAnimationFrame(update);
+                controls.update();
+
+                // A bit of plane animation
+                if (airplane) {
+                    airplane.position.z = Math.sin(t * 0.001);
+                    airplane.rotation.x = Math.sin(t * 0.001 + 2) * 0.1;
+                    airplane.rotation.y = Math.sin(t * 0.001 - 4) * -0.1;
+                }
+
+                // For depth render, replace program with depth override.
+                scene.traverse(node => {
+                    if (!node.draw) return;
+                    node.programColor = node.program;
+                    node.program = programDepth;
+                });
+
+                // Render the depth shadow map using the light as the camera
+                renderer.render({scene, camera: light, target: depthTarget});
+
+                // Then switch the program back to the normal one
+                scene.traverse(node => {
+                    if (!node.draw) return;
+                    node.program = node.programColor;
+
+                    // Add shadow uniforms needed to each mesh once they're ready
+                    if (!node.program.uniforms.shadowViewMatrix) {
+                        Object.assign(node.program.uniforms, {
+                            shadowProjectionMatrix: {value: light.projectionMatrix},
+                            shadowViewMatrix: {value: light.viewMatrix},
+                            tShadow: {value: depthTarget.texture},
+                        });
+                    }
+                });
+                
+                // Render the scene (with shadows) to the canvas
+                renderer.render({scene, camera});
+            }
+        }
+    </script>
+</body>
+</html>

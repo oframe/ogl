@@ -292,7 +292,7 @@ For more advanced techniques, extra classes will be developed and contained with
  - [x] Post FXAA (Fast Approximate Anti-Aliasing)
  - [ ] MRT (Multiple Render Targets)
  - [ ] Reflections
- - [ ] Shadow maps
+ - [x] Shadow maps
  - [ ] Distortion (refraction)
  - [x] Post Fluid Distortion
  - [ ] Effects - DOF (Depth Of Field) + light rays + tone mapping
