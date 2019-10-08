@@ -12,34 +12,8 @@
 <body>
     <div class="Info">Shadow maps. Model by Google Poly</div>
     <script type="module">
-        import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, RenderTarget} from '../src/Core.js';
-        import {Orbit, Plane} from '../src/Extras.js';
-        
-        const vertexDepth = `
-            attribute vec3 position;
-            attribute vec2 uv;
-
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
-
-            void main() {
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
-
-        const fragmentDepth = `
-            precision highp float;
-
-            vec4 packRGBA (float v) {
-                vec4 pack = fract(vec4(1.0, 255.0, 65025.0, 16581375.0) * v);
-                pack -= pack.yzww * vec2(1.0 / 255.0, 0.0).xxxy;
-                return pack;
-            }
-
-            void main() {
-                gl_FragColor = packRGBA(gl_FragCoord.z);
-            }
-        `;
+        import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh} from '../src/Core.js';
+        import {Orbit, Plane, Shadow} from '../src/Extras.js';
 
         const vertexColor = `
             attribute vec3 position;
@@ -135,18 +109,8 @@
             light.position.set(3, 10, 3);
             light.lookAt([0, 0, 0]);
 
-            // Render target to render the shadow depth map from the view of the light
-            const depthTarget = new RenderTarget(gl, {
-                width: 1024, 
-                height: 1024,
-            });
-
-            // Override program to render the depth to the above map
-            const programDepth = new Program(gl, {
-                vertex: vertexDepth,
-                fragment: fragmentDepth,
-                cullFace: null,
-            });
+            // Create shadow instance attached to light camera
+            const shadow = new Shadow(gl, {light});
 
             addAirplane();
             addGround();
@@ -175,8 +139,13 @@
                     normal: {size: 3, data: new Float32Array(data.normal)},
                 });
 
-                airplane = new Mesh(gl, {geometry, program});
-                airplane.setParent(scene);
+                const mesh = new Mesh(gl, {geometry, program});
+                mesh.setParent(scene);
+                
+                // Use the 'add' method to attach the mesh to the shadow map
+                shadow.add({mesh});
+
+                airplane = mesh;
             }
 
             function addGround() {
@@ -197,10 +166,14 @@
                 const geometry = new Plane(gl);
 
                 const mesh = new Mesh(gl, {geometry, program});
+                mesh.setParent(scene);
+
+                // Use the 'add' method to attach the mesh to the shadow map
+                shadow.add({mesh});
+
                 mesh.rotation.x = Math.PI / 2;
                 mesh.scale.set(6);
                 mesh.position.y = -3;
-                mesh.setParent(scene);
             }
 
             requestAnimationFrame(update);
@@ -215,30 +188,8 @@
                     airplane.rotation.y = Math.sin(t * 0.001 - 4) * -0.1;
                 }
 
-                // For depth render, replace program with depth override.
-                scene.traverse(node => {
-                    if (!node.draw) return;
-                    node.programColor = node.program;
-                    node.program = programDepth;
-                });
-
-                // Render the depth shadow map using the light as the camera
-                renderer.render({scene, camera: light, target: depthTarget});
-
-                // Then switch the program back to the normal one
-                scene.traverse(node => {
-                    if (!node.draw) return;
-                    node.program = node.programColor;
-
-                    // Add shadow uniforms needed to each mesh once they're ready
-                    if (!node.program.uniforms.shadowViewMatrix) {
-                        Object.assign(node.program.uniforms, {
-                            shadowProjectionMatrix: {value: light.projectionMatrix},
-                            shadowViewMatrix: {value: light.viewMatrix},
-                            tShadow: {value: depthTarget.texture},
-                        });
-                    }
-                });
+                // Render cast meshes to shadow map
+                shadow.render({scene});
                 
                 // Render the scene (with shadows) to the canvas
                 renderer.render({scene, camera});

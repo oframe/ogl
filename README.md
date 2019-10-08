@@ -236,6 +236,7 @@ Below is an **Extras** wish-list, and is still a work-in-progress as examples ar
  - [x] Flowmap.js
  - [x] GPGPU.js
  - [x] Polyline.js
+ - [x] Shadow.js
 
 ## Examples wishlist
 
