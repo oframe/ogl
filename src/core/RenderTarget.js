@@ -52,14 +52,12 @@ export class RenderTarget {
         // note depth textures break stencil - so can't use together
         if (depthTexture && (this.gl.renderer.isWebgl2 || this.gl.renderer.getExtension('WEBGL_depth_texture'))) {
             this.depthTexture = new Texture(gl, {
-                width, height, wrapS, wrapT,
+                width, height,
                 minFilter: this.gl.NEAREST,
                 magFilter: this.gl.NEAREST,
-                flipY: false,
                 format: this.gl.DEPTH_COMPONENT,
-                internalFormat: gl.renderer.isWebgl2 ? this.gl.DEPTH_COMPONENT24 : this.gl.DEPTH_COMPONENT,
+                internalFormat: gl.renderer.isWebgl2 ? this.gl.DEPTH_COMPONENT16 : this.gl.DEPTH_COMPONENT,
                 type: this.gl.UNSIGNED_INT,
-                generateMipmaps: false,
             });
             this.depthTexture.update();
             this.gl.framebufferTexture2D(this.target, this.gl.DEPTH_ATTACHMENT, this.gl.TEXTURE_2D, this.depthTexture.texture, 0 /* level */);
