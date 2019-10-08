@@ -90,7 +90,7 @@
 
                 vec3 lightPos = vLightNDC.xyz / vLightNDC.w;
 
-                float bias = 0.0001;
+                float bias = 0.001;
                 float depth = lightPos.z - bias;
                 float occluder = unpackRGBA(texture2D(tShadow, lightPos.xy));
 
