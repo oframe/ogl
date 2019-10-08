@@ -317,7 +317,7 @@ export class Renderer {
         if (clear || (this.autoClear && clear !== false)) {
 
             // Ensure depth buffer writing is enabled so it can be cleared
-            if (this.depth && (!target || !target.depth)) {
+            if (this.depth && (!target || target.depth)) {
                 this.enable(this.gl.DEPTH_TEST);
                 this.setDepthMask(true);
             }
