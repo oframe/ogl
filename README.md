@@ -279,7 +279,7 @@ For more advanced techniques, extra classes will be developed and contained with
  - [x] Textures
  - [x] Skydome
  - [x] Normal Maps
- - [ ] Flat Shading
+ - [x] Flat Shading Matcap
  - [ ] Wireframe Shader
  - [ ] SDF Alpha test/clip (Signed Distance Fields)
  - [x] MSDF Text Glyphs (Multichannel Signed Distance Fields)
