@@ -51,6 +51,7 @@ export class Euler extends Array {
         this[0] = v[0];
         this[1] = v[1];
         this[2] = v[2];
+        this.onChange();
         return this;
     }
 
