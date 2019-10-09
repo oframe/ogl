@@ -260,7 +260,6 @@ For more advanced techniques, extra classes will be developed and contained with
  - [x] Particles
  - [x] Instancing
  - [ ] Particle Depth Sort
- - [ ] Frustum culling
  - [ ] LODs (Level Of Detail)
  - [x] Polylines
  - [ ] Load GLTF (Graphics Language Transmission Format)
@@ -268,7 +267,7 @@ For more advanced techniques, extra classes will be developed and contained with
 ### Scene
  - [x] Scene Graph hierarchy
  - [x] Sort Transparency
- - [ ] Load Hierarchy Animation
+ - [x] Frustum culling
 
 ### Interaction
  - [x] Orbit controls
@@ -302,6 +301,7 @@ For more advanced techniques, extra classes will be developed and contained with
 ### Animation
  - [x] Skinning
  - [ ] Blendshapes
+ - [ ] Load Hierarchy Animation
 
 ### Stencil
  - [ ] Stencil Shadows and Mirror
