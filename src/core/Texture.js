@@ -1,5 +1,4 @@
 // TODO: facilitate Compressed Textures
-// TODO: cube map
 // TODO: delete texture
 // TODO: should I support anisotropy? Maybe a way to extend the update easily
 // TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
@@ -28,7 +27,7 @@ export class Texture {
         magFilter = gl.LINEAR,
         premultiplyAlpha = false,
         unpackAlignment = 4,
-        flipY = true,
+        flipY = target == gl.TEXTURE_2D ? true : false,
         level = 0,
         width, // used for RenderTargets or Data Textures
         height = width,
@@ -127,39 +126,20 @@ export class Texture {
         }
 
         if (this.image) {
-
             if (this.image.width) {
                 this.width = this.image.width;
                 this.height = this.image.height;
             }
-
-            // TODO: all sides if cubemap
-            // gl.TEXTURE_CUBE_MAP_POSITIVE_X
             
-            // TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
-            if (this.gl.renderer.isWebgl2 || ArrayBuffer.isView(this.image)) {
-                this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0 /* border */, this.format, this.type, this.image);
+            if (this.target === this.gl.TEXTURE_CUBE_MAP) {
+                for (let i = 0; i < 6; i++) {
+                    this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, this.level, this.internalFormat, this.format, this.type, this.image[i]);
+                }
+            } else if (ArrayBuffer.isView(this.image)) {
+                this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, this.image);
             } else {
                 this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image);
             }
-
-            // TODO: support everything
-            // WebGL1:
-            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, ArrayBufferView? pixels);
-            // gl.texImage2D(target, level, internalformat, format, type, ImageData? pixels);
-            // gl.texImage2D(target, level, internalformat, format, type, HTMLImageElement? pixels);
-            // gl.texImage2D(target, level, internalformat, format, type, HTMLCanvasElement? pixels);
-            // gl.texImage2D(target, level, internalformat, format, type, HTMLVideoElement? pixels);
-            // gl.texImage2D(target, level, internalformat, format, type, ImageBitmap? pixels);
-
-            // WebGL2:
-            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, GLintptr offset);
-            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, HTMLCanvasElement source);
-            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, HTMLImageElement source);
-            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, HTMLVideoElement source);
-            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, ImageBitmap source);
-            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, ImageData source);
-            // gl.texImage2D(target, level, internalformat, width, height, border, format, type, ArrayBufferView srcData, srcOffset);
 
             if (this.generateMipmaps) {
 
@@ -173,8 +153,13 @@ export class Texture {
                 }
             }
         } else {
+            if (this.target === this.gl.TEXTURE_CUBE_MAP) {
 
-            if (this.width) {
+                // Upload empty pixel for each side while no image to avoid errors while image or video loading
+                for (let i = 0; i < 6; i++) {
+                    this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
+                }
+            } else if (this.width) {
 
                 // image intentionally left null for RenderTarget
                 this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, null);
@@ -183,7 +168,6 @@ export class Texture {
                 // Upload empty pixel if no image to avoid errors while image or video loading
                 this.gl.texImage2D(this.target, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
             }
-
         }
         this.store.image = this.image;
 
