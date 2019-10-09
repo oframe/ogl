@@ -85,7 +85,10 @@
 
             const scene = new Transform();
 
-            const geometry = new Plane(gl, 1, 1, 10);
+            const geometry = new Plane(gl, {
+                widthSegments: 10,
+                heightSegments: 10,
+            });
 
             const texture = new Texture(gl);
             const img = new Image();
@@ -97,7 +100,7 @@
                 fragment,
                 uniforms: {
                     tMap: {value: texture},
-                    uColor: {value: new Color('#3e9873')},
+                    uColor: {value: new Color('#ffc219')},
                 },
                 transparent: true,
                 cullFace: null,
@@ -105,7 +108,7 @@
 
             const meshes = [];
 
-            for (let i = 0; i < 20; i++) {
+            for (let i = 0; i < 50; i++) {
                 const mesh = new Mesh(gl, {geometry, program});
                 mesh.position.set(
                     (Math.random() - 0.5) * 3,
@@ -117,8 +120,8 @@
                     (Math.random() - 0.5) * 6.28,
                     (Math.random() - 0.5) * 6.28
                 );
-                mesh.scale.set(Math.random() * 0.5 + 0.5);
-                mesh.speed = Math.random() + 0.5;
+                mesh.scale.set(Math.random() * 0.5 + 0.2);
+                mesh.speed = Math.random() * 1.5 + 0.2;
                 mesh.setParent(scene);
                 meshes.push(mesh);
             }
