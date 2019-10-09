@@ -19,7 +19,6 @@ export class Cylinder extends Geometry {
         const tLength = thetaLength;
 
         const numCaps = openEnded ? 0 : radiusBottom && radiusTop ? 2 : 1;
-        console.log(numCaps);
         const num = (rSegs + 1) * (hSegs + 1 + numCaps) + numCaps;
         const numIndices = rSegs * hSegs * 6 + numCaps * rSegs * 3;
 
