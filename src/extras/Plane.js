@@ -55,7 +55,7 @@ export class Plane extends Geometry {
                 normal[i * 3 + v] = 0;
                 normal[i * 3 + w] = depth >= 0 ? 1 : -1;
 
-                uv[i * 2]     = ix / wSegs;
+                uv[i * 2] = ix / wSegs;
                 uv[i * 2 + 1] = 1 - iy / hSegs;
 
                 if (iy === hSegs || ix === wSegs) continue;
@@ -64,7 +64,7 @@ export class Plane extends Geometry {
                 let c = io + ix + (iy + 1) * (wSegs + 1) + 1;
                 let d = io + ix + iy * (wSegs + 1) + 1;
 
-                index[ii * 6]     = a;
+                index[ii * 6] = a;
                 index[ii * 6 + 1] = b;
                 index[ii * 6 + 2] = d;
                 index[ii * 6 + 3] = b;
