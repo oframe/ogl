@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <title>OGL • Wireframe Shader</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info">Wireframe Shader. Model by Google Poly</div>
+    <script type="module">
+        import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Vec3} from '../src/Core.js';
+        import {Orbit} from '../src/Extras.js';
+        
+        const vertex100 = `
+            attribute vec3 position;
+            attribute vec3 barycentric;
+
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+
+            varying vec3 vBarycentric;
+
+            void main() {
+                vBarycentric = barycentric;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragment100 = `#extension GL_OES_standard_derivatives : enable
+            precision highp float;
+
+            varying vec3 vBarycentric;
+
+            void main() {
+                vec3 bary = vBarycentric;
+
+                vec3 color = vec3(0);
+                float alpha = 1.0;
+
+                // Line thickness - in pixels
+                float width = 1.0 * 0.5;
+                vec3 d = fwidth(bary);
+                vec3 s = smoothstep(d * (width + 0.5), d * (width - 0.5), bary);
+                alpha *= max(max(s.x, s.y), s.z);
+
+                // Dashes
+                alpha *= step(0.0, sin(max(bary.x, bary.y) * 3.14 * 5.0));
+
+                // Back face shading
+                color = mix(vec3(1, 0, 0), color, vec3(gl_FrontFacing));
+                alpha = mix(alpha * 0.1 + 0.02, alpha, float(gl_FrontFacing));
+
+                gl_FragColor.rgb = color;
+                gl_FragColor.a = alpha;
+            }
+        `;
+
+        const vertex300 = `#version 300 es
+            in vec3 position;
+            in vec3 barycentric;
+
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+
+            out vec3 vBarycentric;
+
+            void main() {
+                vBarycentric = barycentric;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragment300 = `#version 300 es
+            precision highp float;
+
+            in vec3 vBarycentric;
+
+            out vec4 FragColor;
+
+            void main() {
+                vec3 bary = vBarycentric;
+
+                vec3 color = vec3(0);
+                float alpha = 1.0;
+
+                // Line thickness - in pixels
+                float width = 1.0 * 0.5;
+                vec3 d = fwidth(bary);
+                vec3 s = smoothstep(d * (width + 0.5), d * (width - 0.5), bary);
+                alpha *= max(max(s.x, s.y), s.z);
+
+                // Dashes
+                alpha *= step(0.0, sin(max(bary.x, bary.y) * 3.14 * 5.0));
+
+                // Back face shading
+                color = mix(vec3(1, 0, 0), color, vec3(gl_FrontFacing));
+                alpha = mix(alpha * 0.1 + 0.02, alpha, float(gl_FrontFacing));
+
+                FragColor.rgb = color;
+                FragColor.a = alpha;
+            }
+        `;
+
+        {
+            const renderer = new Renderer({dpr: 2});
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+            gl.clearColor(1, 1, 1, 1);
+
+            const camera = new Camera(gl, {fov: 35});
+            camera.position.set(3, 2, 4);
+
+            const controls = new Orbit(camera, {
+                target: new Vec3(0, 1, 0),
+            });
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+            const scene = new Transform();
+
+            const program = new Program(gl, {
+                vertex: renderer.isWebgl2 ? vertex300 : vertex100,
+                fragment: renderer.isWebgl2 ? fragment300 : fragment100,
+                transparent: true,
+                cullFace: null,
+                depthTest: false,
+            });
+
+            function addBarycentric (position) {
+                const count = position.length / 9;
+                const barycentric = [];
+
+                for (let i = 0; i < count; i++) {
+                    if (i % 2 === 0) barycentric.push(0, 0, 1, 0, 1, 0, 1, 0, 0);
+                    else barycentric.push(0, 1, 0, 0, 0, 1, 1, 0, 0);
+                }
+
+                return new Float32Array(barycentric);
+            };
+
+            let mesh;
+            loadModel();
+            async function loadModel() {
+                const data = await (await fetch(`assets/goat.json`)).json();
+
+                const geometry = new Geometry(gl, {
+                    position: {size: 3, data: new Float32Array(data.position)},
+                    uv: {size: 2, data: new Float32Array(data.uv)},
+                    normal: {size: 3, data: new Float32Array(data.normal)},
+                    barycentric: {size: 3, data: addBarycentric(data.position)},
+                });
+
+                mesh = new Mesh(gl, {geometry, program});
+                mesh.setParent(scene);
+            }
+
+            requestAnimationFrame(update);
+            function update() {
+                requestAnimationFrame(update);
+
+                controls.update();
+                if (mesh) mesh.rotation.y += 0.005;
+                renderer.render({scene, camera});
+            }
+        }
+
+    </script>
+</body>
+</html>
