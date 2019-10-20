@@ -8,6 +8,8 @@
 
     <title>OGL • Performance - High mesh count</title>
     <link href="assets/main.css" rel="stylesheet">
+    <style>#gl-bench { right: 0; padding: 8px; left: auto !important }</style>
+    <script src="https://unpkg.com/gl-bench@0.3.14/dist/gl-bench.min.js"></script>
 </head>
 <body>
     <div class="Info">Performance - High mesh count</span></div>
@@ -56,6 +58,7 @@
         {
             const renderer = new Renderer({});
             const gl = renderer.gl;
+            const bench = new GLBench(gl, { chartHz: 5 });
             document.body.appendChild(gl.canvas);
             gl.clearColor(1, 1, 1, 1);
 
@@ -114,8 +117,11 @@
             setMeshCount(1000)
 
             requestAnimationFrame(update);
-            function update() {
+            function update(t) {
                 requestAnimationFrame(update);
+                bench.nextFrame(t);
+
+                bench.begin();
 
                 // rotate camera
                 let time = performance.now()/30000;
@@ -129,6 +135,7 @@
                 }
 
                 renderer.render({scene, camera});
+                bench.end();
             }
         }
     </script>
