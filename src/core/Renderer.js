@@ -88,6 +88,7 @@ export class Renderer {
             this.getExtension('OES_standard_derivatives');
             this.getExtension('EXT_sRGB');
             this.getExtension('WEBGL_depth_texture');
+            this.getExtension('WEBGL_draw_buffers');
         }
 
         // Create method aliases using extension (WebGL1) or native if available (WebGL2)
@@ -97,6 +98,7 @@ export class Renderer {
         this.createVertexArray = this.getExtension('OES_vertex_array_object', 'createVertexArray', 'createVertexArrayOES');
         this.bindVertexArray = this.getExtension('OES_vertex_array_object', 'bindVertexArray', 'bindVertexArrayOES');
         this.deleteVertexArray = this.getExtension('OES_vertex_array_object', 'deleteVertexArray', 'deleteVertexArrayOES');
+        this.drawBuffers = this.getExtension('WEBGL_draw_buffers', 'drawBuffers', 'drawBuffersWEBGL');
     }
 
     setSize(width, height) {
@@ -201,6 +203,9 @@ export class Renderer {
 
         // return extension if no function requested
         if (!webgl2Func) return this.extensions[extension];
+
+        // Return null if extension not supported
+        if (!this.extensions[extension]) return null;
 
         // return extension function, bound to extension
         return this.extensions[extension][extFunc].bind(this.extensions[extension]);
