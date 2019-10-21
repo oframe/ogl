@@ -290,7 +290,7 @@ For more advanced techniques, extra classes will be developed and contained with
 ### Frame Buffer
  - [x] Render to texture
  - [x] Post FXAA (Fast Approximate Anti-Aliasing)
- - [ ] MRT (Multiple Render Targets)
+ - [x] MRT (Multiple Render Targets)
  - [ ] Reflections
  - [x] Shadow maps
  - [ ] Distortion (refraction)
