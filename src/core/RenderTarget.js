@@ -32,8 +32,8 @@ export class RenderTarget {
         this.gl.bindFramebuffer(this.target, this.buffer);
 
         this.textures = [];
+        const drawBuffers = [];
 
-        // TODO: multi target rendering
         // create and attach required num of color textures
         for (let i = 0; i < color; i++) {
             this.textures.push(new Texture(gl, {
@@ -44,7 +44,11 @@ export class RenderTarget {
             }));
             this.textures[i].update();
             this.gl.framebufferTexture2D(this.target, this.gl.COLOR_ATTACHMENT0 + i, this.gl.TEXTURE_2D, this.textures[i].texture, 0 /* level */);
+            drawBuffers.push(this.gl.COLOR_ATTACHMENT0 + i);
         }
+
+        // For multi-render targets shader access
+        if (drawBuffers.length > 1) this.gl.renderer.drawBuffers(drawBuffers);
 
         // alias for majority of use cases
         this.texture = this.textures[0];
