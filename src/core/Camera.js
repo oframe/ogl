@@ -16,7 +16,6 @@ export class Camera extends Transform {
         right,
         bottom,
         top,
-
     } = {}) {
         super(gl);
 
