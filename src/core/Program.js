@@ -2,7 +2,7 @@
 // TODO: upload identity matrix if null ?
 // TODO: sampler Cube
 
-let ID = 0;
+let ID = 1;
 
 // cache of typed arrays used to flatten uniform arrays
 const arrayCacheF32 = {};

@@ -15,8 +15,8 @@ import {Vec3} from '../math/Vec3.js';
 
 const tempVec3 = new Vec3();
 
-let ID = 0;
-let ATTR_ID = 0;
+let ID = 1;
+let ATTR_ID = 1;
 
 export class Geometry {
     constructor(gl, attributes = {}) {
