@@ -42,7 +42,7 @@ export class Raycast {
 
             // Create bounds
             if (!mesh.geometry.bounds) mesh.geometry.computeBoundingBox();
-            if (mesh.geometry.raycast === 'sphere' && mesh.geometry.bounds === Infinity) mesh.geometry.computeBoundingSphere();
+            if (mesh.geometry.raycast === 'sphere' && mesh.geometry.bounds.radius === Infinity) mesh.geometry.computeBoundingSphere();
 
             // Take world space ray and make it object space to align with bounding box
             invWorldMat4.inverse(mesh.worldMatrix);
