@@ -12,7 +12,7 @@ export class Mesh extends Transform {
         frustumCulled = true,
         renderOrder = 0,
     } = {}) {
-        super(gl);
+        super();
         this.gl = gl;
         this.id = ID++;
 
