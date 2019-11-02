@@ -17,7 +17,7 @@ export class Camera extends Transform {
         bottom,
         top,
     } = {}) {
-        super(gl);
+        super();
 
         this.near = near;
         this.far = far;
