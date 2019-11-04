@@ -27,6 +27,7 @@ export class Camera extends Transform {
         this.projectionMatrix = new Mat4();
         this.viewMatrix = new Mat4();
         this.projectionViewMatrix = new Mat4();
+        this.worldPosition = new Vec3();
 
         // Use orthographic if values set, else default to perspective camera
         if (left || right) this.orthographic({left, right, bottom, top});
@@ -60,6 +61,7 @@ export class Camera extends Transform {
     updateMatrixWorld() {
         super.updateMatrixWorld();
         this.viewMatrix.inverse(this.worldMatrix);
+        this.worldMatrix.getTranslation(this.worldPosition);
         
         // used for sorting
         this.projectionViewMatrix.multiply(this.projectionMatrix, this.viewMatrix);

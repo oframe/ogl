@@ -64,7 +64,7 @@ export class Mesh extends Transform {
             }
 
             this.program.uniforms.projectionMatrix.value = camera.projectionMatrix;
-            this.program.uniforms.cameraPosition.value = camera.position;
+            this.program.uniforms.cameraPosition.value = camera.worldPosition;
             this.program.uniforms.viewMatrix.value = camera.viewMatrix;
 
             this.modelViewMatrix.multiply(camera.viewMatrix, this.worldMatrix);
