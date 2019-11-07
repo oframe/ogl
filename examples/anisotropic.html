@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <title>OGL • Textures</title>
+    <link href="assets/main.css" rel="stylesheet">
+    <style>
+        .split {
+            width: 100%;
+            display: flex;
+            justify-content: space-evenly;
+        }
+    </style>
+</head>
+<body>
+    <div class="Info split">
+        <span>Texture anisotropy: 1</span> <span>Texture anisotropy: 16</span>
+    </div>
+    <script type="module">
+        import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh} from '../src/Core.js';
+        import {Plane} from '../src/Extras.js';
+        
+        const vertex = `
+            precision highp float;
+            precision highp int;
+
+            attribute vec2 uv;
+            attribute vec3 position;
+            attribute vec3 normal;
+
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+            uniform mat3 normalMatrix;
+
+            varying vec2 vUv;
+            varying vec3 vNormal;
+
+            void main() {
+                vUv = uv;
+                vNormal = normalize(normalMatrix * normal);
+                
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragment = `
+            precision highp float;
+            precision highp int;
+
+            uniform sampler2D tMap;
+            uniform sampler2D tMapA;
+            uniform float fSlide;
+            
+
+            varying vec2 vUv;
+            varying vec3 vNormal;
+
+            void main() {
+                vec3 normal = normalize(vNormal);
+                vec3 tex = texture2D(tMap, vUv).rgb;
+                vec3 texA = texture2D(tMapA, vUv).rgb;
+                 
+                vec3 light = normalize(vec3(0.5, 1.0, -0.3));
+                float shading = dot(normal, light) * 0.15;
+                
+                gl_FragColor.rgb = mix(tex, texA, step(fSlide, vUv.x)) + shading;
+                gl_FragColor.a = 1.0;
+            }
+        `;
+
+        {
+            const renderer = new Renderer({dpr: 2});
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+            gl.clearColor(1, 1, 1, 1);
+
+            const camera = new Camera(gl, {fov: 45, far: 1000});
+            camera.position.set(0, 0, 1);
+            camera.lookAt([0, 0.1, 0]);
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+            const scene = new Transform();
+
+            const texture = new Texture(gl);
+            const textureAnisotropy = new Texture(gl, {anisotropy : 16});
+            
+            const img = new Image();
+
+            img.src = "./assets/grid.jpg";
+            img.onload = () =>  {
+                texture.image = img;
+                textureAnisotropy.image = img;
+            }
+
+            const geometry = new Plane(gl);
+
+            const program = new Program(gl, {
+                vertex,
+                fragment,
+                uniforms: {
+                    tMap: {value: texture},
+                    tMapA: {value: textureAnisotropy},
+                    fSlide: {value: 0 }
+                },
+                cullFace: null,
+            });
+
+            const mesh = new Mesh(gl, {
+                geometry: geometry,
+                program: program
+            });
+
+            mesh.position.set(0, 0, -5);
+            mesh.scale.set(5, 10, 5);
+            mesh.rotation.set([-Math.PI / 2.1, 0, 0]);
+
+            mesh.setParent(scene);
+
+            gl.canvas.addEventListener('mousemove', event => {
+                const x = 2 * event.x / gl.canvas.width;
+                program.uniforms.fSlide.value = x;
+            });
+            requestAnimationFrame(update);
+            function update(t) {
+                requestAnimationFrame(update);
+                renderer.render({scene, camera});
+            }
+        }
+
+    </script>
+</body>
+</html>

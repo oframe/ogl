@@ -1,6 +1,5 @@
 // TODO: facilitate Compressed Textures
 // TODO: delete texture
-// TODO: should I support anisotropy? Maybe a way to extend the update easily
 // TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
 // TODO: use texSubImage2D for updates
 // TODO: need? encoding = linearEncoding
@@ -71,7 +70,7 @@ export class Texture {
         this.state.magFilter = this.gl.LINEAR;
         this.state.wrapS = this.gl.REPEAT;
         this.state.wrapT = this.gl.REPEAT;
-        this.state.anisotropy = this.anisotropy;
+        this.state.anisotropy = -1;
     }
 
     bind() {
@@ -134,7 +133,7 @@ export class Texture {
         const anisotropyExt = this.gl.renderer.getExtension('EXT_texture_filter_anisotropic')
         // when support
         if(anisotropyExt && this.anisotropy > 0 && this.anisotropy !== this.state.anisotropy) {
-            gl.texParameterf(this.target, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, this.anisotropy);
+            this.gl.texParameterf(this.target, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, this.anisotropy);
             this.state.anisotropy = this.anisotropy;
         }
 
