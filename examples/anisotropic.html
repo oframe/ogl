@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <link rel="icon" type="image/png" href="assets/favicon.png">
 
-    <title>OGL • Textures</title>
+    <title>OGL • Anisotropic</title>
     <link href="assets/main.css" rel="stylesheet">
     <style>
         .split {
@@ -17,57 +17,43 @@
     </style>
 </head>
 <body>
+    <div class="Info">Anisotropic</div>
     <div class="Info split">
-        <span>Texture anisotropy: 1</span> <span>Texture anisotropy: 16</span>
+        <span>Texture anisotropy: None</span> <span>Texture anisotropy: 16</span>
     </div>
     <script type="module">
         import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh} from '../src/Core.js';
         import {Plane} from '../src/Extras.js';
         
         const vertex = `
-            precision highp float;
-            precision highp int;
-
             attribute vec2 uv;
             attribute vec3 position;
-            attribute vec3 normal;
 
             uniform mat4 modelViewMatrix;
             uniform mat4 projectionMatrix;
-            uniform mat3 normalMatrix;
 
             varying vec2 vUv;
-            varying vec3 vNormal;
 
             void main() {
                 vUv = uv;
-                vNormal = normalize(normalMatrix * normal);
-                
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
         `;
 
         const fragment = `
             precision highp float;
-            precision highp int;
 
             uniform sampler2D tMap;
             uniform sampler2D tMapA;
             uniform float fSlide;
             
-
             varying vec2 vUv;
-            varying vec3 vNormal;
 
             void main() {
-                vec3 normal = normalize(vNormal);
                 vec3 tex = texture2D(tMap, vUv).rgb;
                 vec3 texA = texture2D(tMapA, vUv).rgb;
-                 
-                vec3 light = normalize(vec3(0.5, 1.0, -0.3));
-                float shading = dot(normal, light) * 0.15;
                 
-                gl_FragColor.rgb = mix(tex, texA, step(fSlide, vUv.x)) + shading;
+                gl_FragColor.rgb = mix(tex, texA, step(fSlide, vUv.x)) + 0.1;
                 gl_FragColor.a = 1.0;
             }
         `;
@@ -78,9 +64,8 @@
             document.body.appendChild(gl.canvas);
             gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 45, far: 1000});
+            const camera = new Camera(gl);
             camera.position.set(0, 0, 1);
-            camera.lookAt([0, 0.1, 0]);
 
             function resize() {
                 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -91,16 +76,18 @@
 
             const scene = new Transform();
 
+            // By default, anisotropy is not active
             const texture = new Texture(gl);
+
+            // Pass in number of anisotropic samples to activate
             const textureAnisotropy = new Texture(gl, {anisotropy : 16});
             
             const img = new Image();
-
-            img.src = "./assets/grid.jpg";
+            img.src = 'assets/grid.jpg';
             img.onload = () =>  {
                 texture.image = img;
                 textureAnisotropy.image = img;
-            }
+            };
 
             const geometry = new Plane(gl);
 
@@ -110,9 +97,8 @@
                 uniforms: {
                     tMap: {value: texture},
                     tMapA: {value: textureAnisotropy},
-                    fSlide: {value: 0 }
+                    fSlide: {value: 0.5},
                 },
-                cullFace: null,
             });
 
             const mesh = new Mesh(gl, {
@@ -120,9 +106,8 @@
                 program: program
             });
 
-            mesh.position.set(0, 0, -5);
-            mesh.scale.set(5, 10, 5);
-            mesh.rotation.set([-Math.PI / 2.1, 0, 0]);
+            mesh.scale.set(1, 2, 1);
+            mesh.rotation.set(-1.5, 0, 0);
 
             mesh.setParent(scene);
 
@@ -130,6 +115,7 @@
                 const x = 2 * event.x / gl.canvas.width;
                 program.uniforms.fSlide.value = x;
             });
+
             requestAnimationFrame(update);
             function update(t) {
                 requestAnimationFrame(update);
