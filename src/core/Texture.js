@@ -31,6 +31,7 @@ export class Texture {
         level = 0,
         width, // used for RenderTargets or Data Textures
         height = width,
+        anisotropy = 1
     } = {}) {
         this.gl = gl;
         this.id = ID++;
@@ -52,11 +53,15 @@ export class Texture {
         this.width = width;
         this.height = height;
         this.texture = this.gl.createTexture();
-
+        
         this.store = {
             image: null,
         };
 
+        // -1
+        const max = this.gl.renderer.parameters.maxAnisotropy;
+        this.anisotropy = Math.min(anisotropy || max, max);
+        
         // Alias for state store to avoid redundant calls for global state
         this.glState = this.gl.renderer.state;
 
@@ -66,6 +71,7 @@ export class Texture {
         this.state.magFilter = this.gl.LINEAR;
         this.state.wrapS = this.gl.REPEAT;
         this.state.wrapT = this.gl.REPEAT;
+        this.state.anisotropy = this.anisotropy;
     }
 
     bind() {
@@ -123,6 +129,13 @@ export class Texture {
         if (this.wrapT !== this.state.wrapT) {
             this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.wrapT);
             this.state.wrapT = this.wrapT;
+        }
+
+        const anisotropyExt = this.gl.renderer.getExtension('EXT_texture_filter_anisotropic')
+        // when support
+        if(anisotropyExt && this.anisotropy > 0 && this.anisotropy !== this.state.anisotropy) {
+            gl.texParameterf(this.target, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, this.anisotropy);
+            this.state.anisotropy = this.anisotropy;
         }
 
         if (this.image) {

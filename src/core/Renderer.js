@@ -53,6 +53,7 @@ export class Renderer {
         // Store device parameters
         this.parameters = {};
         this.parameters.maxTextureUnits = this.gl.getParameter(this.gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+        this.parameters.maxAnisotropy= -1;
 
         // gl state stores to avoid redundant calls on methods used internally
         this.state = {};
@@ -71,7 +72,7 @@ export class Renderer {
         this.state.activeTextureUnit = 0;
         this.state.boundBuffer = null;
         this.state.uniformLocations = new Map();
-
+        
         // store requested extensions
         this.extensions = {};
 
@@ -91,6 +92,12 @@ export class Renderer {
             this.getExtension('WEBGL_draw_buffers');
         }
 
+        const anisotropicExt = this.getExtension('EXT_texture_filter_anisotropic');
+
+        if(anisotropicExt) {
+            this.parameters.maxAnisotropy = this.gl.getParameter(anisotropicExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+        }
+        
         // Create method aliases using extension (WebGL1) or native if available (WebGL2)
         this.vertexAttribDivisor = this.getExtension('ANGLE_instanced_arrays', 'vertexAttribDivisor', 'vertexAttribDivisorANGLE');
         this.drawArraysInstanced = this.getExtension('ANGLE_instanced_arrays', 'drawArraysInstanced', 'drawArraysInstancedANGLE');
