@@ -50,11 +50,6 @@ export class Renderer {
         // initialise size values
         this.setSize(width, height);
 
-        // Store device parameters
-        this.parameters = {};
-        this.parameters.maxTextureUnits = this.gl.getParameter(this.gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
-        this.parameters.maxAnisotropy= -1;
-
         // gl state stores to avoid redundant calls on methods used internally
         this.state = {};
         this.state.blendFunc = {src: this.gl.ONE, dst: this.gl.ZERO};
@@ -91,12 +86,6 @@ export class Renderer {
             this.getExtension('WEBGL_depth_texture');
             this.getExtension('WEBGL_draw_buffers');
         }
-
-        const anisotropicExt = this.getExtension('EXT_texture_filter_anisotropic');
-
-        if(anisotropicExt) {
-            this.parameters.maxAnisotropy = this.gl.getParameter(anisotropicExt.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
-        }
         
         // Create method aliases using extension (WebGL1) or native if available (WebGL2)
         this.vertexAttribDivisor = this.getExtension('ANGLE_instanced_arrays', 'vertexAttribDivisor', 'vertexAttribDivisorANGLE');
@@ -106,6 +95,13 @@ export class Renderer {
         this.bindVertexArray = this.getExtension('OES_vertex_array_object', 'bindVertexArray', 'bindVertexArrayOES');
         this.deleteVertexArray = this.getExtension('OES_vertex_array_object', 'deleteVertexArray', 'deleteVertexArrayOES');
         this.drawBuffers = this.getExtension('WEBGL_draw_buffers', 'drawBuffers', 'drawBuffersWEBGL');
+
+        // Store device parameters
+        this.parameters = {};
+        this.parameters.maxTextureUnits = this.gl.getParameter(this.gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+        this.parameters.maxAnisotropy = this.getExtension('EXT_texture_filter_anisotropic') ? 
+            this.gl.getParameter(this.getExtension('EXT_texture_filter_anisotropic').MAX_TEXTURE_MAX_ANISOTROPY_EXT) : 0;
+
     }
 
     setSize(width, height) {

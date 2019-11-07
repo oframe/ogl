@@ -27,10 +27,10 @@ export class Texture {
         premultiplyAlpha = false,
         unpackAlignment = 4,
         flipY = target == gl.TEXTURE_2D ? true : false,
+        anisotropy = 0,
         level = 0,
         width, // used for RenderTargets or Data Textures
         height = width,
-        anisotropy = 1
     } = {}) {
         this.gl = gl;
         this.id = ID++;
@@ -48,6 +48,7 @@ export class Texture {
         this.premultiplyAlpha = premultiplyAlpha;
         this.unpackAlignment = unpackAlignment;
         this.flipY = flipY;
+        this.anisotropy = Math.min(anisotropy, this.gl.renderer.parameters.maxAnisotropy);
         this.level = level;
         this.width = width;
         this.height = height;
@@ -56,10 +57,6 @@ export class Texture {
         this.store = {
             image: null,
         };
-
-        // -1
-        const max = this.gl.renderer.parameters.maxAnisotropy;
-        this.anisotropy = Math.min(anisotropy || max, max);
         
         // Alias for state store to avoid redundant calls for global state
         this.glState = this.gl.renderer.state;
@@ -70,7 +67,7 @@ export class Texture {
         this.state.magFilter = this.gl.LINEAR;
         this.state.wrapS = this.gl.REPEAT;
         this.state.wrapT = this.gl.REPEAT;
-        this.state.anisotropy = -1;
+        this.state.anisotropy = 0;
     }
 
     bind() {
@@ -130,10 +127,8 @@ export class Texture {
             this.state.wrapT = this.wrapT;
         }
 
-        const anisotropyExt = this.gl.renderer.getExtension('EXT_texture_filter_anisotropic')
-        // when support
-        if(anisotropyExt && this.anisotropy > 0 && this.anisotropy !== this.state.anisotropy) {
-            this.gl.texParameterf(this.target, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, this.anisotropy);
+        if (this.anisotropy && this.anisotropy !== this.state.anisotropy) {
+            this.gl.texParameterf(this.target, this.gl.renderer.getExtension('EXT_texture_filter_anisotropic').TEXTURE_MAX_ANISOTROPY_EXT, this.anisotropy);
             this.state.anisotropy = this.anisotropy;
         }
 
