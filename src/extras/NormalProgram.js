@@ -1,6 +1,6 @@
 import {Program} from '../core/Program.js';
 
-const vertex = `
+const vertex = /* glsl */ `
     precision highp float;
     precision highp int;
 
@@ -19,7 +19,7 @@ const vertex = `
     }
 `;
 
-const fragment = `
+const fragment = /* glsl */ `
     precision highp float;
     precision highp int;
 

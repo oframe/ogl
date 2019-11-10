@@ -15,7 +15,7 @@
         import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh} from '../src/Core.js';
         import {Orbit} from '../src/Extras.js';
         
-        const vertex100 = `
+        const vertex100 = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -41,7 +41,7 @@
             }
         `;
 
-        const fragment100 = `
+        const fragment100 = /* glsl */ `
             #extension GL_OES_standard_derivatives : enable
 
             precision highp float;
@@ -90,7 +90,7 @@
             }
         `;
         
-        const vertex300 = `#version 300 es
+        const vertex300 = /* glsl */ `#version 300 es
             precision highp float;
             precision highp int;
 
@@ -116,7 +116,7 @@
             }
         `;
 
-        const fragment300 = `#version 300 es
+        const fragment300 = /* glsl */ `#version 300 es
             precision highp float;
             precision highp int;
 

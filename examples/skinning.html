@@ -15,7 +15,7 @@
         import {Renderer, Transform, Camera, Geometry, Texture, Program, Mesh} from '../src/Core.js';
         import {Orbit, Plane, Skin} from '../src/Extras.js';
 
-        const vertex = `
+        const vertex = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -84,7 +84,7 @@
             }
         `;
 
-        const fragment = `
+        const fragment = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -105,7 +105,7 @@
             }
         `;
         
-        const shadowVertex = `
+        const shadowVertex = /* glsl */ `
             precision highp float;
 
             attribute vec2 uv;
@@ -123,7 +123,7 @@
             }
         `;
 
-        const shadowFragment = `
+        const shadowFragment = /* glsl */ `
             precision highp float;
 
             uniform sampler2D tMap;

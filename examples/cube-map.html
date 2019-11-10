@@ -15,7 +15,7 @@
         import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh} from '../src/Core.js';
         import {Box, Orbit} from '../src/Extras.js';
         
-        const vertex = `
+        const vertex = /* glsl */ `
             attribute vec3 position;
 
             uniform mat4 modelViewMatrix;
@@ -30,7 +30,7 @@
             }
         `;
 
-        const fragment = `
+        const fragment = /* glsl */ `
             precision highp float;
 
             // uniform type is samplerCube rather than sampler2D

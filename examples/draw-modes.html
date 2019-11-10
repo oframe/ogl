@@ -14,7 +14,7 @@
     <script type="module">
         import {Renderer, Camera, Transform, Geometry, Program, Mesh} from '../src/Core.js';
 
-        const vertex = `
+        const vertex = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -36,7 +36,7 @@
             }
         `;
 
-        const fragment = `
+        const fragment = /* glsl */ `
             precision highp float;
             precision highp int;
 

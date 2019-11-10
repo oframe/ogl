@@ -15,7 +15,7 @@
         import {Renderer, Camera, Transform, Geometry, Texture, RenderTarget, Program, Mesh, Vec3, Vec2} from '../src/Core.js';
         import {Orbit} from '../src/Extras.js';
         
-        const vertex100 = `
+        const vertex100 = /* glsl */ `
             attribute vec3 position;
             attribute vec3 normal;
             attribute vec2 uv;
@@ -51,7 +51,7 @@
             }
         `;
 
-        const fragment100 = `
+        const fragment100 = /* glsl */ `
             #extension GL_EXT_draw_buffers : require 
 
             precision highp float;
@@ -68,7 +68,7 @@
             }
         `;
 
-        const vertex300 = `#version 300 es
+        const vertex300 = /* glsl */ `#version 300 es
             in vec3 position;
             in vec3 normal;
             in vec2 uv;
@@ -104,7 +104,7 @@
             }
         `;
 
-        const fragment300 = `#version 300 es
+        const fragment300 = /* glsl */ `#version 300 es
             precision highp float;
 
             uniform sampler2D tMap;
@@ -121,7 +121,7 @@
             }
         `;
 
-        const vertexPost = `
+        const vertexPost = /* glsl */ `
             attribute vec3 position;
             attribute vec2 uv;
 
@@ -133,7 +133,7 @@
             }
         `;
 
-        const fragmentPost = `
+        const fragmentPost = /* glsl */ `
             precision highp float;
 
             uniform sampler2D tColor;

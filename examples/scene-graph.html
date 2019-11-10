@@ -15,7 +15,7 @@
         import {Renderer, Camera, Program, Transform, Mesh} from '../src/Core.js';
         import {Sphere, Box} from '../src/Extras.js';
         
-        const vertex = `
+        const vertex = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -37,7 +37,7 @@
             }
         `;
 
-        const fragment = `
+        const fragment = /* glsl */ `
             precision highp float;
             precision highp int;
 

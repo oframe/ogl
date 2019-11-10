@@ -15,7 +15,7 @@
         import {Renderer, Camera, RenderTarget, Geometry, Program, Texture, Mesh, Color, Vec2} from '../src/Core.js';
         import {Box, NormalProgram, Post} from '../src/Extras.js';
 
-        const fragment = `
+        const fragment = /* glsl */ `
             precision highp float;
 
             uniform sampler2D tMap;
@@ -34,7 +34,7 @@
             }
         `;
 
-        const baseVertex = `
+        const baseVertex = /* glsl */ `
             precision highp float;
             attribute vec2 position;
             attribute vec2 uv;
@@ -54,7 +54,7 @@
             }
         `;
 
-        const clearShader = `
+        const clearShader = /* glsl */ `
             precision mediump float;
             precision mediump sampler2D;
             varying highp vec2 vUv;
@@ -65,7 +65,7 @@
             }
         `;
 
-        const splatShader = `
+        const splatShader = /* glsl */ `
             precision highp float;
             precision highp sampler2D;
             varying vec2 vUv;
@@ -83,7 +83,7 @@
             }
         `;
 
-        const advectionManualFilteringShader = `
+        const advectionManualFilteringShader = /* glsl */ `
             precision highp float;
             precision highp sampler2D;
             varying vec2 vUv;
@@ -110,7 +110,7 @@
             }
         `;
 
-        const advectionShader = `
+        const advectionShader = /* glsl */ `
             precision highp float;
             precision highp sampler2D;
             varying vec2 vUv;
@@ -126,7 +126,7 @@
             }
         `;
 
-        const divergenceShader = `
+        const divergenceShader = /* glsl */ `
             precision mediump float;
             precision mediump sampler2D;
             varying highp vec2 vUv;
@@ -150,7 +150,7 @@
             }
         `;
 
-        const curlShader = `
+        const curlShader = /* glsl */ `
             precision mediump float;
             precision mediump sampler2D;
             varying highp vec2 vUv;
@@ -169,7 +169,7 @@
             }
         `;
 
-        const vorticityShader = `
+        const vorticityShader = /* glsl */ `
             precision highp float;
             precision highp sampler2D;
             varying vec2 vUv;
@@ -196,7 +196,7 @@
             }
         `;
 
-        const pressureShader = `
+        const pressureShader = /* glsl */ `
             precision mediump float;
             precision mediump sampler2D;
             varying highp vec2 vUv;
@@ -218,7 +218,7 @@
             }
         `;
 
-        const gradientSubtractShader = `
+        const gradientSubtractShader = /* glsl */ `
             precision mediump float;
             precision mediump sampler2D;
             varying highp vec2 vUv;

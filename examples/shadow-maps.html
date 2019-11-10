@@ -15,7 +15,7 @@
         import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh} from '../src/Core.js';
         import {Orbit, Plane, Shadow} from '../src/Extras.js';
 
-        const vertexColor = `
+        const vertexColor = /* glsl */ `
             attribute vec3 position;
             attribute vec2 uv;
 
@@ -46,7 +46,7 @@
             }
         `;
 
-        const fragmentColor = `
+        const fragmentColor = /* glsl */ `
             precision highp float;
 
             uniform sampler2D tMap;

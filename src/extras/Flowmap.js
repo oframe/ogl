@@ -102,7 +102,7 @@ export class Flowmap {
     }
 }
 
-const vertex = `
+const vertex = /* glsl */ `
     attribute vec2 uv;
     attribute vec2 position;
 
@@ -114,7 +114,7 @@ const vertex = `
     }
 `;
 
-const fragment = `
+const fragment = /* glsl */ `
     precision highp float;
 
     uniform sampler2D tMap;
