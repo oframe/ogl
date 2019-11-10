@@ -15,7 +15,7 @@
         import {Renderer, Geometry, Program, Mesh, Camera, Transform, Texture} from '../src/Core.js';
         import {Sphere, Orbit} from '../src/Extras.js';
         
-        const vertex = `
+        const vertex = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -34,7 +34,7 @@
             }
         `;
 
-        const fragment = `
+        const fragment = /* glsl */ `
             precision highp float;
             precision highp int;
 

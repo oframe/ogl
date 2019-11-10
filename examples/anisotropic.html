@@ -25,7 +25,7 @@
         import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh} from '../src/Core.js';
         import {Plane} from '../src/Extras.js';
         
-        const vertex = `
+        const vertex = /* glsl */ `
             attribute vec2 uv;
             attribute vec3 position;
 
@@ -40,7 +40,7 @@
             }
         `;
 
-        const fragment = `
+        const fragment = /* glsl */ `
             precision highp float;
 
             uniform sampler2D tMap;

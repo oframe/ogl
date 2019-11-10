@@ -15,7 +15,7 @@
         import {Renderer, Geometry, Program, Texture, Mesh, Vec2} from '../src/Core.js';
         import {Flowmap} from '../src/Extras.js';
         
-        const vertex = `
+        const vertex = /* glsl */ `
             attribute vec2 uv;
             attribute vec2 position;
 
@@ -27,7 +27,7 @@
             }
         `;
 
-        const fragment = `
+        const fragment = /* glsl */ `
             precision highp float;
             precision highp int;
 

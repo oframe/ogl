@@ -15,7 +15,7 @@
         import {Renderer, Camera, Geometry, Program, Texture, Mesh, Vec2} from '../src/Core.js';
         import {GPGPU} from '../src/Extras.js';
         
-        const vertex = `
+        const vertex = /* glsl */ `
             precision highp float;
 
             attribute vec2 coords;
@@ -47,7 +47,7 @@
             }
         `;
 
-        const fragment = `
+        const fragment = /* glsl */ `
             precision highp float;
 
             varying vec4 vRandom;
@@ -68,7 +68,7 @@
             }
         `;
 
-        const positionFragment = `
+        const positionFragment = /* glsl */ `
             precision highp float;
 
             uniform float uTime;
@@ -95,7 +95,7 @@
             }
         `;
 
-        const velocityFragment = `
+        const velocityFragment = /* glsl */ `
             precision highp float;
 
             uniform float uTime;

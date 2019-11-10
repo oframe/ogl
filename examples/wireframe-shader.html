@@ -15,7 +15,7 @@
         import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Vec3} from '../src/Core.js';
         import {Orbit} from '../src/Extras.js';
         
-        const vertex100 = `
+        const vertex100 = /* glsl */ `
             attribute vec3 position;
             attribute vec3 barycentric;
 
@@ -30,7 +30,7 @@
             }
         `;
 
-        const fragment100 = `#extension GL_OES_standard_derivatives : enable
+        const fragment100 = /* glsl */ `#extension GL_OES_standard_derivatives : enable
             precision highp float;
 
             varying vec3 vBarycentric;
@@ -59,7 +59,7 @@
             }
         `;
 
-        const vertex300 = `#version 300 es
+        const vertex300 = /* glsl */ `#version 300 es
             in vec3 position;
             in vec3 barycentric;
 
@@ -74,7 +74,7 @@
             }
         `;
 
-        const fragment300 = `#version 300 es
+        const fragment300 = /* glsl */ `#version 300 es
             precision highp float;
 
             in vec3 vBarycentric;

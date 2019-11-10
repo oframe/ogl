@@ -21,7 +21,7 @@
         // about the extension's existence. So unfortunately we're 
         // forced to create a 300 es GLSL shader for WebGL2, and a 100 es 
         // GLSL shader for WebGL1. There are only slight syntax changes.
-        const vertex100 = `
+        const vertex100 = /* glsl */ `
             attribute vec3 position;
 
             uniform mat4 modelViewMatrix;
@@ -35,7 +35,7 @@
             }
         `;
 
-        const fragment100 = `#extension GL_OES_standard_derivatives : enable
+        const fragment100 = /* glsl */ `#extension GL_OES_standard_derivatives : enable
             precision highp float;
 
             uniform sampler2D tMap;
@@ -65,7 +65,7 @@
             }
         `;
 
-        const vertex300 = `#version 300 es
+        const vertex300 = /* glsl */ `#version 300 es
             in vec3 position;
 
             uniform mat4 modelViewMatrix;
@@ -79,7 +79,7 @@
             }
         `;
 
-        const fragment300 = `#version 300 es
+        const fragment300 = /* glsl */ `#version 300 es
             precision highp float;
 
             uniform sampler2D tMap;

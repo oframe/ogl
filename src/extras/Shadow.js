@@ -97,7 +97,7 @@ export class Shadow {
     }
 }
 
-const defaultVertex = `
+const defaultVertex = /* glsl */ `
     attribute vec3 position;
     attribute vec2 uv;
 
@@ -109,7 +109,7 @@ const defaultVertex = `
     }
 `;
 
-const defaultFragment = `
+const defaultFragment = /* glsl */ `
     precision highp float;
 
     vec4 packRGBA (float v) {

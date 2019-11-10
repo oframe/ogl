@@ -111,7 +111,7 @@ export class Polyline {
     }
 };
 
-const defaultVertex = `
+const defaultVertex = /* glsl */ `
     precision highp float;
 
     attribute vec3 position;
@@ -162,7 +162,7 @@ const defaultVertex = `
     }
 `;
 
-const defaultFragment = `
+const defaultFragment = /* glsl */ `
     precision highp float;
 
     uniform vec3 uColor;

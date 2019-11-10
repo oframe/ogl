@@ -15,7 +15,7 @@
         import {Renderer, Camera, Transform, Texture, Program, Color, Geometry, Mesh, Vec3} from '../src/Core.js';
         import {Orbit, Cylinder, NormalProgram} from '../src/Extras.js';
         
-        const vertex = `
+        const vertex = /* glsl */ `
             attribute vec2 uv;
             attribute vec3 position;
 
@@ -34,7 +34,7 @@
             }
         `;
 
-        const fragment = `
+        const fragment = /* glsl */ `
             precision highp float;
 
             uniform sampler2D tMap;

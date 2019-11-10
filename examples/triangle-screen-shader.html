@@ -14,7 +14,7 @@
     <script type="module">
         import {Renderer, Geometry, Program, Color, Mesh} from '../src/Core.js';
         
-        const vertex = `
+        const vertex = /* glsl */ `
             attribute vec2 uv;
             attribute vec2 position;
 
@@ -26,7 +26,7 @@
             }
         `;
 
-        const fragment = `
+        const fragment = /* glsl */ `
             precision highp float;
 
             uniform float uTime;

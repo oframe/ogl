@@ -123,7 +123,7 @@ export class GPGPU {
     }
 };
 
-const defaultVertex = `
+const defaultVertex = /* glsl */ `
     attribute vec2 uv;
     attribute vec2 position;
 
@@ -135,7 +135,7 @@ const defaultVertex = `
     }
 `;
 
-const defaultFragment = `
+const defaultFragment = /* glsl */ `
     precision highp float;
 
     uniform sampler2D tMap;
