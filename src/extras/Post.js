@@ -105,7 +105,7 @@ export class Post {
             this.gl.renderer.render({
                 scene: pass.mesh, 
                 target: i === enabledPasses.length - 1 ? target : this.fbo.write,
-                clear: false,
+                clear: i === enabledPasses.length - 1 ? true : false,
             });
             this.fbo.swap();
         });
