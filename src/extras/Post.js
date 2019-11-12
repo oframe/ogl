@@ -18,6 +18,7 @@ export class Post {
             position: {size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3])},
             uv: {size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2])},
         }),
+        targetOnly = null,
     } = {}) {
         this.gl = gl;
 
@@ -25,7 +26,10 @@ export class Post {
 
         this.passes = [];
 
-        this.geometry = geometry;
+        this.geometry = geometry;   
+
+        this.uniform = {value: null};
+        this.targetOnly = targetOnly;
 
         const fbo = this.fbo = {
             read: null,
@@ -95,7 +99,7 @@ export class Post {
         
         this.gl.renderer.render({
             scene, camera,
-            target: enabledPasses.length ? this.fbo.write : target,
+            target: enabledPasses.length || (!target && this.targetOnly) ? this.fbo.write : target,
             update, sort, frustumCull,
         });
         this.fbo.swap();
@@ -104,11 +108,13 @@ export class Post {
             pass.mesh.program.uniforms[pass.textureUniform].value = this.fbo.read.texture;
             this.gl.renderer.render({
                 scene: pass.mesh, 
-                target: i === enabledPasses.length - 1 ? target : this.fbo.write,
+                target: i === enabledPasses.length - 1 && (target || !this.targetOnly) ? target : this.fbo.write,
                 clear: i === enabledPasses.length - 1 ? true : false,
             });
             this.fbo.swap();
         });
+
+        this.uniform.value = this.fbo.read.texture;
     }
 }
 
