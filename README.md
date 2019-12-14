@@ -25,15 +25,15 @@
 
 ⚠️ *Note: currently in alpha, so expect breaking changes.*
 
-[See Examples](https://oframe.github.io/ogl/examples)
+[See the Examples!](https://oframe.github.io/ogl/examples)
 
-OGL is a small, effective WebGL framework aimed at developers who like minimal layers of abstraction, and are comfortable creating their own shaders.
+OGL is a small, effective WebGL library aimed at developers who like minimal layers of abstraction, and are comfortable creating their own shaders.
 
-With zero dependencies, the API shares many similarities with ThreeJS, however it is tightly coupled with WebGL and comes with much fewer features.
+Written in es6 modules with zero dependencies, the API shares many similarities with ThreeJS, however it is tightly coupled with WebGL and comes with much fewer features.
 
-In its design, the framework does the minimum abstraction necessary, so devs should still feel comfortable using it in conjunction with native WebGL commands.
+In its design, the library does the minimum abstraction necessary, so devs should still feel comfortable using it in conjunction with native WebGL commands.
 
-Keeping the level of abstraction low helps to make the framework easier to understand and extend, and also makes it more practical as a WebGL learning resource.
+Keeping the level of abstraction low helps to make the library easier to understand, extend, and also makes it more practical as a WebGL learning resource.
 
 ## Install
 
@@ -42,7 +42,7 @@ Keeping the level of abstraction low helps to make the framework easier to under
 **or**
 
 ```
-npm i ogl
+npm i ogl -D
 ```
 
 ## Examples
@@ -53,7 +53,7 @@ npm i ogl
 
 Even though the source is modular, as a guide, below are the complete component download sizes.
 
-Component | Size (gzipped)
+Component | Size (minzipped)
 ------------ | -------------:
 Core | 6kb
 Math | 7kb
@@ -64,30 +64,34 @@ With tree-shaking applied in a build step, one can expect the final size to be m
 
 ## Usage
 
-Importing can be done from one single entry point.
+If installed amongst your project files importing can be done from one single entry point.
 
 ```js
-import {Renderer, Camera, Program, Mesh, Box} from './src/index.js';
+import { ... } from './path/to/src/index.mjs';
 ```
 
-However, in the examples, two entry points are used for clarity. These are `Core.js` and `Extras.js` - which relate to the component structure outlined below.
-
+Else if using a bundler with node modules, then import directly from the installed node module.
 ```js
-import {Renderer, Camera, Program, Mesh} from './src/Core.js';
-import {Box} from './src/Extras.js';
+import { ... } from 'ogl';
 ```
-
-For CodeSandboxes or CodePens, jsdelivr can be used to provide CDN access to the npm deployment.
-
+By default, the ES source modules are loaded (`src/index.mjs`). If your bundler doesn't support ES modules (eg Browserify, Vue SSR), the simplest solution is to just target the UMD bundle instead. 
 ```js
-import {Renderer, Camera, Program, Mesh, Box} from 'https://cdn.jsdelivr.net/npm/ogl/dist/ogl.mjs';
-
+import { ... } from 'ogl/dist/ogl.umd.js';
 ```
 
-Below renders a spinning white cube.
+As another alternative, you could load from a CDN, using either the jsdelivr or unpkg services.
+```js
+import {...} from 'https://cdn.jsdelivr.net/npm/ogl';
+import {...} from 'https://unpkg.com/ogl';
+```
+If you take this route, I would highly recommend defining a specific version (append `@x.x.x`) to avoid code breaking, rather than fetching the latest version, as per the above links.
+
+As a basic API example, below renders a spinning white cube.
 
 ```js
 {
+    import {Renderer, Camera, Program, Mesh, Box} from 'ogl';
+
     const renderer = new Renderer();
     const gl = renderer.gl;
     document.body.appendChild(gl.canvas);
@@ -140,10 +144,10 @@ Below renders a spinning white cube.
 }
 ```
 
-For a simpler use, such as a full-screen shader, more of the core can be omitted as a scene graph and projection matrices are not necessary. 
+For a simpler use, such as a full-screen shader, more of the core can be omitted as a scene graph and projection matrices (cameras) are not necessary. 
 
 ```js
-import {Renderer, Geometry, Program, Mesh} from './src/index.js';
+import {Renderer, Geometry, Program, Mesh} from 'ogl';
 
 {
     const renderer = new Renderer({
@@ -204,7 +208,7 @@ import {Renderer, Geometry, Program, Mesh} from './src/index.js';
 
 ## Structure
 
-In an attempt to keep things light and modular, the framework is split up into three components: **Math**, **Core**, and **Extras**.
+In an attempt to keep things light and modular, the library is split up into three components: **Math**, **Core**, and **Extras**.
 
 The **Math** component is an extension of [gl-matrix](http://glmatrix.net/), providing instancable classes that extend Array for each of the module types. 7kb when gzipped, it has no dependencies and can be used separately.
 
@@ -242,13 +246,11 @@ Below is an **Extras** wish-list, and is still a work-in-progress as examples ar
 
 [Examples](https://oframe.github.io/ogl/examples)
 
-In order to test the completeness of the framework, below is a wish-list that covers most commonly-used 3D techniques.
+In order to test the completeness of the library, below is a wish-list that covers most commonly-used 3D techniques, and some more advanced uses too.
 
-It is an opinionated, comprehensive list of examples for any fully-fledged WebGL framework.
+Inspired by the effectiveness of ThreeJS' examples, they will hopefully serve as reference for how to use the library, and to achieve a wide range of techniques.
 
-Inspired by the effectiveness of ThreeJS' examples, they will serve as reference for how to achieve a wide range of techniques.
-
-For more advanced techniques, extra classes will be developed and contained within the 'Extras' folder of the framework.
+For more advanced techniques, extra classes will be developed and contained within the `Extras` folder of the library.
 
 ### Geometry
  - [x] Triangle Screen Shader

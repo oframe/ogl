@@ -1,11 +1,8 @@
 {
     "name": "ogl",
-    "version": "0.0.33",
+    "version": "0.0.35",
     "description": "WebGL Framework",
-    "main": "src/index.js",
-    "browser": "dist/ogl.js",
-    "module": "dist/ogl.mjs",
-    "unpkg": "dist/ogl.umd.js",
+    "main": "src/index.mjs",
     "sideEffects": false,
     "directories": {
         "example": "examples"
@@ -32,7 +29,7 @@
         "url": "https://github.com/oframe/ogl/issues"
     },
     "devDependencies": {
-        "rollup": "^1.20.3"
+        "rollup": "^1.27.13"
     },
     "homepage": "https://github.com/oframe/ogl#readme"
 }

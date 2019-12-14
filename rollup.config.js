@@ -1,10 +1,6 @@
-import pkg from './package.json';
-
 export default [{
-    input: 'src/index.js',
+    input: 'src/index.mjs',
     output: [
-        { file: pkg.browser, format: 'cjs' },
-        { file: pkg.module, format: 'es' },
-        { file: pkg.unpkg, format: 'umd', name: 'ogl' },
+        { file: 'dist/ogl.umd.js', format: 'umd', name: 'ogl' },
     ],
 }];
