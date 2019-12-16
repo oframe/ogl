@@ -1,7 +1,7 @@
 {
     "name": "ogl",
     "version": "0.0.35",
-    "description": "WebGL Framework",
+    "description": "WebGL Library",
     "main": "src/index.mjs",
     "sideEffects": false,
     "directories": {
