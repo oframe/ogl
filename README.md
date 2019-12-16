@@ -19,7 +19,7 @@
     </a>
 </p>
 
-<p align="center"><b>Minimal WebGL framework.</b></p>
+<p align="center"><b>Minimal WebGL library.</b></p>
 
 <br />
 
