@@ -6,11 +6,9 @@ import { Texture } from '../core/Texture.js';
 export const KTXLoader = {
     loadTexture(gl, {
         src,
-        flipY = false,
     } = {}) {
         const texture = new Texture(gl, {
             generateMipmaps: false,
-            flipY,
         });
 
         fetch(src)
