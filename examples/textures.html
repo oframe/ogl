@@ -79,11 +79,11 @@
 
             // Upload empty texture while source loading
             const texture = new Texture(gl);
-            const img = new Image();
-
+            
             // update image value with source once loaded
-            img.onload = () => texture.image = img;
+            const img = new Image();
             img.src = 'assets/saddle.jpg';
+            img.onload = () => texture.image = img;
 
             const program = new Program(gl, {
                 vertex,

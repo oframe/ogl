@@ -57,8 +57,8 @@ Component | Size (minzipped)
 ------------ | -------------:
 Core | 6kb
 Math | 7kb
-Extras | 8kb
-Total | 21kb
+Extras | 9kb
+Total | 22kb
 
 With tree-shaking applied in a build step, one can expect the final size to be much lighter than the values above.
 
@@ -289,7 +289,7 @@ For more advanced techniques, extra classes will be developed and contained with
  - [x] MSDF Text Glyphs (Multichannel Signed Distance Fields)
  - [ ] Point lighting with specular highlights
  - [x] PBR (Physically Based Rendering)
- - [ ] Compressed Textures
+ - [x] Compressed Textures
 
 ### Frame Buffer
  - [x] Render to texture
