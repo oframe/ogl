@@ -1,8 +1,9 @@
 // TODO: facilitate Compressed Textures
 // TODO: delete texture
 // TODO: check is ArrayBuffer.isView is best way to check for Typed Arrays?
-// TODO: use texSubImage2D for updates
+// TODO: use texSubImage2D for updates (video or when loaded)
 // TODO: need? encoding = linearEncoding
+// TODO: support non-compressed mipmaps
 
 const emptyPixel = new Uint8Array(4);
 
@@ -139,17 +140,24 @@ export class Texture {
             }
             
             if (this.target === this.gl.TEXTURE_CUBE_MAP) {
+                // For cube maps
                 for (let i = 0; i < 6; i++) {
                     this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, this.level, this.internalFormat, this.format, this.type, this.image[i]);
                 }
             } else if (ArrayBuffer.isView(this.image)) {
+                // Data texture
                 this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, this.image);
+            } else if (Array.isArray(this.image)) { // TODO: support regular mipmaps?
+                // Compressed texture
+                for (let level = 0; level < this.image.length; level++) {
+                    this.gl.compressedTexImage2D(this.target, level, this.internalFormat, this.image[level].width, this.image[level].height, 0, this.image[level].data);
+                }
             } else {
+                // Regular texture
                 this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image);
             }
 
             if (this.generateMipmaps) {
-
                 // For WebGL1, if not a power of 2, turn off mips, set wrapping to clamp to edge and minFilter to linear
                 if (!this.gl.renderer.isWebgl2 && (!isPowerOf2(this.image.width) || !isPowerOf2(this.image.height))) {
                     this.generateMipmaps = false;
