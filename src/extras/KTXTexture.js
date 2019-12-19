@@ -3,28 +3,35 @@ import { Texture } from '../core/Texture.js';
 // TODO: Support cubemaps
 // Generate textures using https://github.com/TimvanScherpenzeel/texture-compressor
 
-export const KTXLoader = {
-    loadTexture(gl, {
-        src,
+export class KTXTexture extends Texture {
+    constructor(gl, {
+        buffer,
+        wrapS = gl.CLAMP_TO_EDGE,
+        wrapT = gl.CLAMP_TO_EDGE,
+        anisotropy = 0,
     } = {}) {
-        const texture = new Texture(gl, {
+        super(gl, {
             generateMipmaps: false,
+            wrapS,
+            wrapT,
+            anisotropy,
         });
 
-        fetch(src)
-            .then(res => res.arrayBuffer())
-            .then(buffer => {
-                const ktx = new KhronosTextureContainer(buffer, 1);
+        if (buffer) return this.parseBuffer(buffer);
+    }
 
-                // Update texture
-                texture.image = ktx.mipmaps;
-                texture.internalFormat = ktx.glInternalFormat;
-                texture.minFilter = ktx.numberOfMipmapLevels > 1 ? gl.NEAREST_MIPMAP_LINEAR : gl.LINEAR;
-                // ktx.numberOfFaces
-            });
+    parseBuffer(buffer) {
+        const ktx = new KhronosTextureContainer(buffer);
+        ktx.mipmaps.isCompressedTexture = true;
+        
+        // Update texture
+        this.image = ktx.mipmaps;
+        this.internalFormat = ktx.glInternalFormat;
+        this.minFilter = ktx.numberOfMipmapLevels > 1 ? this.gl.NEAREST_MIPMAP_LINEAR : this.gl.LINEAR;
 
-        return texture;
-    },
+        // TODO: support cube maps
+        // ktx.numberOfFaces
+    }
 };
 
 function KhronosTextureContainer(buffer) {

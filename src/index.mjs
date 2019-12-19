@@ -35,3 +35,5 @@ export {Flowmap} from './extras/Flowmap.js';
 export {GPGPU} from './extras/GPGPU.js';
 export {Polyline} from './extras/Polyline.js';
 export {Shadow} from './extras/Shadow.js';
+export {KTXTexture} from './extras/KTXTexture.js';
+export {TextureLoader} from './extras/TextureLoader.js';
