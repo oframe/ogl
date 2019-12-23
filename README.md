@@ -231,6 +231,7 @@ Below is an **Extras** wish-list, and is still a work-in-progress as examples ar
  - [x] Box.js
  - [x] Sphere.js
  - [x] Cylinder.js
+ - [x] Triangle.js
  - [x] Orbit.js
  - [x] Raycast.js
  - [ ] Curve.js
@@ -243,6 +244,8 @@ Below is an **Extras** wish-list, and is still a work-in-progress as examples ar
  - [x] GPGPU.js
  - [x] Polyline.js
  - [x] Shadow.js
+ - [x] KTXTexture.js
+ - [x] TextureLoader.js
 
 ## Examples wishlist
 
@@ -310,5 +313,5 @@ For more advanced techniques, extra classes will be developed and contained with
 ### Stencil
  - [ ] Stencil Shadows and Mirror
 
- ### Performance
+### Performance
  - [x] High mesh count

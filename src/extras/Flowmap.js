@@ -1,8 +1,8 @@
 import {RenderTarget} from '../core/RenderTarget.js';
-import {Geometry} from '../core/Geometry.js';
 import {Program} from '../core/Program.js';
 import {Mesh} from '../core/Mesh.js';
 import {Vec2} from '../math/Vec2.js';
+import {Triangle} from './Triangle.js';
 
 export class Flowmap {
     constructor(gl, {
@@ -64,10 +64,7 @@ export class Flowmap {
             return new Mesh(gl, {
 
                 // Triangle that includes -1 to 1 range for 'position', and 0 to 1 range for 'uv'.
-                geometry: new Geometry(gl, {
-                    position: {size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3])},
-                    uv: {size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2])},
-                }),
+                geometry: new Triangle(gl),
 
                 program: new Program(gl, {
                     vertex,
