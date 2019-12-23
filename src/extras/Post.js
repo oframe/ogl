@@ -1,9 +1,9 @@
 // TODO: Destroy render targets if size changed and exists
 
-import {Geometry} from '../core/Geometry.js';
 import {Program} from '../core/Program.js';
 import {Mesh} from '../core/Mesh.js';
 import {RenderTarget} from '../core/RenderTarget.js';
+import {Triangle} from './Triangle.js';
 
 export class Post {
     constructor(gl, {
@@ -14,10 +14,7 @@ export class Post {
         wrapT = gl.CLAMP_TO_EDGE,
         minFilter = gl.LINEAR,
         magFilter = gl.LINEAR,
-        geometry = new Geometry(gl, {
-            position: {size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3])},
-            uv: {size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2])},
-        }),
+        geometry = new Triangle(gl),
         targetOnly = null,
     } = {}) {
         this.gl = gl;

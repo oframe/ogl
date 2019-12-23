@@ -1,8 +1,8 @@
-import {Geometry} from '../core/Geometry.js';
 import {Program} from '../core/Program.js';
 import {Mesh} from '../core/Mesh.js';
 import {Texture} from '../core/Texture.js';
 import {RenderTarget} from '../core/RenderTarget.js';
+import {Triangle} from './Triangle.js';
 
 export class GPGPU {
     constructor(gl, {
@@ -10,10 +10,7 @@ export class GPGPU {
         // Always pass in array of vec4s (RGBA values within texture)
         data = new Float32Array(16),
 
-        geometry = new Geometry(gl, {
-            position: {size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3])},
-            uv: {size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2])},
-        }),
+        geometry = new Triangle(gl),
     }) {
         this.gl = gl;
         const initialData = data;

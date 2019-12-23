@@ -23,6 +23,7 @@ export {Plane} from './extras/Plane.js';
 export {Box} from './extras/Box.js';
 export {Sphere} from './extras/Sphere.js';
 export {Cylinder} from './extras/Cylinder.js';
+export {Triangle} from './extras/Triangle.js';
 export {Orbit} from './extras/Orbit.js';
 export {Raycast} from './extras/Raycast.js';
 // export {Curve} from './extras/Curve.js';
