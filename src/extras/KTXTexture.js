@@ -31,6 +31,8 @@ export class KTXTexture extends Texture {
 
         // TODO: support cube maps
         // ktx.numberOfFaces
+        
+        this.onUpdate && this.onUpdate();
     }
 };
 
