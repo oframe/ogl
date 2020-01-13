@@ -78,7 +78,7 @@ export class TextureLoader {
                     wrapT,
                     anisotropy,
                 });
-                this.loadKTX(src, texture);
+                texture.loaded = this.loadKTX(src, texture);
                 break;
             case 'webp':
             case 'jpg':
@@ -97,7 +97,7 @@ export class TextureLoader {
                     unpackAlignment,
                     flipY,
                 });
-                this.loadImage(gl, src, texture);
+                texture = loaded = this.loadImage(gl, src, texture);
                 break;
             default:
                 console.warn('No supported format supplied');
@@ -133,13 +133,13 @@ export class TextureLoader {
     }
 
     static loadKTX(src, texture) {
-        fetch(src)
+        return fetch(src)
             .then(res => res.arrayBuffer())
             .then(buffer => texture.parseBuffer(buffer));
     }
 
     static loadImage(gl, src, texture) {
-        decodeImage(src).then(imgBmp => {
+        return decodeImage(src).then(imgBmp => {
             // Catch non POT textures and update params to avoid errors
             if (!powerOfTwo(imgBmp.width) || !powerOfTwo(imgBmp.height)) {
                 if (texture.generateMipmaps) texture.generateMipmaps = false;
