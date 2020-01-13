@@ -84,6 +84,9 @@
             });
             // A console warning will show when no supported format was supplied
 
+            // `loaded` property is a promise resolved when the file is loaded and processed
+            // texture.loaded.then(() => console.log('loaded'));
+
             // You can check which format was applied using the `format` property
             document.body.querySelector('.Info').textContent += ` Supported format chosen: '${texture.format}'.`;
 
