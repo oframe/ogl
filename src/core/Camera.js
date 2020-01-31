@@ -16,21 +16,21 @@ export class Camera extends Transform {
         right,
         bottom,
         top,
+        zoom = 1,
     } = {}) {
         super();
 
-        this.near = near;
-        this.far = far;
-        this.fov = fov;
-        this.aspect = aspect;
+        Object.assign(this, { near, far, fov, aspect, left, right, bottom, top, zoom });
 
         this.projectionMatrix = new Mat4();
         this.viewMatrix = new Mat4();
         this.projectionViewMatrix = new Mat4();
         this.worldPosition = new Vec3();
 
-        // Use orthographic if values set, else default to perspective camera
-        if (left || right) this.orthographic({left, right, bottom, top});
+        // Use orthographic if left/right set, else default to perspective camera
+        this.type = left || right ? 'orthographic' : 'perspective';
+        
+        if (this.type === 'orthographic') this.orthographic();
         else this.perspective();
     }
 
@@ -40,6 +40,7 @@ export class Camera extends Transform {
         fov = this.fov,
         aspect = this.aspect,
     } = {}) {
+        Object.assign(this, { near, far, fov, aspect });
         this.projectionMatrix.fromPerspective({fov: fov * (Math.PI / 180), aspect, near, far});
         this.type = 'perspective';
         return this;
@@ -48,11 +49,17 @@ export class Camera extends Transform {
     orthographic({
         near = this.near,
         far = this.far,
-        left = -1,
-        right = 1,
-        bottom = -1,
-        top = 1,
+        left = this.left,
+        right = this.right,
+        bottom = this.bottom,
+        top = this.top,
+        zoom = this.zoom,
     } = {}) {
+        Object.assign(this, { near, far, left, right, bottom, top, zoom });
+        left /= zoom;
+        right /= zoom;
+        bottom /= zoom;
+        top /= zoom;
         this.projectionMatrix.fromOrthogonal({left, right, bottom, top, near, far});
         this.type = 'orthographic';
         return this;
