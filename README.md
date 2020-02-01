@@ -90,7 +90,7 @@ As a basic API example, below renders a spinning white cube.
 
 ```js
 {
-    import {Renderer, Camera, Program, Mesh, Box} from 'ogl';
+    import {Renderer, Camera, Transform, Box, Program, Mesh } from 'ogl';
 
     const renderer = new Renderer();
     const gl = renderer.gl;
@@ -146,7 +146,7 @@ As a basic API example, below renders a spinning white cube.
 Here you can play with the above template live in a codesandbox
 https://codesandbox.io/s/ogl-5i69p
 
-For a simpler use, such as a full-screen shader, more of the core can be omitted as a scene graph and projection matrices (cameras) are not necessary. 
+For a simpler use, such as a full-screen shader, more of the core can be omitted as a scene graph (Transform) and projection matrices (Camera) are not necessary. We'll also show how to easily create custom geometry.
 
 ```js
 import {Renderer, Geometry, Program, Mesh} from 'ogl';
@@ -164,6 +164,7 @@ import {Renderer, Geometry, Program, Mesh} from 'ogl';
         position: {size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3])},
         uv: {size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2])},
     });
+    // Alternatively, you could use the Triangle class.
 
     const program = new Program(gl, {
         vertex: `
@@ -246,6 +247,8 @@ Below is an **Extras** wish-list, and is still a work-in-progress as examples ar
  - [x] Shadow.js
  - [x] KTXTexture.js
  - [x] TextureLoader.js
+ - [ ] GLTFLoader.js
+ - [ ] OBJLoader.js
 
 ## Examples wishlist
 
@@ -269,6 +272,7 @@ For more advanced techniques, extra classes will be developed and contained with
  - [ ] Particle Depth Sort
  - [ ] LODs (Level Of Detail)
  - [x] Polylines
+ - [ ] Load OBJ (Object file format)
  - [ ] Load GLTF (Graphics Language Transmission Format)
 
 ### Scene
