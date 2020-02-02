@@ -64,19 +64,20 @@ export class Raycast {
             origin.copy(this.origin).applyMatrix4(invWorldMat4);
             direction.copy(this.direction).transformDirection(invWorldMat4);
 
-            let distance = 0;
-            if (mesh.geometry.raycast === 'sphere') { 
-                distance = this.intersectSphere(mesh.geometry.bounds, origin, direction);
+            let localDistance = 0;
+            if (mesh.geometry.raycast === 'sphere') {
+                localDistance = this.intersectSphere(mesh.geometry.bounds, origin, direction);
             } else {
-                distance = this.intersectBox(mesh.geometry.bounds, origin, direction);
+                localDistance = this.intersectBox(mesh.geometry.bounds, origin, direction);
             }
-            if (!distance) return;
+            if (!localDistance) return;
 
             // Create object on mesh to avoid generating lots of objects
-            if (!mesh.hit) mesh.hit = {localPoint: new Vec3()};
+            if (!mesh.hit) mesh.hit = {localPoint: new Vec3(), point: new Vec3()};
 
-            mesh.hit.distance = distance;
-            mesh.hit.localPoint.copy(direction).multiply(distance).add(origin);
+            mesh.hit.localPoint.copy(direction).multiply(localDistance).add(origin);
+            mesh.hit.point.copy(mesh.hit.localPoint).applyMatrix4(mesh.worldMatrix);
+            mesh.hit.distance = mesh.hit.point.distance(this.origin);
 
             hits.push(mesh);
         });
