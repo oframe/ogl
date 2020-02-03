@@ -1,44 +1,48 @@
-// TODO : support more color formats - e.g 0xffffff
 import * as ColorFunc from './functions/ColorFunc.js';
 
+// Color stored as an array of RGB decimal values (between 0 > 1)
+// Constructor and set method accept following formats:
+// new Color() - Empty (defaults to black)
+// new Color([0.2, 0.4, 1.0]) - Decimal Array (or another Color instance)
+// new Color(0.7, 0.0, 0.1) - Decimal RGB values
+// new Color('#ff0000') - Hex string
+// new Color('#ccc') - Short-hand Hex string
+// new Color(0x4f27e8) - Number
+// new Color('red') - Color name string (short list in ColorFunc.js)
+
 export class Color extends Array {
-    constructor(r = 0, g = 0, b = 0) {
-        if (typeof r === 'string') [r, g, b] = ColorFunc.hexToRGB(r);
-        super(r, g, b);
-        return this;
+    constructor(color) {
+        if (Array.isArray(color)) return super(...color);
+        return super(...ColorFunc.parseColor(...arguments));
     }
 
     get r() {
         return this[0];
     }
 
-    set r(v) {
-        this[0] = v;
-    }
-
     get g() {
         return this[1];
-    }
-
-    set g(v) {
-        this[1] = v;
     }
 
     get b() {
         return this[2];
     }
 
+    set r(v) {
+        this[0] = v;
+    }
+
+    set g(v) {
+        this[1] = v;
+    }
+
     set b(v) {
         this[2] = v;
     }
 
-    set(r, g, b) {
-        if (typeof r === 'string') [r, g, b] = ColorFunc.hexToRGB(r);
-        if (r.length) return this.copy(r);
-        this[0] = r;
-        this[1] = g;
-        this[2] = b;
-        return this;
+    set(color) {
+        if (Array.isArray(color)) return this.copy(color);
+        return this.copy(ColorFunc.parseColor(...arguments));
     }
 
     copy(v) {
