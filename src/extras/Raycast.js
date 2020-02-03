@@ -1,4 +1,3 @@
-// TODO: test orthographic
 // TODO: add barycentric ?
 
 import {Vec3} from '../math/Vec3.js';
@@ -22,9 +21,9 @@ export class Raycast {
         if (camera.type === 'orthographic') {
             // Set origin
             // Since camera is orthographic, origin is not the camera position
-            const {left, right, bottom, top} = camera;
-            const x = left + (right - left) * (mouse[0] * .5 + .5);
-            const y = bottom + (top - bottom) * (mouse[1] * .5 + .5);
+            const {left, right, bottom, top, zoom} = camera;
+            const x = left / zoom + (right - left) / zoom * (mouse[0] * .5 + .5);
+            const y = bottom / zoom + (top - bottom) / zoom * (mouse[1] * .5 + .5);
             this.origin.set(x, y, 0);
             this.origin.applyMatrix4(camera.worldMatrix);
 
