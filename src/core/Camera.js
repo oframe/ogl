@@ -121,6 +121,8 @@ export class Camera extends Transform {
         
         if (!node.geometry.bounds || node.geometry.bounds.radius === Infinity) node.geometry.computeBoundingSphere();
 
+        if (!node.geometry.bounds) return true;
+
         const center = tempVec3a;
         center.copy(node.geometry.bounds.center);
         center.applyMatrix4(node.worldMatrix);

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <title>OGL • Load GLTF</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info">Load GLTF (Graphics Language Transmission Format). Model by <a href="https://sketchfab.com/3d-models/old-scooter-5e9b5072b2224ba982366490ad5f31d9" target="_blank">Nadia Ribitis</a></div>
+    <script type="module">
+        import {Renderer, Camera, Transform, Program, Mesh, Orbit, GLTFLoader} from '../src/index.mjs';
+        
+        const vertex = /* glsl */ `
+            precision highp float;
+            precision highp int;
+
+            attribute vec3 position;
+            attribute vec3 normal;
+
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+            uniform mat3 normalMatrix;
+
+            varying vec3 vNormal;
+
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragment = /* glsl */ `
+            precision highp float;
+            precision highp int;
+
+            varying vec3 vNormal;
+
+            void main() {
+                gl_FragColor.rgb = normalize(vNormal);
+                gl_FragColor.a = 1.0;
+            }
+        `;
+
+        {
+            const renderer = new Renderer({dpr: 2});
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+            gl.clearColor(1, 1, 1, 1);
+
+            const camera = new Camera(gl);
+            camera.position.set(31, 14, 24);
+
+            window.CAMERA = camera;
+
+            const controls = new Orbit(camera);
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+            const scene = new Transform();
+
+            const program = new Program(gl, {vertex, fragment, cullFace: null});
+
+            loadModel();
+            async function loadModel() {
+                const data = await GLTFLoader.load(gl, `assets/gltf/old_scooter/scene.gltf`);
+                console.log(data);
+
+                data.meshes.forEach(primitives => {
+                    primitives.forEach(({geometry, mode}) => {
+                        const mesh = new Mesh(gl, {geometry, program});
+                        mesh.setParent(scene);
+                    });
+                });
+            }
+
+            scene.rotation.x = -Math.PI / 2;
+            scene.position.set(-8, -5, 14);
+            scene.scale.set(0.1);
+
+            requestAnimationFrame(update);
+            function update() {
+                requestAnimationFrame(update);
+                controls.update();
+                renderer.render({scene, camera, sort: false, frustumCull: false});
+            }
+        }
+    </script>
+</body>
+</html>

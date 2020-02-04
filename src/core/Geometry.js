@@ -4,12 +4,20 @@
 //     size - int default 1
 //     instanced - default null. Pass divisor amount
 //     type - gl enum default gl.UNSIGNED_SHORT for 'index', gl.FLOAT for others
-//     normalize - boolean default false
+//     normalized - boolean default false
+
+//     buffer - gl buffer, if buffer exists, don't need to provide data
+//     stride - default 0 - for when passing in buffer
+//     offset - default 0 - for when passing in buffer
+//     count - default null - for when passing in buffer
+//     min - array - - for when passing in buffer
+//     max - array - - for when passing in buffer
 // }
 
 // TODO: fit in transform feedback
 // TODO: when would I disableVertexAttribArray ?
 // TODO: add fallback for non vao support (ie)
+// TODO: redo bounds calc for GLTF - using min/max of the shared buffer doesn't work
 
 import {Vec3} from '../math/Vec3.js';
 
@@ -41,27 +49,35 @@ export class Geometry {
         for (let key in attributes) {
             this.addAttribute(key, attributes[key]);
         }
+
+        // To stop inifinite warnings
+        this.isBoundsWarned = false;
     }
 
     addAttribute(key, attr) {
         this.attributes[key] = attr;
 
         // Set options
-        attr.id = ATTR_ID++;
+        attr.id = ATTR_ID++; // TODO: currently unused, remove?
         attr.size = attr.size || 1;
         attr.type = attr.type || (
             attr.data.constructor === Float32Array ? this.gl.FLOAT : 
             attr.data.constructor === Uint16Array ? this.gl.UNSIGNED_SHORT : 
             this.gl.UNSIGNED_INT); // Uint32Array
         attr.target = key === 'index' ? this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER;
-        attr.normalize = attr.normalize || false;
-        attr.buffer = this.gl.createBuffer();
-        attr.count = attr.data.length / attr.size;
+        attr.normalized = attr.normalized || false;
+        attr.stride = attr.stride || 0;
+        attr.offset = attr.offset || 0;
+        attr.count = attr.count || attr.data.length / attr.size;
         attr.divisor = attr.instanced || 0;
         attr.needsUpdate = false;
 
-        // Push data to buffer
-        this.updateAttribute(attr);
+        if (!attr.buffer) {
+            attr.buffer = this.gl.createBuffer();
+
+            // Push data to buffer
+            this.updateAttribute(attr);
+        }
 
         // Update geometry counts. If indexed, ignore regular attributes
         if (attr.divisor) {
@@ -79,11 +95,9 @@ export class Geometry {
     }
 
     updateAttribute(attr) {
-
-        // Already bound, prevent gl command
-        if (this.glState.boundBuffer !== attr.id) {
+        if (this.glState.boundBuffer !== attr.buffer) {
             this.gl.bindBuffer(attr.target, attr.buffer);
-            this.glState.boundBuffer = attr.id;
+            this.glState.boundBuffer = attr.buffer;
         }
         this.gl.bufferData(attr.target, attr.data, this.gl.STATIC_DRAW);
         attr.needsUpdate = false;
@@ -122,14 +136,14 @@ export class Geometry {
             const attr = this.attributes[name];
 
             this.gl.bindBuffer(attr.target, attr.buffer);
-            this.glState.boundBuffer = attr.id;
+            this.glState.boundBuffer = attr.buffer;
             this.gl.vertexAttribPointer(
                 location,
                 attr.size,
                 attr.type,
-                attr.normalize,
-                0, // stride
-                0 // offset
+                attr.normalized,
+                attr.stride,
+                attr.offset
             );
             this.gl.enableVertexAttribArray(location);
 
@@ -166,18 +180,26 @@ export class Geometry {
             }
         } else {
             if (this.attributes.index) {
-                this.gl.drawElements(mode, this.drawRange.count, this.attributes.index.type, this.drawRange.start);
+                this.gl.drawElements(mode, this.drawRange.count, this.attributes.index.type, this.attributes.index.offset + this.drawRange.start * 2);
             } else {
                 this.gl.drawArrays(mode, this.drawRange.start, this.drawRange.count);
             }
         }
     }
 
-    computeBoundingBox(array) {
+    getPositionArray() {
 
-        // Use position buffer if available
-        if (!array && this.attributes.position) array = this.attributes.position.data;
-        if (!array) console.warn('No position buffer found to compute bounds');
+        // Use position buffer, or min/max if available
+        const attr = this.attributes.position;
+        if (attr.min) return [attr.min, attr.max];
+        if (attr.data) return attr.data;
+        if (this.isBoundsWarned) return;
+        console.warn('No position buffer data found to compute bounds');
+        return this.isBoundsWarned = true;
+    }
+
+    computeBoundingBox(array) {
+        if (!array) array = this.getPositionArray();
 
         if (!this.bounds) {
             this.bounds = {
@@ -197,6 +219,7 @@ export class Geometry {
         min.set(+Infinity);
         max.set(-Infinity);
 
+        // TODO: use offset/stride if exists
         for (let i = 0, l = array.length; i < l; i += 3) {
             const x = array[i];
             const y = array[i + 1];
@@ -216,11 +239,7 @@ export class Geometry {
     }
 
     computeBoundingSphere(array) {
-
-        // Use position buffer if available
-        if (!array && this.attributes.position) array = this.attributes.position.data;
-        if (!array) console.warn('No position buffer found to compute bounds');
-
+        if (!array) array = this.getPositionArray();
         if (!this.bounds) this.computeBoundingBox(array);
 
         let maxRadiusSq = 0;
@@ -237,7 +256,6 @@ export class Geometry {
         for (let key in this.attributes) {
             this.gl.deleteBuffer(this.attributes[key].buffer);
             delete this.attributes[key];
-
         }
     }
 }
