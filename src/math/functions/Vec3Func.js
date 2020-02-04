@@ -104,78 +104,6 @@ export function divide(out, a, b) {
 }
 
 /**
- * Math.ceil the components of a vec3
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a vector to ceil
- * @returns {vec3} out
- */
-export function ceil(out, a) {
-    out[0] = Math.ceil(a[0]);
-    out[1] = Math.ceil(a[1]);
-    out[2] = Math.ceil(a[2]);
-    return out;
-}
-
-/**
- * Math.floor the components of a vec3
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a vector to floor
- * @returns {vec3} out
- */
-export function floor(out, a) {
-    out[0] = Math.floor(a[0]);
-    out[1] = Math.floor(a[1]);
-    out[2] = Math.floor(a[2]);
-    return out;
-}
-
-/**
- * Returns the minimum of two vec3's
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @returns {vec3} out
- */
-export function min(out, a, b) {
-    out[0] = Math.min(a[0], b[0]);
-    out[1] = Math.min(a[1], b[1]);
-    out[2] = Math.min(a[2], b[2]);
-    return out;
-}
-
-/**
- * Returns the maximum of two vec3's
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @returns {vec3} out
- */
-export function max(out, a, b) {
-    out[0] = Math.max(a[0], b[0]);
-    out[1] = Math.max(a[1], b[1]);
-    out[2] = Math.max(a[2], b[2]);
-    return out;
-}
-
-/**
- * Math.round the components of a vec3
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a vector to round
- * @returns {vec3} out
- */
-export function round(out, a) {
-    out[0] = Math.round(a[0]);
-    out[1] = Math.round(a[1]);
-    out[2] = Math.round(a[2]);
-    return out;
-}
-
-/**
  * Scales a vec3 by a scalar number
  *
  * @param {vec3} out the receiving vector
@@ -187,22 +115,6 @@ export function scale(out, a, b) {
     out[0] = a[0] * b;
     out[1] = a[1] * b;
     out[2] = a[2] * b;
-    return out;
-}
-
-/**
- * Adds two vec3's after scaling the second operand by a scalar value
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @param {Number} scale the amount to scale b by before adding
- * @returns {vec3} out
- */
-export function scaleAndAdd(out, a, b, scale) {
-    out[0] = a[0] + b[0] * scale;
-    out[1] = a[1] + b[1] * scale;
-    out[2] = a[2] + b[2] * scale;
     return out;
 }
 
@@ -346,78 +258,6 @@ export function lerp(out, a, b, t) {
 }
 
 /**
- * Performs a hermite interpolation with two control points
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @param {vec3} c the third operand
- * @param {vec3} d the fourth operand
- * @param {Number} t interpolation amount between the two inputs
- * @returns {vec3} out
- */
-export function hermite(out, a, b, c, d, t) {
-    let factorTimes2 = t * t;
-    let factor1 = factorTimes2 * (2 * t - 3) + 1;
-    let factor2 = factorTimes2 * (t - 2) + t;
-    let factor3 = factorTimes2 * (t - 1);
-    let factor4 = factorTimes2 * (3 - 2 * t);
-
-    out[0] = a[0] * factor1 + b[0] * factor2 + c[0] * factor3 + d[0] * factor4;
-    out[1] = a[1] * factor1 + b[1] * factor2 + c[1] * factor3 + d[1] * factor4;
-    out[2] = a[2] * factor1 + b[2] * factor2 + c[2] * factor3 + d[2] * factor4;
-
-    return out;
-}
-
-/**
- * Performs a bezier interpolation with two control points
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @param {vec3} c the third operand
- * @param {vec3} d the fourth operand
- * @param {Number} t interpolation amount between the two inputs
- * @returns {vec3} out
- */
-export function bezier(out, a, b, c, d, t) {
-    let inverseFactor = 1 - t;
-    let inverseFactorTimesTwo = inverseFactor * inverseFactor;
-    let factorTimes2 = t * t;
-    let factor1 = inverseFactorTimesTwo * inverseFactor;
-    let factor2 = 3 * t * inverseFactorTimesTwo;
-    let factor3 = 3 * factorTimes2 * inverseFactor;
-    let factor4 = factorTimes2 * t;
-
-    out[0] = a[0] * factor1 + b[0] * factor2 + c[0] * factor3 + d[0] * factor4;
-    out[1] = a[1] * factor1 + b[1] * factor2 + c[1] * factor3 + d[1] * factor4;
-    out[2] = a[2] * factor1 + b[2] * factor2 + c[2] * factor3 + d[2] * factor4;
-
-    return out;
-}
-
-/**
- * Generates a random vector with the given scale
- *
- * @param {vec3} out the receiving vector
- * @param {Number} [scale] Length of the resulting vector. If ommitted, a unit vector will be returned
- * @returns {vec3} out
- */
-export function random(out, scale) {
-    scale = scale || 1.0;
-
-    let r = Math.random() * 2.0 * Math.PI;
-    let z = (Math.random() * 2.0) - 1.0;
-    let zScale = Math.sqrt(1.0 - z * z) * scale;
-
-    out[0] = Math.cos(r) * zScale;
-    out[1] = Math.sin(r) * zScale;
-    out[2] = z * scale;
-    return out;
-}
-
-/**
  * Transforms the vec3 with a mat4.
  * 4th vector component is implicitly '1'
  *
@@ -490,90 +330,6 @@ export function transformQuat(out, a, q) {
 }
 
 /**
- * Rotate a 3D vector around the x-axis
- * @param {vec3} out The receiving vec3
- * @param {vec3} a The vec3 point to rotate
- * @param {vec3} b The origin of the rotation
- * @param {Number} c The angle of rotation
- * @returns {vec3} out
- */
-export function rotateX(out, a, b, c) {
-    let p = [], r = [];
-    //Translate point to the origin
-    p[0] = a[0] - b[0];
-    p[1] = a[1] - b[1];
-    p[2] = a[2] - b[2];
-
-    //perform rotation
-    r[0] = p[0];
-    r[1] = p[1] * Math.cos(c) - p[2] * Math.sin(c);
-    r[2] = p[1] * Math.sin(c) + p[2] * Math.cos(c);
-
-    //translate to correct position
-    out[0] = r[0] + b[0];
-    out[1] = r[1] + b[1];
-    out[2] = r[2] + b[2];
-
-    return out;
-}
-
-/**
- * Rotate a 3D vector around the y-axis
- * @param {vec3} out The receiving vec3
- * @param {vec3} a The vec3 point to rotate
- * @param {vec3} b The origin of the rotation
- * @param {Number} c The angle of rotation
- * @returns {vec3} out
- */
-export function rotateY(out, a, b, c) {
-    let p = [], r = [];
-    //Translate point to the origin
-    p[0] = a[0] - b[0];
-    p[1] = a[1] - b[1];
-    p[2] = a[2] - b[2];
-
-    //perform rotation
-    r[0] = p[2] * Math.sin(c) + p[0] * Math.cos(c);
-    r[1] = p[1];
-    r[2] = p[2] * Math.cos(c) - p[0] * Math.sin(c);
-
-    //translate to correct position
-    out[0] = r[0] + b[0];
-    out[1] = r[1] + b[1];
-    out[2] = r[2] + b[2];
-
-    return out;
-}
-
-/**
- * Rotate a 3D vector around the z-axis
- * @param {vec3} out The receiving vec3
- * @param {vec3} a The vec3 point to rotate
- * @param {vec3} b The origin of the rotation
- * @param {Number} c The angle of rotation
- * @returns {vec3} out
- */
-export function rotateZ(out, a, b, c) {
-    let p = [], r = [];
-    //Translate point to the origin
-    p[0] = a[0] - b[0];
-    p[1] = a[1] - b[1];
-    p[2] = a[2] - b[2];
-
-    //perform rotation
-    r[0] = p[0] * Math.cos(c) - p[1] * Math.sin(c);
-    r[1] = p[0] * Math.sin(c) + p[1] * Math.cos(c);
-    r[2] = p[2];
-
-    //translate to correct position
-    out[0] = r[0] + b[0];
-    out[1] = r[1] + b[1];
-    out[2] = r[2] + b[2];
-
-    return out;
-}
-
-/**
  * Get the angle between two 3D vectors
  * @param {vec3} a The first operand
  * @param {vec3} b The second operand
@@ -604,16 +360,6 @@ export const angle = (function() {
 })();
 
 /**
- * Returns a string representation of a vector
- *
- * @param {vec3} a vector to represent as a string
- * @returns {String} string representation of the vector
- */
-export function str(a) {
-    return 'vec3(' + a[0] + ', ' + a[1] + ', ' + a[2] + ')';
-}
-
-/**
  * Returns whether or not the vectors have exactly the same elements in the same position (when compared with ===)
  *
  * @param {vec3} a The first vector.
@@ -622,19 +368,4 @@ export function str(a) {
  */
 export function exactEquals(a, b) {
     return a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
-}
-
-/**
- * Returns whether or not the vectors have approximately the same elements in the same position.
- *
- * @param {vec3} a The first vector.
- * @param {vec3} b The second vector.
- * @returns {Boolean} True if the vectors are equal, false otherwise.
- */
-export function equals(a, b) {
-    let a0 = a[0], a1 = a[1], a2 = a[2];
-    let b0 = b[0], b1 = b[1], b2 = b[2];
-    return (Math.abs(a0 - b0) <= EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) &&
-        Math.abs(a1 - b1) <= EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) &&
-        Math.abs(a2 - b2) <= EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)));
 }
