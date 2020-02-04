@@ -85,7 +85,7 @@ export class GLTFLoader {
         };
     }
 
-    // Threejs GLTF Loader https://github.com/mrdoob/three.js/blob/master/examples/js/loaders/GLTFLoader.js
+    // Threejs GLTF Loader https://github.com/mrdoob/three.js/blob/master/examples/js/loaders/GLTFLoader.js#L1085
 	static resolveURI(uri, dir) {
 		// Invalid URI
 		if (typeof uri !== 'string' || uri === '') return '';
@@ -248,7 +248,7 @@ export class GLTFLoader {
 
         // Return attribute data
         return {
-            data, // Optional. Used for computing bounds
+            data, // Optional. Used for computing bounds if no min/max
             size,
             type: componentType,
             normalized,
@@ -285,7 +285,7 @@ export class GLTFLoader {
             } else {
                 if (rotation) node.quaternion.copy(rotation);
                 if (scale) node.scale.copy(scale);
-                if (translation) node.translation.copy(translation);
+                if (translation) node.position.copy(translation);
             }
 
             if (meshIndex !== undefined) {
