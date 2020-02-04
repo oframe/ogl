@@ -31,22 +31,6 @@ export function copy(out, a) {
  * Set the components of a mat4 to the given values
  *
  * @param {mat4} out the receiving matrix
- * @param {Number} m00 Component in column 0, row 0 position (index 0)
- * @param {Number} m01 Component in column 0, row 1 position (index 1)
- * @param {Number} m02 Component in column 0, row 2 position (index 2)
- * @param {Number} m03 Component in column 0, row 3 position (index 3)
- * @param {Number} m10 Component in column 1, row 0 position (index 4)
- * @param {Number} m11 Component in column 1, row 1 position (index 5)
- * @param {Number} m12 Component in column 1, row 2 position (index 6)
- * @param {Number} m13 Component in column 1, row 3 position (index 7)
- * @param {Number} m20 Component in column 2, row 0 position (index 8)
- * @param {Number} m21 Component in column 2, row 1 position (index 9)
- * @param {Number} m22 Component in column 2, row 2 position (index 10)
- * @param {Number} m23 Component in column 2, row 3 position (index 11)
- * @param {Number} m30 Component in column 3, row 0 position (index 12)
- * @param {Number} m31 Component in column 3, row 1 position (index 13)
- * @param {Number} m32 Component in column 3, row 2 position (index 14)
- * @param {Number} m33 Component in column 3, row 3 position (index 15)
  * @returns {mat4} out
  */
 export function set(out, m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) {
@@ -280,28 +264,19 @@ export function multiply(out, a, b) {
     out[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
     out[3] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-    b0 = b[4];
-    b1 = b[5];
-    b2 = b[6];
-    b3 = b[7];
+    b0 = b[4]; b1 = b[5]; b2 = b[6]; b3 = b[7];
     out[4] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
     out[5] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
     out[6] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
     out[7] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-    b0 = b[8];
-    b1 = b[9];
-    b2 = b[10];
-    b3 = b[11];
+    b0 = b[8]; b1 = b[9]; b2 = b[10]; b3 = b[11];
     out[8] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
     out[9] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
     out[10] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
     out[11] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-    b0 = b[12];
-    b1 = b[13];
-    b2 = b[14];
-    b3 = b[15];
+    b0 = b[12]; b1 = b[13]; b2 = b[14]; b3 = b[15];
     out[12] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
     out[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
     out[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
@@ -405,7 +380,7 @@ export function scale(out, a, v) {
  */
 export function rotate(out, a, rad, axis) {
     let x = axis[0], y = axis[1], z = axis[2];
-    let len = Math.sqrt(x * x + y * y + z * z);
+    let len = Math.hypot(x,y,z);
     let s, c, t;
     let a00, a01, a02, a03;
     let a10, a11, a12, a13;
@@ -679,7 +654,7 @@ export function fromScaling(out, v) {
  */
 export function fromRotation(out, rad, axis) {
     let x = axis[0], y = axis[1], z = axis[2];
-    let len = Math.sqrt(x * x + y * y + z * z);
+    let len = Math.hypot(x, y, z);
     let s, c, t;
 
     if (Math.abs(len) < EPSILON) {
@@ -910,9 +885,9 @@ export function getScaling(out, mat) {
     let m32 = mat[9];
     let m33 = mat[10];
 
-    out[0] = Math.sqrt(m11 * m11 + m12 * m12 + m13 * m13);
-    out[1] = Math.sqrt(m21 * m21 + m22 * m22 + m23 * m23);
-    out[2] = Math.sqrt(m31 * m31 + m32 * m32 + m33 * m33);
+    out[0] = Math.hypot(m11, m12, m13);
+    out[1] = Math.hypot(m21, m22, m23);
+    out[2] = Math.hypot(m31, m32, m33);
 
     return out;
 }
@@ -944,39 +919,59 @@ export function getMaxScaleOnAxis(mat) {
  * @param {mat4} mat Matrix to be decomposed (input)
  * @return {quat} out
  */
-export function getRotation(out, mat) {
-    // Algorithm taken from http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
-    let trace = mat[0] + mat[5] + mat[10];
-    let S = 0;
+export const getRotation = (function() {
+    const temp = [0, 0, 0];
 
-    if (trace > 0) {
-        S = Math.sqrt(trace + 1.0) * 2;
-        out[3] = 0.25 * S;
-        out[0] = (mat[6] - mat[9]) / S;
-        out[1] = (mat[8] - mat[2]) / S;
-        out[2] = (mat[1] - mat[4]) / S;
-    } else if ((mat[0] > mat[5]) && (mat[0] > mat[10])) {
-        S = Math.sqrt(1.0 + mat[0] - mat[5] - mat[10]) * 2;
-        out[3] = (mat[6] - mat[9]) / S;
-        out[0] = 0.25 * S;
-        out[1] = (mat[1] + mat[4]) / S;
-        out[2] = (mat[8] + mat[2]) / S;
-    } else if (mat[5] > mat[10]) {
-        S = Math.sqrt(1.0 + mat[5] - mat[0] - mat[10]) * 2;
-        out[3] = (mat[8] - mat[2]) / S;
-        out[0] = (mat[1] + mat[4]) / S;
-        out[1] = 0.25 * S;
-        out[2] = (mat[6] + mat[9]) / S;
-    } else {
-        S = Math.sqrt(1.0 + mat[10] - mat[0] - mat[5]) * 2;
-        out[3] = (mat[1] - mat[4]) / S;
-        out[0] = (mat[8] + mat[2]) / S;
-        out[1] = (mat[6] + mat[9]) / S;
-        out[2] = 0.25 * S;
+    return function(out, mat) {
+        let scaling = temp;
+        getScaling(scaling, mat);
+    
+        let is1 = 1 / scaling[0];
+        let is2 = 1 / scaling[1];
+        let is3 = 1 / scaling[2];
+    
+        let sm11 = mat[0] * is1;
+        let sm12 = mat[1] * is2;
+        let sm13 = mat[2] * is3;
+        let sm21 = mat[4] * is1;
+        let sm22 = mat[5] * is2;
+        let sm23 = mat[6] * is3;
+        let sm31 = mat[8] * is1;
+        let sm32 = mat[9] * is2;
+        let sm33 = mat[10] * is3;
+    
+        let trace = sm11 + sm22 + sm33;
+        let S = 0;
+    
+        if (trace > 0) {
+            S = Math.sqrt(trace + 1.0) * 2;
+            out[3] = 0.25 * S;
+            out[0] = (sm23 - sm32) / S;
+            out[1] = (sm31 - sm13) / S;
+            out[2] = (sm12 - sm21) / S;
+        } else if ((sm11 > sm22) && (sm11 > sm33)) {
+            S = Math.sqrt(1.0 + sm11 - sm22- sm33) * 2;
+            out[3] = (sm23 - sm32) / S;
+            out[0] = 0.25 * S;
+            out[1] = (sm12 + sm21) / S;
+            out[2] = (sm31 + sm13) / S;
+        } else if (sm22 > sm33) {
+            S = Math.sqrt(1.0 + sm22 - sm11 - sm33) * 2;
+            out[3] = (sm31 - sm13) / S;
+            out[0] = (sm12 + sm21) / S;
+            out[1] = 0.25 * S;
+            out[2] = (sm23 + sm32) / S;
+        } else {
+            S = Math.sqrt(1.0 + sm33 - sm11 - sm22) * 2;
+            out[3] = (sm12 - sm21) / S;
+            out[0] = (sm31 + sm13) / S;
+            out[1] = (sm23 + sm32) / S;
+            out[2] = 0.25 * S;
+        }
+    
+        return out;
     }
-
-    return out;
-}
+})();
 
 /**
  * Creates a matrix from a quaternion rotation, vector translation and vector scale
@@ -1329,7 +1324,7 @@ export function lookAt(out, eye, center, up) {
     z1 = eyey - centery;
     z2 = eyez - centerz;
 
-    len = 1 / Math.sqrt(z0 * z0 + z1 * z1 + z2 * z2);
+    len = 1 / Math.hypot(z0, z1, z2);
     z0 *= len;
     z1 *= len;
     z2 *= len;
@@ -1337,7 +1332,7 @@ export function lookAt(out, eye, center, up) {
     x0 = upy * z2 - upz * z1;
     x1 = upz * z0 - upx * z2;
     x2 = upx * z1 - upy * z0;
-    len = Math.sqrt(x0 * x0 + x1 * x1 + x2 * x2);
+    len = Math.hypot(x0, x1, x2);
     if (!len) {
         x0 = 0;
         x1 = 0;
@@ -1353,7 +1348,7 @@ export function lookAt(out, eye, center, up) {
     y1 = z2 * x0 - z0 * x2;
     y2 = z0 * x1 - z1 * x0;
 
-    len = Math.sqrt(y0 * y0 + y1 * y1 + y2 * y2);
+    len = Math.hypot(y0, y1, y2);
     if (!len) {
         y0 = 0;
         y1 = 0;

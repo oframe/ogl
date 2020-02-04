@@ -10,14 +10,13 @@
 //     stride - default 0 - for when passing in buffer
 //     offset - default 0 - for when passing in buffer
 //     count - default null - for when passing in buffer
-//     min - array - - for when passing in buffer
-//     max - array - - for when passing in buffer
+//     min - array - for when passing in buffer
+//     max - array - for when passing in buffer
 // }
 
 // TODO: fit in transform feedback
 // TODO: when would I disableVertexAttribArray ?
 // TODO: add fallback for non vao support (ie)
-// TODO: redo bounds calc for GLTF - using min/max of the shared buffer doesn't work
 
 import {Vec3} from '../math/Vec3.js';
 
