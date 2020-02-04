@@ -12,38 +12,7 @@
 <body>
     <div class="Info">Load GLTF (Graphics Language Transmission Format). Model by <a href="https://sketchfab.com/3d-models/old-scooter-5e9b5072b2224ba982366490ad5f31d9" target="_blank">Nadia Ribitis</a></div>
     <script type="module">
-        import {Renderer, Camera, Transform, Program, Mesh, Orbit, GLTFLoader} from '../src/index.mjs';
-        
-        const vertex = /* glsl */ `
-            precision highp float;
-            precision highp int;
-
-            attribute vec3 position;
-            attribute vec3 normal;
-
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
-            uniform mat3 normalMatrix;
-
-            varying vec3 vNormal;
-
-            void main() {
-                vNormal = normalize(normalMatrix * normal);
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
-
-        const fragment = /* glsl */ `
-            precision highp float;
-            precision highp int;
-
-            varying vec3 vNormal;
-
-            void main() {
-                gl_FragColor.rgb = normalize(vNormal);
-                gl_FragColor.a = 1.0;
-            }
-        `;
+        import {Renderer, Camera, Transform, Orbit, GLTFLoader} from '../src/index.mjs';
 
         {
             const renderer = new Renderer({dpr: 2});
@@ -51,12 +20,13 @@
             document.body.appendChild(gl.canvas);
             gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl);
-            camera.position.set(31, 14, 24);
+            const camera = new Camera(gl, {near: 1, far: 1000});
+            camera.position.set(281, 127, 217);
 
             window.CAMERA = camera;
 
             const controls = new Orbit(camera);
+            controls.target.y = 50;
 
             function resize() {
                 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -67,24 +37,12 @@
 
             const scene = new Transform();
 
-            const program = new Program(gl, {vertex, fragment, cullFace: null});
+            (async function() {
+                const gltf = await GLTFLoader.load(gl, `assets/gltf/old_scooter/scene.gltf`);
+                console.log(gltf);
 
-            loadModel();
-            async function loadModel() {
-                const data = await GLTFLoader.load(gl, `assets/gltf/old_scooter/scene.gltf`);
-                console.log(data);
-
-                data.meshes.forEach(primitives => {
-                    primitives.forEach(({geometry, mode}) => {
-                        const mesh = new Mesh(gl, {geometry, program});
-                        mesh.setParent(scene);
-                    });
-                });
-            }
-
-            scene.rotation.x = -Math.PI / 2;
-            scene.position.set(-8, -5, 14);
-            scene.scale.set(0.1);
+                gltf.scene.forEach(node => node.setParent(scene));
+            })();
 
             requestAnimationFrame(update);
             function update() {
