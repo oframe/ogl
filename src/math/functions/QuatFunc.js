@@ -1,4 +1,3 @@
-import * as vec3 from './Vec3Func.js';
 import * as vec4 from './Vec4Func.js';
 
 /**
@@ -32,35 +31,6 @@ export function setAxisAngle(out, axis, rad) {
     out[2] = s * axis[2];
     out[3] = Math.cos(rad);
     return out;
-}
-
-/**
- * Gets the rotation axis and angle for a given
- *  quaternion. If a quaternion is created with
- *  setAxisAngle, this method will return the same
- *  values as providied in the original parameter list
- *  OR functionally equivalent values.
- * Example: The quaternion formed by axis [0, 0, 1] and
- *  angle -90 is the same as the quaternion formed by
- *  [0, 0, 1] and 270. This method favors the latter.
- * @param  {vec3} out_axis  Vector receiving the axis of rotation
- * @param  {quat} q     Quaternion to be decomposed
- * @return {Number}     Angle, in radians, of the rotation
- */
-export function getAxisAngle(out_axis, q) {
-    let rad = Math.acos(q[3]) * 2.0;
-    let s = Math.sin(rad / 2.0);
-    if (s != 0.0) {
-        out_axis[0] = q[0] / s;
-        out_axis[1] = q[1] / s;
-        out_axis[2] = q[2] / s;
-    } else {
-        // If s is zero, return any axis (no rotation - axis does not matter)
-        out_axis[0] = 1;
-        out_axis[1] = 0;
-        out_axis[2] = 0;
-    }
-    return rad;
 }
 
 /**
@@ -142,25 +112,6 @@ export function rotateZ(out, a, rad) {
     out[1] = ay * bw - ax * bz;
     out[2] = az * bw + aw * bz;
     out[3] = aw * bw - az * bz;
-    return out;
-}
-
-/**
- * Calculates the W component of a quat from the X, Y, and Z components.
- * Assumes that quaternion is 1 unit in length.
- * Any existing W component will be ignored.
- *
- * @param {quat} out the receiving quaternion
- * @param {quat} a quat to calculate W component of
- * @returns {quat} out
- */
-export function calculateW(out, a) {
-    let x = a[0], y = a[1], z = a[2];
-
-    out[0] = x;
-    out[1] = y;
-    out[2] = z;
-    out[3] = Math.sqrt(Math.abs(1.0 - x * x - y * y - z * z));
     return out;
 }
 
@@ -349,17 +300,6 @@ export function fromEuler(out, euler, order = 'YXZ') {
 }
 
 /**
- * Returns a string representation of a quatenion
- *
- * @param {quat} a vector to represent as a string
- * @returns {String} string representation of the vector
- */
-export function str(a) {
-    return 'quat(' + a[0] + ', ' + a[1] + ', ' + a[2] + ', ' + a[3] + ')';
-}
-
-
-/**
  * Copy the values from one quat to another
  *
  * @param {quat} out the receiving quaternion
@@ -435,15 +375,6 @@ export const lerp = vec4.lerp;
 export const length = vec4.length;
 
 /**
- * Calculates the squared length of a quat
- *
- * @param {quat} a vector to calculate squared length of
- * @returns {Number} squared length of a
- * @function
- */
-export const squaredLength = vec4.squaredLength;
-
-/**
  * Normalize a quat
  *
  * @param {quat} out the receiving quaternion
@@ -452,117 +383,3 @@ export const squaredLength = vec4.squaredLength;
  * @function
  */
 export const normalize = vec4.normalize;
-
-/**
- * Returns whether or not the quaternions have exactly the same elements in the same position (when compared with ===)
- *
- * @param {quat} a The first quaternion.
- * @param {quat} b The second quaternion.
- * @returns {Boolean} True if the vectors are equal, false otherwise.
- */
-export const exactEquals = vec4.exactEquals;
-
-/**
- * Returns whether or not the quaternions have approximately the same elements in the same position.
- *
- * @param {quat} a The first vector.
- * @param {quat} b The second vector.
- * @returns {Boolean} True if the vectors are equal, false otherwise.
- */
-export const equals = vec4.equals;
-
-/**
- * Sets a quaternion to represent the shortest rotation from one
- * vector to another.
- *
- * Both vectors are assumed to be unit length.
- *
- * @param {quat} out the receiving quaternion.
- * @param {vec3} a the initial vector
- * @param {vec3} b the destination vector
- * @returns {quat} out
- */
-export const rotationTo = (function () {
-    const tmpvec3 = [0, 0, 0];
-    const xUnitVec3 = [1, 0, 0];
-    const yUnitVec3 = [0, 1, 0];
-
-    return function (out, a, b) {
-        let dot = vec3.dot(a, b);
-        if (dot < -0.999999) {
-            vec3.cross(tmpvec3, xUnitVec3, a);
-            if (vec3.length(tmpvec3) < 0.000001)
-                vec3.cross(tmpvec3, yUnitVec3, a);
-            vec3.normalize(tmpvec3, tmpvec3);
-            setAxisAngle(out, tmpvec3, Math.PI);
-            return out;
-        } else if (dot > 0.999999) {
-            out[0] = 0;
-            out[1] = 0;
-            out[2] = 0;
-            out[3] = 1;
-            return out;
-        } else {
-            vec3.cross(tmpvec3, a, b);
-            out[0] = tmpvec3[0];
-            out[1] = tmpvec3[1];
-            out[2] = tmpvec3[2];
-            out[3] = 1 + dot;
-            return normalize(out, out);
-        }
-    };
-})();
-
-/**
- * Performs a spherical linear interpolation with two control points
- *
- * @param {quat} out the receiving quaternion
- * @param {quat} a the first operand
- * @param {quat} b the second operand
- * @param {quat} c the third operand
- * @param {quat} d the fourth operand
- * @param {Number} t interpolation amount
- * @returns {quat} out
- */
-export const sqlerp = (function () {
-    let temp1 = [0, 0, 0, 1];
-    let temp2 = [0, 0, 0, 1];
-
-    return function (out, a, b, c, d, t) {
-        slerp(temp1, a, d, t);
-        slerp(temp2, b, c, t);
-        slerp(out, temp1, temp2, 2 * t * (1 - t));
-
-        return out;
-    };
-}());
-
-/**
- * Sets the specified quaternion with values corresponding to the given
- * axes. Each axis is a vec3 and is expected to be unit length and
- * perpendicular to all other specified axes.
- *
- * @param {vec3} view  the vector representing the viewing direction
- * @param {vec3} right the vector representing the local "right" direction
- * @param {vec3} up    the vector representing the local "up" direction
- * @returns {quat} out
- */
-export const setAxes = (function () {
-    const m = [1, 0, 0, 0, 1, 0, 0, 0, 1];
-
-    return function (out, view, right, up) {
-        m[0] = right[0];
-        m[3] = right[1];
-        m[6] = right[2];
-
-        m[1] = up[0];
-        m[4] = up[1];
-        m[7] = up[2];
-
-        m[2] = -view[0];
-        m[5] = -view[1];
-        m[8] = -view[2];
-
-        return normalize(out, fromMat3(out, m));
-    };
-})();

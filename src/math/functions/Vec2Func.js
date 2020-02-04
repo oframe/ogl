@@ -84,73 +84,6 @@ export function divide(out, a, b) {
 };
 
 /**
- * Math.ceil the components of a vec2
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a vector to ceil
- * @returns {vec2} out
- */
-export function ceil(out, a) {
-    out[0] = Math.ceil(a[0]);
-    out[1] = Math.ceil(a[1]);
-    return out;
-};
-
-/**
- * Math.floor the components of a vec2
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a vector to floor
- * @returns {vec2} out
- */
-export function floor(out, a) {
-    out[0] = Math.floor(a[0]);
-    out[1] = Math.floor(a[1]);
-    return out;
-};
-
-/**
- * Returns the minimum of two vec2's
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @returns {vec2} out
- */
-export function min(out, a, b) {
-    out[0] = Math.min(a[0], b[0]);
-    out[1] = Math.min(a[1], b[1]);
-    return out;
-};
-
-/**
- * Returns the maximum of two vec2's
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @returns {vec2} out
- */
-export function max(out, a, b) {
-    out[0] = Math.max(a[0], b[0]);
-    out[1] = Math.max(a[1], b[1]);
-    return out;
-};
-
-/**
- * Math.round the components of a vec2
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a vector to round
- * @returns {vec2} out
- */
-export function round(out, a) {
-    out[0] = Math.round(a[0]);
-    out[1] = Math.round(a[1]);
-    return out;
-};
-
-/**
  * Scales a vec2 by a scalar number
  *
  * @param {vec2} out the receiving vector
@@ -161,21 +94,6 @@ export function round(out, a) {
 export function scale(out, a, b) {
     out[0] = a[0] * b;
     out[1] = a[1] * b;
-    return out;
-};
-
-/**
- * Adds two vec2's after scaling the second operand by a scalar value
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @param {Number} scale the amount to scale b by before adding
- * @returns {vec2} out
- */
-export function scaleAndAdd(out, a, b, scale) {
-    out[0] = a[0] + b[0] * scale;
-    out[1] = a[1] + b[1] * scale;
     return out;
 };
 
@@ -316,21 +234,6 @@ export function lerp(out, a, b, t) {
 };
 
 /**
- * Generates a random vector with the given scale
- *
- * @param {vec2} out the receiving vector
- * @param {Number} [scale] Length of the resulting vector. If ommitted, a unit vector will be returned
- * @returns {vec2} out
- */
-export function random(out, scale) {
-    scale = scale || 1.0;
-    var r = Math.random() * 2.0 * Math.PI;
-    out[0] = Math.cos(r) * scale;
-    out[1] = Math.sin(r) * scale;
-    return out;
-};
-
-/**
  * Transforms the vec2 with a mat2
  *
  * @param {vec2} out the receiving vector
@@ -398,16 +301,6 @@ export function transformMat4(out, a, m) {
 }
 
 /**
- * Returns a string representation of a vector
- *
- * @param {vec2} a vector to represent as a string
- * @returns {String} string representation of the vector
- */
-export function str(a) {
-    return 'vec2(' + a[0] + ', ' + a[1] + ')';
-}
-
-/**
  * Returns whether or not the vectors exactly have the same elements in the same position (when compared with ===)
  *
  * @param {vec2} a The first vector.
@@ -416,18 +309,4 @@ export function str(a) {
  */
 export function exactEquals(a, b) {
     return a[0] === b[0] && a[1] === b[1];
-}
-
-/**
- * Returns whether or not the vectors have approximately the same elements in the same position.
- *
- * @param {vec2} a The first vector.
- * @param {vec2} b The second vector.
- * @returns {Boolean} True if the vectors are equal, false otherwise.
- */
-export function equals(a, b) {
-    let a0 = a[0], a1 = a[1];
-    let b0 = b[0], b1 = b[1];
-    return (Math.abs(a0 - b0) <= EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) &&
-        Math.abs(a1 - b1) <= EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)));
 }

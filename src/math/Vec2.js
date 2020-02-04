@@ -9,13 +9,13 @@ export class Vec2 extends Array {
     get x() {
         return this[0];
     }
+    
+    get y() {
+        return this[1];
+    }
 
     set x(v) {
         this[0] = v;
-    }
-
-    get y() {
-        return this[1];
     }
 
     set y(v) {
