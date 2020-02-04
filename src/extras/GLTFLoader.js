@@ -6,15 +6,6 @@ import { Geometry } from '../core/Geometry.js';
 // TODO: is there ever more than one component type per buffer view? surely not...
 // TODO: extensions: GLB
 
-const MODE = {
-    POINTS: 0,
-    LINES: 1,
-    LINE_LOOP: 2,
-    LINE_STRIP: 3,
-    TRIANGLES: 4,
-    TRIANGLE_FAN: 6,
-};
-
 const TYPE_ARRAY = {
     5121: Uint8Array,
     5122: Int16Array,
@@ -96,13 +87,12 @@ export class GLTFLoader {
 
 	static async loadBuffers(desc, dir) {
         return await Promise.all(desc.buffers.map(buffer => {
-            const src = this.resolveURI(buffer.uri, dir);
-            return fetch(src).then(res => res.arrayBuffer())
+            const uri = this.resolveURI(buffer.uri, dir);
+            return fetch(uri).then(res => res.arrayBuffer());
         }));
     }
 
     static parseBufferViews(gl, desc, buffers) {
-        // TODO: only push attribute bufferViews to the GPU
         
         // Clone to leave desc pure
         const bufferViews = desc.bufferViews.map(o => Object.assign({}, o));
@@ -122,23 +112,23 @@ export class GLTFLoader {
         });
 
         // Push each bufferView to the GPU as a separate buffer
+        // TODO: only push attribute bufferViews to the GPU
         bufferViews.forEach(({
             buffer: bufferIndex, // required
             byteOffset = 0, // optional
             byteLength, // required
             byteStride, // optional
-            target, // optional, added above for elements
+            target = gl.ARRAY_BUFFER, // optional, added above for elements
             // name, // optional
             // extensions, // optional
             // extras, // optional
 
             componentType, // required, added from accessor above
         }, i) => {
-            if (!target) target = gl.ARRAY_BUFFER;
             const TypeArray = TYPE_ARRAY[componentType];
             const elementBytes = TypeArray.BYTES_PER_ELEMENT;
 
-            // Create gl buffers for the buffer view, pushing it to the GPU
+            // Create gl buffers for the bufferView, pushing it to the GPU
             const data = new TypeArray(buffers[bufferIndex], byteOffset, byteLength / elementBytes);
             const buffer = gl.createBuffer();
             gl.bindBuffer(target, buffer);
