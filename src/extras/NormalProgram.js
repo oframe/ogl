@@ -35,5 +35,6 @@ export function NormalProgram(gl) {
     return new Program(gl, {
         vertex: vertex,
         fragment: fragment,
+        cullFace: null,
     });
 }

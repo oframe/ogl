@@ -26,6 +26,9 @@ const tempVec3 = new Vec3();
 let ID = 1;
 let ATTR_ID = 1;
 
+// To stop inifinite warnings
+let isBoundsWarned = false;
+
 export class Geometry {
     constructor(gl, attributes = {}) {
         this.gl = gl;
@@ -49,9 +52,6 @@ export class Geometry {
         for (let key in attributes) {
             this.addAttribute(key, attributes[key]);
         }
-
-        // To stop inifinite warnings
-        this.isBoundsWarned = false;
     }
 
     addAttribute(key, attr) {
@@ -193,9 +193,9 @@ export class Geometry {
         const attr = this.attributes.position;
         if (attr.min) return [attr.min, attr.max];
         if (attr.data) return attr.data;
-        if (this.isBoundsWarned) return;
+        if (isBoundsWarned) return;
         console.warn('No position buffer data found to compute bounds');
-        return this.isBoundsWarned = true;
+        return isBoundsWarned = true;
     }
 
     computeBoundingBox(array) {

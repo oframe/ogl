@@ -1,10 +1,23 @@
 import { Geometry } from '../core/Geometry.js';
+import { Transform } from '../core/Transform.js';
+import { Mesh } from '../core/Mesh.js';
+import { NormalProgram } from './NormalProgram.js';
+
+// Supports
+// [x] Geometry
+// [x] Nodes and Hierarchy
+// [ ] Morph Targets
+// [ ] Skins
+// [ ] Materials
+// [ ] Textures
+// [ ] Animation
+// [ ] Cameras
+// [ ] Extensions
 
 // TODO: only push attribute bufferViews to the GPU
 // TODO: Sparse accessor packing? what for?
 // TODO: init accessor missing bufferView with 0s
 // TODO: is there ever more than one component type per buffer view? surely not...
-// TODO: extensions: GLB
 
 const TYPE_ARRAY = {
     5121: Uint8Array,
@@ -54,11 +67,21 @@ export class GLTFLoader {
         // Create geometries for each mesh primitive
         const meshes = this.parseMeshes(gl, desc, bufferViews);
 
+        // Create transforms, meshes and hierarchy
+        const nodes = this.parseNodes(gl, desc, meshes);
+
+        // Get top level nodes for each scene
+        const scenes = this.parseScenes(desc, nodes);
+        const scene = scenes[desc.scene];
+
         return {
             json: desc,
             buffers,
             bufferViews,
             meshes,
+            nodes,
+            scenes,
+            scene,
         };
     }
 
@@ -119,9 +142,9 @@ export class GLTFLoader {
             byteLength, // required
             byteStride, // optional
             target = gl.ARRAY_BUFFER, // optional, added above for elements
-            // name, // optional
-            // extensions, // optional
-            // extras, // optional
+            name, // optional
+            extensions, // optional
+            extras, // optional
 
             componentType, // required, added from accessor above
         }, i) => {
@@ -146,37 +169,49 @@ export class GLTFLoader {
         return desc.meshes.map(({
             primitives, // required
             weights, // optional
-            // name, // optional
+            name, // optional
+            extensions, // optional
+            extras, // optional
+        }) => {
+            return {
+                primitives: this.parsePrimitives(gl, primitives, desc, bufferViews),
+                weights,
+                name,
+            };
+        });
+
+    }
+    
+    static parsePrimitives(gl, primitives, desc, bufferViews) {
+        return primitives.map(({
+            attributes, // required
+            indices, // optional
+            material, // optional
+            mode = 4, // optional
+            targets, // optional
             // extensions, // optional
             // extras, // optional
         }) => {
-            return primitives.map(({
-                attributes, // required
-                indices, // optional
-                material, // optional
-                mode = 4, // optional
-                targets, // optional
-                // extensions, // optional
-                // extras, // optional
-            }) => {
-                const geometry = new Geometry(gl);
+            const geometry = new Geometry(gl);
 
-                // Add each attribute found in primitive
-                for (const attr in attributes) {
-                    geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
-                }
-                
-                // Add index attribute if found
-                if (indices !== undefined) geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews));
+            // Add each attribute found in primitive
+            for (const attr in attributes) {
+                geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
+            }
+            
+            // Add index attribute if found
+            if (indices !== undefined) geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews));
 
-                return {
-                    geometry,
-                    mode: mode,
-                };
-            });
+            // TODO: materials
+            const program = new NormalProgram(gl);
+
+            return {
+                geometry,
+                program,
+                mode,
+            };
         });
-
-	}
+    }
 
 	static parseAccessor(index, desc, bufferViews) {
         // TODO: init missing bufferView with 0s
@@ -193,7 +228,7 @@ export class GLTFLoader {
             max, // optional
             sparse, // optional
             // name, // optional
-            // extension, // optional
+            // extensions, // optional
             // extras, // optional
         } = desc.accessors[index];
 
@@ -224,6 +259,64 @@ export class GLTFLoader {
             min,
             max,
         };
-	}
+    }
+    
+    static parseNodes(gl, desc, meshes) {
+
+        const nodes = desc.nodes.map(({
+            // Everything is optional
+            camera,
+            children,
+            skin,
+            matrix, 
+            mesh: meshIndex,
+            rotation,
+            scale,
+            translation,
+            weights,
+            name,
+            extensions,
+            extras,
+        }) => {
+            const node = new Transform();
+            if (matrix) {
+                node.matrix.copy(matrix);
+                node.decompose();
+            } else {
+                if (rotation) node.quaternion.copy(rotation);
+                if (scale) node.scale.copy(scale);
+                if (translation) node.translation.copy(translation);
+            }
+
+            if (meshIndex !== undefined) {
+                meshes[meshIndex].primitives.forEach(({geometry, program, mode}) => {
+                    const mesh = new Mesh(gl, {geometry, program, mode});
+                    mesh.setParent(node);
+                });
+            }
+
+            return node;
+        });
+
+        // Set hierarchy now all nodes created
+        desc.nodes.forEach(({children = []}, i) => {
+            children.forEach(childIndex => {
+                nodes[childIndex].setParent(nodes[i]);
+            });
+        });
+
+        return nodes;
+    }
+
+    static parseScenes(desc, nodes) {
+        return desc.scenes.map(({
+            nodes: nodesIndices = [],
+            name,
+            extensions,
+            extras,
+        }) => {
+            return nodesIndices.map(i => nodes[i]);
+        });
+    }
 }
 
