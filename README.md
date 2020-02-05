@@ -55,10 +55,10 @@ Even though the source is modular, as a guide, below are the complete component 
 
 Component | Size (minzipped)
 ------------ | -------------:
-Core | 6kb
-Math | 7kb
-Extras | 9kb
-Total | 22kb
+Core | 8kb
+Math | 6kb
+Extras | 10kb
+Total | 24kb
 
 With tree-shaking applied in a build step, one can expect the final size to be much lighter than the values above.
 
