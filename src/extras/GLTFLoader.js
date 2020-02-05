@@ -86,29 +86,29 @@ export class GLTFLoader {
     }
 
     // Threejs GLTF Loader https://github.com/mrdoob/three.js/blob/master/examples/js/loaders/GLTFLoader.js#L1085
-	static resolveURI(uri, dir) {
-		// Invalid URI
-		if (typeof uri !== 'string' || uri === '') return '';
+    static resolveURI(uri, dir) {
+        // Invalid URI
+        if (typeof uri !== 'string' || uri === '') return '';
 
-		// Host Relative URI
-		if (/^https?:\/\//i.test(dir) && /^\//.test(uri)) {
-			dir = dir.replace( /(^https?:\/\/[^\/]+).*/i, '$1' );
-		}
+        // Host Relative URI
+        if (/^https?:\/\//i.test(dir) && /^\//.test(uri)) {
+            dir = dir.replace( /(^https?:\/\/[^\/]+).*/i, '$1' );
+        }
 
-		// Absolute URI http://, https://, //
-		if ( /^(https?:)?\/\//i.test(uri)) return uri;
+        // Absolute URI http://, https://, //
+        if ( /^(https?:)?\/\//i.test(uri)) return uri;
 
-		// Data URI
-		if (/^data:.*,.*$/i.test(uri)) return uri;
+        // Data URI
+        if (/^data:.*,.*$/i.test(uri)) return uri;
 
-		// Blob URI
-		if (/^blob:.*$/i.test(uri)) return uri;
+        // Blob URI
+        if (/^blob:.*$/i.test(uri)) return uri;
 
-		// Relative URI
-		return dir + uri;
-	}
+        // Relative URI
+        return dir + uri;
+    }
 
-	static async loadBuffers(desc, dir) {
+    static async loadBuffers(desc, dir) {
         return await Promise.all(desc.buffers.map(buffer => {
             const uri = this.resolveURI(buffer.uri, dir);
             return fetch(uri).then(res => res.arrayBuffer());
@@ -165,7 +165,7 @@ export class GLTFLoader {
         return bufferViews;
     }
 
-	static parseMeshes(gl, desc, bufferViews) {
+    static parseMeshes(gl, desc, bufferViews) {
         return desc.meshes.map(({
             primitives, // required
             weights, // optional
@@ -213,7 +213,7 @@ export class GLTFLoader {
         });
     }
 
-	static parseAccessor(index, desc, bufferViews) {
+    static parseAccessor(index, desc, bufferViews) {
         // TODO: init missing bufferView with 0s
         // TODO: support sparse
 
