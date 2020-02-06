@@ -70,9 +70,6 @@
             //     src: 'assets/compressed/s3tc-m-y.ktx',
             // });
 
-            // Why does this return null for iPad
-            console.log(gl.getExtension('WEBGL_compressed_texture_pvrtc'));
-
             // Or pass in an object of extension:src key-values, and the function will use the first
             // supported format in the list - so order by preference!
             const texture = TextureLoader.load(gl, {

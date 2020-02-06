@@ -114,8 +114,11 @@ export class TextureLoader {
         if (supportedExtensions.length) return supportedExtensions;
 
         const extensions = {
-            pvrtc: gl.renderer.getExtension('WEBGL_compressed_texture_pvrtc'),
-            s3tc: gl.renderer.getExtension('WEBGL_compressed_texture_s3tc'),
+            pvrtc: gl.renderer.getExtension('WEBGL_compressed_texture_pvrtc') 
+                || gl.renderer.getExtension('WEBKIT_WEBGL_compressed_texture_pvrtc'), 
+            s3tc: gl.renderer.getExtension('WEBGL_compressed_texture_s3tc')
+                || gl.renderer.getExtension('MOZ_WEBGL_compressed_texture_s3tc')
+                || gl.renderer.getExtension('WEBKIT_WEBGL_compressed_texture_s3tc'),
             etc: gl.renderer.getExtension('WEBGL_compressed_texture_etc'),
             etc1: gl.renderer.getExtension('WEBGL_compressed_texture_etc1'),
             astc: gl.renderer.getExtension('WEBGL_compressed_texture_astc'),
