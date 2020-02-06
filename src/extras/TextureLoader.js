@@ -97,14 +97,14 @@ export class TextureLoader {
                     unpackAlignment,
                     flipY,
                 });
-                texture = loaded = this.loadImage(gl, src, texture);
+                texture.loaded = this.loadImage(gl, src, texture);
                 break;
             default:
                 console.warn('No supported format supplied');
                 texture = new Texture(gl);
         }
 
-        texture.format = ext;
+        texture.ext = ext;
 
         // TODO: store in cache
         return texture;
