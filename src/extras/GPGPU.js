@@ -11,6 +11,7 @@ export class GPGPU {
         data = new Float32Array(16),
 
         geometry = new Triangle(gl),
+        type, // Pass in gl.FLOAT to force it, defaults to gl.HALF_FLOAT
     }) {
         this.gl = gl;
         const initialData = data;
@@ -61,11 +62,11 @@ export class GPGPU {
         const options = {
             width: this.size, 
             height: this.size, 
-            type: gl.renderer.isWebgl2 ? gl.HALF_FLOAT : 
-                gl.renderer.extensions['OES_texture_half_float'] ? gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES : 
-                gl.UNSIGNED_BYTE,
+            type: type || gl.HALF_FLOAT || gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES,
             format: gl.RGBA,
-            internalFormat: gl.renderer.isWebgl2 ? gl.RGBA16F : gl.RGBA,
+            internalFormat: gl.renderer.isWebgl2 
+                ? (type === gl.FLOAT ? gl.RGBA32F : gl.RGBA16F) 
+                : gl.RGBA,
             minFilter: gl.NEAREST,
             depth: false,
             unpackAlignment: 1,
