@@ -1,23 +1,24 @@
 import { Geometry } from '../core/Geometry.js';
 import { Transform } from '../core/Transform.js';
 import { Mesh } from '../core/Mesh.js';
+import { GLTFAnimation } from './GLTFAnimation.js';
 import { NormalProgram } from './NormalProgram.js';
 
 // Supports
 // [x] Geometry
+// [ ] Sparse support
 // [x] Nodes and Hierarchy
 // [ ] Morph Targets
 // [ ] Skins
 // [ ] Materials
 // [ ] Textures
-// [ ] Animation
+// [x] Animation
 // [ ] Cameras
 // [ ] Extensions
 
-// TODO: only push attribute bufferViews to the GPU
-// TODO: Sparse accessor packing? what for?
+// TODO: Sparse accessor packing? For morph targets basically
 // TODO: init accessor missing bufferView with 0s
-// TODO: is there ever more than one component type per buffer view? surely not...
+// TODO: morph target animations
 
 const TYPE_ARRAY = {
     5121: Uint8Array,
@@ -48,6 +49,13 @@ const ATTRIBUTES = {
     JOINTS_0: 'skinIndex',
 };
 
+const TRANSFORMS = {
+    translation: 'position',
+    rotation: 'quaternion',
+    scale: 'scale',
+};
+
+
 export class GLTFLoader {
     static async load(gl, src) {
         const dir = src.split('/').slice(0, -1).join('/') + '/';
@@ -55,7 +63,7 @@ export class GLTFLoader {
         // load main description json
         const desc = await fetch(src).then(res => res.json());
 
-        if (desc.asset === undefined || desc.asset.version[0] < 2) 
+        if (desc.asset === undefined || desc.asset.version[0] < 2)
             console.warn('Only GLTF >=2.0 supported. Attempting to parse.');
 
         // Load buffers async
@@ -70,6 +78,9 @@ export class GLTFLoader {
         // Create transforms, meshes and hierarchy
         const nodes = this.parseNodes(gl, desc, meshes);
 
+        // Create animation handlers
+        const animations = this.parseAnimations(gl, desc, nodes, bufferViews);
+
         // Get top level nodes for each scene
         const scenes = this.parseScenes(desc, nodes);
         const scene = scenes[desc.scene];
@@ -80,6 +91,7 @@ export class GLTFLoader {
             bufferViews,
             meshes,
             nodes,
+            animations,
             scenes,
             scene,
         };
@@ -116,26 +128,30 @@ export class GLTFLoader {
     }
 
     static parseBufferViews(gl, desc, buffers) {
-        
-        // Clone to leave desc pure
+
+        // Clone to leave description pure
         const bufferViews = desc.bufferViews.map(o => Object.assign({}, o));
 
-        // Work out which bufferViews are for indices to determine whether
-        // target is gl.ELEMENT_ARRAY_BUFFER or gl.ARRAY_BUFFER;
         desc.meshes.forEach(({primitives}) => {
-            primitives.forEach(({indices}) => {
+            primitives.forEach(({attributes, indices}) => {
+
+                // Flag bufferView as an attribute, so it knows to create a gl buffer
+                for (let attr in attributes) bufferViews[desc.accessors[attributes[attr]].bufferView].isAttribute = true;
+
                 if (indices === undefined) return;
+                bufferViews[desc.accessors[indices].bufferView].isAttribute = true;
+
+                // Make sure indices bufferView have a target property for gl buffer binding
                 bufferViews[desc.accessors[indices].bufferView].target = gl.ELEMENT_ARRAY_BUFFER;
             });
         })
-        
+
         // Get componentType of each bufferView from the accessors
         desc.accessors.forEach(({bufferView: i, componentType}) => {
             bufferViews[i].componentType = componentType;
         });
 
         // Push each bufferView to the GPU as a separate buffer
-        // TODO: only push attribute bufferViews to the GPU
         bufferViews.forEach(({
             buffer: bufferIndex, // required
             byteOffset = 0, // optional
@@ -147,19 +163,21 @@ export class GLTFLoader {
             extras, // optional
 
             componentType, // required, added from accessor above
+            isAttribute,
         }, i) => {
             const TypeArray = TYPE_ARRAY[componentType];
             const elementBytes = TypeArray.BYTES_PER_ELEMENT;
 
-            // Create gl buffers for the bufferView, pushing it to the GPU
             const data = new TypeArray(buffers[bufferIndex], byteOffset, byteLength / elementBytes);
+            bufferViews[i].data = data;
+
+            // Create gl buffers for the bufferView, pushing it to the GPU
+            if (!isAttribute) return;
             const buffer = gl.createBuffer();
             gl.bindBuffer(target, buffer);
             gl.renderer.state.boundBuffer = buffer;
             gl.bufferData(target, data, gl.STATIC_DRAW);
-
             bufferViews[i].buffer = buffer;
-            bufferViews[i].data = data;
         });
 
         return bufferViews;
@@ -181,7 +199,7 @@ export class GLTFLoader {
         });
 
     }
-    
+
     static parsePrimitives(gl, primitives, desc, bufferViews) {
         return primitives.map(({
             attributes, // required
@@ -189,16 +207,16 @@ export class GLTFLoader {
             material, // optional
             mode = 4, // optional
             targets, // optional
-            // extensions, // optional
-            // extras, // optional
+            extensions, // optional
+            extras, // optional
         }) => {
             const geometry = new Geometry(gl);
 
             // Add each attribute found in primitive
-            for (const attr in attributes) {
+            for (let attr in attributes) {
                 geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
             }
-            
+
             // Add index attribute if found
             if (indices !== undefined) geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews));
 
@@ -235,8 +253,8 @@ export class GLTFLoader {
         const {
             data, // attached in parseBufferViews
             buffer, // replaced to be the actual GL buffer
-            byteOffset: bufferViewByteOffset = 0,
-            byteLength,
+            // byteOffset = 0, // applied in parseBufferViews
+            // byteLength, // applied in parseBufferViews
             byteStride = 0,
             target,
             // name,
@@ -260,15 +278,13 @@ export class GLTFLoader {
             max,
         };
     }
-    
-    static parseNodes(gl, desc, meshes) {
 
+    static parseNodes(gl, desc, meshes) {
         const nodes = desc.nodes.map(({
-            // Everything is optional
             camera,
             children,
             skin,
-            matrix, 
+            matrix,
             mesh: meshIndex,
             rotation,
             scale,
@@ -308,6 +324,58 @@ export class GLTFLoader {
         return nodes;
     }
 
+    static parseAnimations(gl, desc, nodes, bufferViews) {
+        return desc.animations.map(({
+            channels, // required
+            samplers, // required
+            name, // optional
+            // extensions, // optional
+            // extras,  // optional
+        }) => {
+            const data = channels.map(({
+                sampler: samplerIndex, // required
+                target, // required
+                // extensions, // optional
+                // extras, // optional
+            }) => {
+                const {
+                    input: inputIndex, // required
+                    interpolation = 'LINEAR',
+                    output: outputIndex, // required
+                    // extensions, // optional
+                    // extras, // optional
+                } = samplers[samplerIndex];
+
+                const {
+                    node: nodeIndex, // optional - TODO: when is it not included?
+                    path, // required
+                    // extensions, // optional
+                    // extras, // optional
+                } = target;
+
+                const node = nodes[nodeIndex];
+                const transform = TRANSFORMS[path];
+                const timesAcc = this.parseAccessor(inputIndex, desc, bufferViews);
+                const times = timesAcc.data.slice(timesAcc.offset / 4, timesAcc.count * timesAcc.size);
+                const valuesAcc = this.parseAccessor(outputIndex, desc, bufferViews);
+                const values = valuesAcc.data.slice(valuesAcc.offset / 4, valuesAcc.count * valuesAcc.size);
+
+                return {
+                    node,
+                    transform,
+                    interpolation,
+                    times,
+                    values,
+                };
+            });
+
+            return {
+                name,
+                animation: new GLTFAnimation(data),
+            };
+        });
+    }
+
     static parseScenes(desc, nodes) {
         return desc.scenes.map(({
             nodes: nodesIndices = [],
@@ -319,4 +387,3 @@ export class GLTFLoader {
         });
     }
 }
-
