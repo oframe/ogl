@@ -1,7 +1,7 @@
 import { Texture } from '../core/Texture.js';
 import { KTXTexture } from './KTXTexture.js';
 
-// TODO: store cache with arguments
+// TODO: store cache with sampler arguments
 
 // For compressed textures, generate using https://github.com/TimvanScherpenzeel/texture-compressor
 
