@@ -20,6 +20,7 @@ export class Program {
         depthWrite = true,
         depthFunc = gl.LESS,
     } = {}) {
+        if (!gl.canvas) console.error('gl not passed as fist argument to Program');
         this.gl = gl;
         this.uniforms = uniforms;
         this.id = ID++;
