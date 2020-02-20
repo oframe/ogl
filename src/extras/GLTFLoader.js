@@ -325,6 +325,7 @@ export class GLTFLoader {
     }
 
     static parseAnimations(gl, desc, nodes, bufferViews) {
+        if (!desc.animations) return null;
         return desc.animations.map(({
             channels, // required
             samplers, // required
