@@ -17,6 +17,8 @@
 // TODO: fit in transform feedback
 // TODO: when would I disableVertexAttribArray ?
 // TODO: add fallback for non vao support (ie)
+// TODO: use offset/stride if exists
+// TODO: check size of position (eg triangle with Vec2)
 
 import {Vec3} from '../math/Vec3.js';
 
@@ -30,6 +32,7 @@ let isBoundsWarned = false;
 
 export class Geometry {
     constructor(gl, attributes = {}) {
+        if (!gl.canvas) console.error('gl not passed as fist argument to Geometry');
         this.gl = gl;
         this.attributes = attributes;
         this.id = ID++;
@@ -219,6 +222,7 @@ export class Geometry {
         max.set(-Infinity);
 
         // TODO: use offset/stride if exists
+        // TODO: check size of position (eg triangle with Vec2)
         for (let i = 0, l = array.length; i < l; i += 3) {
             const x = array[i];
             const y = array[i + 1];
