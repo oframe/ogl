@@ -86,8 +86,8 @@ export class Vec2 extends Array {
         return this;
     }
 
-    cross(va, vb) {
-        return Vec2Func.cross(va, vb);
+    cross(v) {
+        return Vec2Func.cross(this, v);
     }
 
     scale(v) {
