@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+
+    <title>OGL • Cubic Bezier Curve</title>
+    <link href="assets/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="Info">Cubic Bezier Curve</div>
+    <script type="module">
+        import {Renderer, Camera, Transform, Program, Mesh, Sphere, Polyline, Orbit, Vec3, Color, CubicBezierCurve} from '../src/index.mjs';
+        
+        const vertex = /* glsl */ `
+          precision highp float;
+          precision highp int;
+
+          attribute vec3 position;
+          attribute vec3 normal;
+
+          uniform mat3 normalMatrix;
+          uniform mat4 modelViewMatrix;
+          uniform mat4 projectionMatrix;
+
+          varying vec3 vNormal;
+
+          void main() {
+              vNormal = normalize(normalMatrix * normal);
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `;
+
+        const fragment = /* glsl */ `
+          precision highp float;
+          precision highp int;
+
+          varying vec3 vNormal;
+
+          void main() {
+              gl_FragColor.rgb = normalize(vNormal);
+              gl_FragColor.a = 1.0;
+          }
+        `;
+
+        {
+          const renderer = new Renderer({dpr: 2});
+          const gl = renderer.gl;
+          document.body.appendChild(gl.canvas);
+          gl.clearColor(1, 1, 1, 1);
+
+          const camera = new Camera(gl, {fov: 35});
+          camera.position.set(0, 0, 3);
+
+          // Create controls and pass parameters
+          const controls = new Orbit(camera, {
+              target: new Vec3(0, 0, 0),
+          });
+
+          function resize() {
+              renderer.setSize(window.innerWidth, window.innerHeight);
+              camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
+          }
+          window.addEventListener('resize', resize, false);
+          resize();
+
+          const scene = new Transform();
+
+          const sphereGeometry = new Sphere(gl);
+
+          const program = new Program(gl, {
+              vertex,
+              fragment,
+
+              // Don't cull faces so that plane is double sided - default is gl.BACK
+              cullFace: null,
+          });
+
+          const sphere = new Mesh(gl, {geometry: sphereGeometry, program});
+          sphere.setParent(scene);
+
+          const curve = new CubicBezierCurve({
+            p0: new Vec3(0, 0.5, 0),
+            p1: new Vec3(0, 1, 1),
+            p2: new Vec3(0, -1, 1),
+            p3: new Vec3(0, -0.5, 0),
+          });
+
+          const polyline = new Polyline(gl, {
+            points: curve.getPoints(20),
+            uniforms: {
+              uColor: {value: new Color('#f00')},
+            }
+          });
+
+          for(let i = 0; i <= 200; i++) {
+            const mesh = new Mesh(gl, {geometry: polyline.geometry, program: polyline.program});
+            mesh.setParent(sphere);
+            mesh.rotation.y = i * Math.PI / 200;
+          }
+
+          requestAnimationFrame(update);
+          function update() {
+              requestAnimationFrame(update);
+              sphere.rotation.y += 0.03;
+              controls.update();
+              renderer.render({scene, camera});
+          }
+        }
+
+    </script>
+</body>
+</html>
