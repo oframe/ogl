@@ -61,7 +61,7 @@ export class Curve {
 
   _getCubicBezierPoints(divisions = this.divisions) {
     const points = [];
-    let count = this.points.length;
+    const count = this.points.length;
 
     if (count < 4) {
       console.warn('Not enough points provided.');
@@ -96,7 +96,7 @@ export class Curve {
 
   _getCatmullRomPoints(divisions = this.divisions, a = 0.168, b = 0.168) {
     const points = [];
-    let count = this.points.length;
+    const count = this.points.length;
     
     if(count <= 2) {
       return this.points;
@@ -126,10 +126,12 @@ export class Curve {
 
     if (type === CUBICBEZIER) {
       return this._getCubicBezierPoints(divisions);
-    } else if(type === CATMULLROM) {
+    }
+    
+    if (type === CATMULLROM) {
       return this._getCatmullRomPoints(divisions, a, b);
     }
 
-    return points;
+    return this.points;
   }
 }
