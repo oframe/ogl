@@ -6,13 +6,13 @@
     <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <link rel="icon" type="image/png" href="assets/favicon.png">
 
-    <title>OGL • Cubic Bezier Curve</title>
+    <title>OGL • Curves</title>
     <link href="assets/main.css" rel="stylesheet">
 </head>
 <body>
-    <div class="Info">Cubic Bezier Curve</div>
+    <div class="Info">Curves</div>
     <script type="module">
-        import {Renderer, Camera, Transform, Program, Mesh, Sphere, Polyline, Orbit, Vec3, Color, CubicBezierCurve} from '../src/index.mjs';
+        import {Renderer, Camera, Transform, Program, Mesh, Sphere, Polyline, Orbit, Vec3, Color, Curve} from '../src/index.mjs';
         
         const vertex = /* glsl */ `
           precision highp float;
@@ -52,7 +52,7 @@
           gl.clearColor(1, 1, 1, 1);
 
           const camera = new Camera(gl, {fov: 35});
-          camera.position.set(0, 0, 3);
+          camera.position.set(0, 0, 5);
 
           // Create controls and pass parameters
           const controls = new Orbit(camera, {
@@ -81,30 +81,45 @@
           const sphere = new Mesh(gl, {geometry: sphereGeometry, program});
           sphere.setParent(scene);
 
-          const curve = new CubicBezierCurve({
-            p0: new Vec3(0, 0.5, 0),
-            p1: new Vec3(0, 1, 1),
-            p2: new Vec3(0, -1, 1),
-            p3: new Vec3(0, -0.5, 0),
+          const curve = new Curve({
+            points: [
+              new Vec3(0, 0.5, 0),
+              new Vec3(0, 1, 1),
+              new Vec3(0, -1, 1),
+              new Vec3(0, -0.5, 0),
+            ],
+            type: Curve.CUBICBEZIER,
           });
+          const points = curve.getPoints(20);
+
+          curve.type = Curve.CATMULLROM;
+          const points2 = curve.getPoints(20);
 
           const polyline = new Polyline(gl, {
-            points: curve.getPoints(20),
+            points,
             uniforms: {
               uColor: {value: new Color('#f00')},
             }
           });
 
-          for(let i = 0; i <= 200; i++) {
-            const mesh = new Mesh(gl, {geometry: polyline.geometry, program: polyline.program});
+          const polyline2 = new Polyline(gl, {
+            points: points2,
+            uniforms: {
+              uColor: {value: new Color('#00f')},
+            }
+          });
+
+          for(let i = 0; i <= 50; i++) {
+            const p = i % 2 ? polyline : polyline2;
+            const mesh = new Mesh(gl, {geometry: p.geometry, program: p.program});
             mesh.setParent(sphere);
-            mesh.rotation.y = i * Math.PI / 200;
+            mesh.rotation.y = i * Math.PI / 50;
           }
 
           requestAnimationFrame(update);
           function update() {
               requestAnimationFrame(update);
-              sphere.rotation.y += 0.03;
+              sphere.rotation.y -= 0.01;
               controls.update();
               renderer.render({scene, camera});
           }
