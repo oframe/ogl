@@ -30,16 +30,14 @@ function getCtrlPoint(points, i, a = 0.168, b = 0.168) {
   return [_a0.clone(), _a1.clone()];
 }
 
-function getBezierPoint(t, p1, c1, c2, p2) {
+function getBezierPoint(t, p0, c0, c1, p1) {
   const k = 1 - t;
-  _a0.copy(p1).scale(k ** 3);
-  _a1.copy(c1).scale(3 * k ** 2 * t);
-  _a2.copy(c2).scale(3 * k * t ** 2);
-  _a3.copy(p2).scale(t ** 3);
+  _a0.copy(p0).scale(k ** 3);
+  _a1.copy(c0).scale(3 * k ** 2 * t);
+  _a2.copy(c1).scale(3 * k * t ** 2);
+  _a3.copy(p1).scale(t ** 3);
   const ret = new Vec3();
-  ret.add(_a0, _a1);
-  ret.add(_a2);
-  ret.add(_a3);
+  ret.add(_a0, _a1).add(_a2).add(_a3);
   return ret;
 }
 
@@ -70,24 +68,24 @@ export class Curve {
       return [];
     }
 
-    let p1 = this.points[0],
-      c1 = this.points[1],
-      c2 = this.points[2],
-      p2 = this.points[3];
+    let p0 = this.points[0],
+      c0 = this.points[1],
+      c1 = this.points[2],
+      p1 = this.points[3];
     
     for (let i = 0; i <= divisions; i++) {
-      const p = getBezierPoint(i / divisions, p1, c1, c2, p2);
+      const p = getBezierPoint(i / divisions, p0, c0, c1, p1);
       points.push(p);
     }
 
     let offset = 4;
     while (count - offset > 1) {
-      p1.copy(p2);
-      c1 = p2.scale(2).sub(c2);
-      c2 = this.points[offset];
-      p2 = this.points[offset + 1];
+      p0.copy(p1);
+      c0 = p1.scale(2).sub(c1);
+      c1 = this.points[offset];
+      p1 = this.points[offset + 1];
       for (let i = 0; i <= divisions; i++) {
-        const p = getBezierPoint(i / divisions, p1, c1, c2, p2);
+        const p = getBezierPoint(i / divisions, p0, c0, c1, p1);
         points.push(p);
       }      
       offset += 2;
@@ -109,9 +107,9 @@ export class Curve {
       if(i === 0) {
         p0 = p;
       } else {
-        const [c1, c2] = getCtrlPoint(this.points, i - 1, a, b);
+        const [c0, c1] = getCtrlPoint(this.points, i - 1, a, b);
         const c = new Curve({
-          points: [p0, c1, c2, p],
+          points: [p0, c0, c1, p],
           type: CUBICBEZIER,
         });
         points.pop();
