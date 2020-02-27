@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <link rel="icon" type="image/png" href="assets/favicon.png">
 
-    <title>OGL • Base Primitives - Plane, Cube, Sphere</title>
+    <title>OGL • Base Primitives - Plane, Cube, Sphere, Cylinder, Triangle</title>
     <link href="assets/main.css" rel="stylesheet">
 </head>
+
 <body>
-    <div class="Info">Base Primitives - Plane, Cube, Sphere</div>
+    <div class="Info">Base Primitives - Plane, Cube, Sphere, Cylinder, Triangle</div>
     <script type="module">
-        import {Renderer, Camera, Transform, Program, Mesh, Plane, Sphere, Box} from '../src/index.mjs';
+        import { Renderer, Camera, Transform, Program, Mesh, Plane, Sphere, Box, Cylinder, Triangle, Orbit } from '../src/index.mjs';
 
         const vertex = /* glsl */ `
             precision highp float;
@@ -48,18 +50,19 @@
         `;
 
         {
-            const renderer = new Renderer({dpr: 2});
+            const renderer = new Renderer({ dpr: 2 });
             const gl = renderer.gl;
             document.body.appendChild(gl.canvas);
             gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 35});
+            const camera = new Camera(gl, { fov: 35 });
             camera.position.set(0, 1, 7);
             camera.lookAt([0, 0, 0]);
+            const controls = new Orbit(camera);
 
             function resize() {
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
+                camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
             }
             window.addEventListener('resize', resize, false);
             resize();
@@ -69,6 +72,8 @@
             const planeGeometry = new Plane(gl);
             const sphereGeometry = new Sphere(gl);
             const cubeGeometry = new Box(gl);
+            const cylinderGeometry = new Cylinder(gl);
+            const triangleGeometry = new Triangle(gl);
 
             const program = new Program(gl, {
                 vertex,
@@ -78,29 +83,41 @@
                 cullFace: null,
             });
 
-            const plane = new Mesh(gl, {geometry: planeGeometry, program});
+            const plane = new Mesh(gl, { geometry: planeGeometry, program });
             plane.position.set(0, 1.3, 0);
             plane.setParent(scene);
 
-            const sphere = new Mesh(gl, {geometry: sphereGeometry, program});
+            const sphere = new Mesh(gl, { geometry: sphereGeometry, program });
             sphere.setParent(scene);
 
-            const cube = new Mesh(gl, {geometry: cubeGeometry, program});
+            const cube = new Mesh(gl, { geometry: cubeGeometry, program });
             cube.position.set(0, -1.3, 0);
             cube.setParent(scene);
+
+            const cylinder = new Mesh(gl, { geometry: cylinderGeometry, program });
+            cylinder.position.set(-1.3, 0, 0);
+            cylinder.setParent(scene);
+
+            const triangle = new Mesh(gl, { geometry: triangleGeometry, program });
+            triangle.position.set(1.3, 0, 0);
+            triangle.setParent(scene);
 
             requestAnimationFrame(update);
             function update() {
                 requestAnimationFrame(update);
+                controls.update();
 
                 plane.rotation.y -= 0.02;
                 sphere.rotation.y -= 0.03;
                 cube.rotation.y -= 0.04;
+                cylinder.rotation.y -= 0.02;
+                triangle.rotation.y -= 0.03;
 
-                renderer.render({scene, camera});
+                renderer.render({ scene, camera });
             }
         }
 
     </script>
 </body>
+
 </html>
