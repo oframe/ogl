@@ -84,7 +84,7 @@ export class Curve {
       c0 = p1.scale(2).sub(c1);
       c1 = this.points[offset];
       p1 = this.points[offset + 1];
-      for (let i = 0; i <= divisions; i++) {
+      for (let i = 1; i <= divisions; i++) {
         const p = getBezierPoint(i / divisions, p0, c0, c1, p1);
         points.push(p);
       }      
