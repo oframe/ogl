@@ -718,7 +718,7 @@ export function ortho(out, left, right, bottom, top, near, far) {
  *
  * @param {mat4} out mat4 frustum matrix will be written into
  * @param {vec3} eye Position of the viewer
- * @param {vec3} center Point the viewer is looking at
+ * @param {vec3} target Point the viewer is looking at
  * @param {vec3} up vec3 pointing up
  * @returns {mat4} out
  */
@@ -735,7 +735,11 @@ export function targetTo(out, eye, target, up) {
         z2 = eyez - target[2];
 
     let len = z0 * z0 + z1 * z1 + z2 * z2;
-    if (len > 0) {
+    if (len === 0) {
+        // eye and target are in the same position
+        z2 = 1;
+    }
+    else {
         len = 1 / Math.sqrt(len);
         z0 *= len;
         z1 *= len;
@@ -747,12 +751,26 @@ export function targetTo(out, eye, target, up) {
         x2 = upx * z1 - upy * z0;
 
     len = x0 * x0 + x1 * x1 + x2 * x2;
-    if (len > 0) {
-        len = 1 / Math.sqrt(len);
-        x0 *= len;
-        x1 *= len;
-        x2 *= len;
+    if (len === 0) {
+        // up and z are parallel
+        if (upz) {
+            upx += 1e-6;
+        } else if(upy) {
+            upz += 1e-6;
+        } else {
+            upy += 1e-6;
+        }
+        x0 = upy * z2 - upz * z1,
+        x1 = upz * z0 - upx * z2,
+        x2 = upx * z1 - upy * z0;
+        
+        len = x0 * x0 + x1 * x1 + x2 * x2;
     }
+
+    len = 1 / Math.sqrt(len);
+    x0 *= len;
+    x1 *= len;
+    x2 *= len;
 
     out[0] = x0;
     out[1] = x1;
