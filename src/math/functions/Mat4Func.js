@@ -753,9 +753,9 @@ export function targetTo(out, eye, target, up) {
     len = x0 * x0 + x1 * x1 + x2 * x2;
     if (len === 0) {
         // up and z are parallel
-        if (Math.abs(upz) === 1) {
+        if (upz) {
             upx += 1e-6;
-        } else if(Math.abs(upy) === 1) {
+        } else if(upy) {
             upz += 1e-6;
         } else {
             upy += 1e-6;
