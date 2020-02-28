@@ -42,9 +42,6 @@ function getBezierPoint(t, p0, c0, c1, p1) {
 }
 
 export class Curve {
-  static CATMULLROM = CATMULLROM;
-  static CUBICBEZIER = CUBICBEZIER;
-
   constructor({
     points = [ new Vec3(0, 0, 0),
       new Vec3(0, 1, 0),
@@ -135,3 +132,6 @@ export class Curve {
     return this.points;
   }
 }
+
+Curve.CATMULLROM = CATMULLROM;
+Curve.CUBICBEZIER = CUBICBEZIER;
