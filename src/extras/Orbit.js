@@ -1,6 +1,7 @@
 // Based from ThreeJS' OrbitControls class, rewritten using es6 with some additions and subtractions.
 // TODO: abstract event handlers so can be fed from other sources
 // TODO: make scroll zoom more accurate than just >/< zero
+// TODO: be able to pass in new camera position
 
 import {Vec3} from '../math/Vec3.js';
 import {Vec2} from '../math/Vec2.js';
@@ -241,9 +242,8 @@ export function Orbit(object, {
     };
 
     const onMouseUp = () => {
-        if (!this.enabled) return;
-        document.removeEventListener('mousemove', onMouseMove, false);
-        document.removeEventListener('mouseup', onMouseUp, false);
+        window.removeEventListener('mousemove', onMouseMove, false);
+        window.removeEventListener('mouseup', onMouseUp, false);
         state = STATE.NONE;
     };
 
