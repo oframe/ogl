@@ -95,6 +95,9 @@
           curve.type = Curve.CATMULLROM;
           const points2 = curve.getPoints(20);
 
+          curve.type = Curve.QUADRATICBEZIER;
+          const points3 = curve.getPoints(20);
+
           const polyline = new Polyline(gl, {
             points,
             uniforms: {
@@ -111,11 +114,19 @@
             }
           });
 
-          for(let i = 0; i <= 50; i++) {
-            const p = i % 2 ? polyline : polyline2;
+          const polyline3 = new Polyline(gl, {
+            points: points3,
+            uniforms: {
+              uColor: {value: new Color('#0f0')},
+              uThickness: {value: 4},
+            }
+          });
+
+          for(let i = 0; i <= 60; i++) {
+            const p = [polyline, polyline2, polyline3][i % 3];
             const mesh = new Mesh(gl, {geometry: p.geometry, program: p.program});
             mesh.setParent(sphere);
-            mesh.rotation.y = i * Math.PI / 50;
+            mesh.rotation.y = i * Math.PI / 60;
           }
 
           requestAnimationFrame(update);

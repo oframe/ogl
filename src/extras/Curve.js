@@ -2,6 +2,7 @@ import {Vec3} from '../math/Vec3.js';
 
 const CATMULLROM = 'catmullrom';
 const CUBICBEZIER = 'cubicbezier';
+const QUADRATICBEZIER = 'quadraticbezier';
 
 // temp
 const _a0 = new Vec3(),
@@ -30,7 +31,17 @@ function getCtrlPoint(points, i, a = 0.168, b = 0.168) {
   return [_a0.clone(), _a1.clone()];
 }
 
-function getBezierPoint(t, p0, c0, c1, p1) {
+function getQuadraticBezierPoint(t, p0, c0, p1) {
+  const k = 1 - t;
+  _a0.copy(p0).scale(k ** 2);
+  _a1.copy(c0).scale(2 * k * t);
+  _a2.copy(p1).scale(t ** 2);
+  const ret = new Vec3();
+  ret.add(_a0, _a1).add(_a2);
+  return ret;
+}
+
+function getCubicBezierPoint(t, p0, c0, c1, p1) {
   const k = 1 - t;
   _a0.copy(p0).scale(k ** 3);
   _a1.copy(c0).scale(3 * k ** 2 * t);
@@ -56,6 +67,39 @@ export class Curve {
     this.type = type;
   }
 
+  _getQuadraticBezierPoints(divisions = this.divisions) {
+    const points = [];
+    const count = this.points.length;
+
+    if (count < 3) {
+      console.warn('Not enough points provided.');
+      return [];
+    }
+
+    const p0 = this.points[0];
+    let c0 = this.points[1],
+      p1 = this.points[2];
+
+    for (let i = 0; i <= divisions; i++) {
+      const p = getQuadraticBezierPoint(i / divisions, p0, c0, p1);
+      points.push(p);
+    }
+
+    let offset = 3;
+    while (count - offset > 0) {
+      p0.copy(p1);
+      c0 = p1.scale(2).sub(c0);
+      p1 = this.points[offset];
+      for(let i = 1; i <= divisions; i++) {
+        const p = getQuadraticBezierPoint(i / divisions, p0, c0, p1);
+        points.push(p);
+      }
+      offset++;
+    }
+
+    return points;
+  }
+
   _getCubicBezierPoints(divisions = this.divisions) {
     const points = [];
     const count = this.points.length;
@@ -71,7 +115,7 @@ export class Curve {
       p1 = this.points[3];
     
     for (let i = 0; i <= divisions; i++) {
-      const p = getBezierPoint(i / divisions, p0, c0, c1, p1);
+      const p = getCubicBezierPoint(i / divisions, p0, c0, c1, p1);
       points.push(p);
     }
 
@@ -82,7 +126,7 @@ export class Curve {
       c1 = this.points[offset];
       p1 = this.points[offset + 1];
       for (let i = 1; i <= divisions; i++) {
-        const p = getBezierPoint(i / divisions, p0, c0, c1, p1);
+        const p = getCubicBezierPoint(i / divisions, p0, c0, c1, p1);
         points.push(p);
       }      
       offset += 2;
@@ -121,6 +165,10 @@ export class Curve {
   getPoints(divisions = this.divisions, a = 0.168, b = 0.168) {
     const type = this.type;
 
+    if (type === QUADRATICBEZIER) {
+      return this._getQuadraticBezierPoints(divisions);
+    }
+
     if (type === CUBICBEZIER) {
       return this._getCubicBezierPoints(divisions);
     }
@@ -135,3 +183,4 @@ export class Curve {
 
 Curve.CATMULLROM = CATMULLROM;
 Curve.CUBICBEZIER = CUBICBEZIER;
+Curve.QUADRATICBEZIER = QUADRATICBEZIER;
