@@ -3,7 +3,7 @@ import { KTXTexture } from './KTXTexture.js';
 
 // For compressed textures, generate using https://github.com/TimvanScherpenzeel/texture-compressor
 
-const cache = {};
+let cache = {};
 const supportedExtensions = [];
 
 export class TextureLoader {
@@ -72,7 +72,8 @@ export class TextureLoader {
             magFilter +
             premultiplyAlpha +
             unpackAlignment +
-            flipY;
+            flipY + 
+            gl.renderer.id;
 
         // Check cache for existing texture
         if (cache[cacheID]) return cache[cacheID];
@@ -173,6 +174,10 @@ export class TextureLoader {
                 texture.onUpdate = null;
             };
         });
+    }
+
+    static clearCache() {
+        cache = {};
     }
 }
 

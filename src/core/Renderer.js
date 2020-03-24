@@ -11,6 +11,7 @@ import {Vec3} from '../math/Vec3.js';
 // gl.clearStencil( stencil );
 
 const tempVec3 = new Vec3();
+let ID = 1;
 
 export class Renderer {
     constructor({
@@ -36,6 +37,7 @@ export class Renderer {
         this.stencil = stencil;
         this.premultipliedAlpha = premultipliedAlpha;
         this.autoClear = autoClear;
+        this.id = ID++;
 
         // Attempt WebGL2 unless forced to 1, if not supported fallback to WebGL1
         if (webgl === 2) this.gl = canvas.getContext('webgl2', attributes);
