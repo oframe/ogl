@@ -12,7 +12,7 @@
 <body>
     <div class="Info">Textures. Model by Google Poly. Film by Studio Ghibli.</div>
     <script type="module">
-        import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Box} from '../src/index.mjs';
+        import {Renderer, Camera, Transform, Texture, TextureLoader, Program, Geometry, Mesh, Box} from '../src/index.mjs';
         
         const vertex = /* glsl */ `
             precision highp float;
@@ -84,6 +84,10 @@
             const img = new Image();
             img.src = 'assets/saddle.jpg';
             img.onload = () => texture.image = img;
+
+            // Alternatively, you can use the TextureLoader class's load method that handles
+            // these steps for you. It also handles compressed textures and fallbacks.
+            // const texture = TextureLoader.load(gl, { src: 'assets/saddle.jpg'});
 
             const program = new Program(gl, {
                 vertex,
