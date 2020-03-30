@@ -106,7 +106,7 @@ export class Post {
             this.gl.renderer.render({
                 scene: pass.mesh, 
                 target: i === enabledPasses.length - 1 && (target || !this.targetOnly) ? target : this.fbo.write,
-                clear: i === true,
+                clear: true,
             });
             this.fbo.swap();
         });
