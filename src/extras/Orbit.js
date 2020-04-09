@@ -19,6 +19,8 @@ export function Orbit(object, {
     inertia = 0.85,
     enableRotate = true,
     rotateSpeed = 0.1,
+    autoRotate = false,
+    autoRotateSpeed = 1.0,
     enableZoom = true,
     zoomSpeed = 1,
     enablePan = true,
@@ -54,6 +56,9 @@ export function Orbit(object, {
     spherical.phi = sphericalTarget.phi = Math.acos(Math.min(Math.max(offset.y / sphericalTarget.radius, -1), 1));
 
     this.update = () => {
+        if (autoRotate) {
+            handleAutoRotate();
+        }
 
         // apply delta
         sphericalTarget.radius *= sphericalDelta.radius;
@@ -134,6 +139,11 @@ export function Orbit(object, {
     function dolly(dollyScale) {
         sphericalDelta.radius /= dollyScale;
     }
+
+    function handleAutoRotate() {
+        const angle = 2 * Math.PI / 60 / 60 * autoRotateSpeed;
+        sphericalDelta.theta -= angle;
+	}
 
     function handleMoveRotate(x, y) {
         tempVec2a.set(x, y);
