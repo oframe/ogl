@@ -99,7 +99,7 @@ export class GLTFAnimation {
         const s1 = s3 - t2 + t;
 
         for (let i = 0; i < prevVal.length; i++) {
-            prevVal[i] = s0 * prevVal[i] + s1 * ((1 - t) * prevTan[i]) + s2 * nextVal[i] + s3 * (t * nextTan[i]);
+            prevVal[i] = s0 * prevVal[i] + s1 * (1 - t) * prevTan[i] + s2 * nextVal[i] + s3 * t * nextTan[i];
         }
 
         return prevVal;
