@@ -49,6 +49,8 @@ npm i ogl
 
 [Show me what you got!](https://oframe.github.io/ogl/examples) - Explore a comprehensive list of examples, with comments in the source code.
 
+Inspired by the effectiveness of ThreeJS' examples, they will hopefully serve as reference for how to use the library, and to achieve a wide range of techniques.
+
 ## Weight
 
 Even though the source is modular, as a guide, below are the complete component download sizes.
@@ -249,73 +251,3 @@ Below is an **Extras** wish-list, and is still a work-in-progress as examples ar
  - [x] TextureLoader.js
  - [ ] GLTFLoader.js
  - [ ] OBJLoader.js
-
-## Examples wishlist
-
-[Examples](https://oframe.github.io/ogl/examples)
-
-In order to test the completeness of the library, below is a wish-list that covers most commonly-used 3D techniques, and some more advanced uses too.
-
-Inspired by the effectiveness of ThreeJS' examples, they will hopefully serve as reference for how to use the library, and to achieve a wide range of techniques.
-
-For more advanced techniques, extra classes will be developed and contained within the `Extras` folder of the library.
-
-### Geometry
- - [x] Triangle Screen Shader
- - [x] Draw Modes
- - [x] Indexed vs Non-Indexed
- - [x] Load JSON (Javascript Object Notation)
- - [x] Wireframe
- - [x] Base Primitives - Plane, Cube, Sphere
- - [x] Particles
- - [x] Instancing
- - [ ] Particle Depth Sort
- - [ ] LODs (Level Of Detail)
- - [x] Polylines
- - [ ] Load OBJ (Object file format)
- - [ ] Load GLTF (Graphics Language Transmission Format)
-
-### Scene
- - [x] Scene Graph hierarchy
- - [x] Sort Transparency
- - [x] Frustum culling
-
-### Interaction
- - [x] Orbit controls
- - [x] Projection and Raycasting
- - [x] Mouse Flowmap
-
-### Shading
- - [x] Fog
- - [x] Textures
- - [x] Skydome
- - [x] Normal Maps
- - [x] Flat Shading Matcap
- - [x] Wireframe Shader
- - [ ] SDF Alpha test/clip (Signed Distance Fields)
- - [x] MSDF Text Glyphs (Multichannel Signed Distance Fields)
- - [ ] Point lighting with specular highlights
- - [x] PBR (Physically Based Rendering)
- - [x] Compressed Textures
-
-### Frame Buffer
- - [x] Render to texture
- - [x] Post FXAA (Fast Approximate Anti-Aliasing)
- - [x] MRT (Multiple Render Targets)
- - [ ] Reflections
- - [x] Shadow maps
- - [ ] Distortion (refraction)
- - [x] Post Fluid Distortion
- - [ ] Effects - DOF (Depth Of Field) + light rays + tone mapping
- - [x] GPGPU Particles (General-Purpose computing on Graphics Processing Units)
-
-### Animation
- - [x] Skinning
- - [ ] Blendshapes
- - [ ] Load Hierarchy Animation
-
-### Stencil
- - [ ] Stencil Shadows and Mirror
-
-### Performance
- - [x] High mesh count
