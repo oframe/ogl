@@ -1,18 +1,19 @@
-import {Program} from '../core/Program.js';
-import {Mesh} from '../core/Mesh.js';
-import {Texture} from '../core/Texture.js';
-import {RenderTarget} from '../core/RenderTarget.js';
-import {Triangle} from './Triangle.js';
+import { Program } from '../core/Program.js';
+import { Mesh } from '../core/Mesh.js';
+import { Texture } from '../core/Texture.js';
+import { RenderTarget } from '../core/RenderTarget.js';
+import { Triangle } from './Triangle.js';
 
 export class GPGPU {
-    constructor(gl, {
-
-        // Always pass in array of vec4s (RGBA values within texture)
-        data = new Float32Array(16),
-
-        geometry = new Triangle(gl),
-        type, // Pass in gl.FLOAT to force it, defaults to gl.HALF_FLOAT
-    }) {
+    constructor(
+        gl,
+        {
+            // Always pass in array of vec4s (RGBA values within texture)
+            data = new Float32Array(16),
+            geometry = new Triangle(gl),
+            type, // Pass in gl.FLOAT to force it, defaults to gl.HALF_FLOAT
+        }
+    ) {
         this.gl = gl;
         const initialData = data;
         this.passes = [];
@@ -43,30 +44,30 @@ export class GPGPU {
         })();
 
         // Create output texture uniform using input float texture with initial data
-        this.uniform = {value: new Texture(gl, {
-            image: floatArray,
-            target: gl.TEXTURE_2D,
-            type: gl.FLOAT,
-            format: gl.RGBA,
-            internalFormat: gl.renderer.isWebgl2 ? gl.RGBA32F : gl.RGBA,
-            wrapS: gl.CLAMP_TO_EDGE,
-            wrapT: gl.CLAMP_TO_EDGE,
-            generateMipmaps: false,
-            minFilter: gl.NEAREST,
-            magFilter: gl.NEAREST,
-            width: this.size,
-            flipY: false,
-        })};
+        this.uniform = {
+            value: new Texture(gl, {
+                image: floatArray,
+                target: gl.TEXTURE_2D,
+                type: gl.FLOAT,
+                format: gl.RGBA,
+                internalFormat: gl.renderer.isWebgl2 ? gl.RGBA32F : gl.RGBA,
+                wrapS: gl.CLAMP_TO_EDGE,
+                wrapT: gl.CLAMP_TO_EDGE,
+                generateMipmaps: false,
+                minFilter: gl.NEAREST,
+                magFilter: gl.NEAREST,
+                width: this.size,
+                flipY: false,
+            }),
+        };
 
         // Create FBOs
         const options = {
-            width: this.size, 
-            height: this.size, 
+            width: this.size,
+            height: this.size,
             type: type || gl.HALF_FLOAT || gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES,
             format: gl.RGBA,
-            internalFormat: gl.renderer.isWebgl2 
-                ? (type === gl.FLOAT ? gl.RGBA32F : gl.RGBA16F) 
-                : gl.RGBA,
+            internalFormat: gl.renderer.isWebgl2 ? (type === gl.FLOAT ? gl.RGBA32F : gl.RGBA16F) : gl.RGBA,
             minFilter: gl.NEAREST,
             depth: false,
             unpackAlignment: 1,
@@ -84,19 +85,13 @@ export class GPGPU {
         };
     }
 
-    addPass({
-        vertex = defaultVertex,
-        fragment = defaultFragment,
-        uniforms = {},
-        textureUniform = 'tMap',
-        enabled = true,
-    } = {}) {
+    addPass({ vertex = defaultVertex, fragment = defaultFragment, uniforms = {}, textureUniform = 'tMap', enabled = true } = {}) {
         uniforms[textureUniform] = this.uniform;
-        const program = new Program(this.gl, {vertex, fragment, uniforms});
-        const mesh = new Mesh(this.gl, {geometry: this.geometry, program});
+        const program = new Program(this.gl, { vertex, fragment, uniforms });
+        const mesh = new Mesh(this.gl, { geometry: this.geometry, program });
 
         const pass = {
-            mesh, 
+            mesh,
             program,
             uniforms,
             enabled,
@@ -108,18 +103,18 @@ export class GPGPU {
     }
 
     render() {
-        const enabledPasses = this.passes.filter(pass => pass.enabled);
+        const enabledPasses = this.passes.filter((pass) => pass.enabled);
 
         enabledPasses.forEach((pass, i) => {
             this.gl.renderer.render({
-                scene: pass.mesh, 
+                scene: pass.mesh,
                 target: this.fbo.write,
                 clear: false,
             });
             this.fbo.swap();
         });
     }
-};
+}
 
 const defaultVertex = /* glsl */ `
     attribute vec2 uv;

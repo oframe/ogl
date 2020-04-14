@@ -89,8 +89,11 @@ export function identity(out) {
 export function transpose(out, a) {
     // If we are transposing ourselves we can skip a few steps but have to cache some values
     if (out === a) {
-        let a01 = a[1], a02 = a[2], a03 = a[3];
-        let a12 = a[6], a13 = a[7];
+        let a01 = a[1],
+            a02 = a[2],
+            a03 = a[3];
+        let a12 = a[6],
+            a13 = a[7];
         let a23 = a[11];
 
         out[1] = a[4];
@@ -135,10 +138,22 @@ export function transpose(out, a) {
  * @returns {mat4} out
  */
 export function invert(out, a) {
-    let a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
-    let a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
-    let a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
-    let a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+    let a00 = a[0],
+        a01 = a[1],
+        a02 = a[2],
+        a03 = a[3];
+    let a10 = a[4],
+        a11 = a[5],
+        a12 = a[6],
+        a13 = a[7];
+    let a20 = a[8],
+        a21 = a[9],
+        a22 = a[10],
+        a23 = a[11];
+    let a30 = a[12],
+        a31 = a[13],
+        a32 = a[14],
+        a33 = a[15];
 
     let b00 = a00 * a11 - a01 * a10;
     let b01 = a00 * a12 - a02 * a10;
@@ -188,10 +203,22 @@ export function invert(out, a) {
  * @returns {Number} determinant of a
  */
 export function determinant(a) {
-    let a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
-    let a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
-    let a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
-    let a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+    let a00 = a[0],
+        a01 = a[1],
+        a02 = a[2],
+        a03 = a[3];
+    let a10 = a[4],
+        a11 = a[5],
+        a12 = a[6],
+        a13 = a[7];
+    let a20 = a[8],
+        a21 = a[9],
+        a22 = a[10],
+        a23 = a[11];
+    let a30 = a[12],
+        a31 = a[13],
+        a32 = a[14],
+        a33 = a[15];
 
     let b00 = a00 * a11 - a01 * a10;
     let b01 = a00 * a12 - a02 * a10;
@@ -219,31 +246,55 @@ export function determinant(a) {
  * @returns {mat4} out
  */
 export function multiply(out, a, b) {
-    let a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
-    let a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
-    let a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
-    let a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+    let a00 = a[0],
+        a01 = a[1],
+        a02 = a[2],
+        a03 = a[3];
+    let a10 = a[4],
+        a11 = a[5],
+        a12 = a[6],
+        a13 = a[7];
+    let a20 = a[8],
+        a21 = a[9],
+        a22 = a[10],
+        a23 = a[11];
+    let a30 = a[12],
+        a31 = a[13],
+        a32 = a[14],
+        a33 = a[15];
 
     // Cache only the current line of the second matrix
-    let b0 = b[0], b1 = b[1], b2 = b[2], b3 = b[3];
+    let b0 = b[0],
+        b1 = b[1],
+        b2 = b[2],
+        b3 = b[3];
     out[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
     out[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
     out[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
     out[3] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-    b0 = b[4]; b1 = b[5]; b2 = b[6]; b3 = b[7];
+    b0 = b[4];
+    b1 = b[5];
+    b2 = b[6];
+    b3 = b[7];
     out[4] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
     out[5] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
     out[6] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
     out[7] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-    b0 = b[8]; b1 = b[9]; b2 = b[10]; b3 = b[11];
+    b0 = b[8];
+    b1 = b[9];
+    b2 = b[10];
+    b3 = b[11];
     out[8] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
     out[9] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
     out[10] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
     out[11] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
 
-    b0 = b[12]; b1 = b[13]; b2 = b[14]; b3 = b[15];
+    b0 = b[12];
+    b1 = b[13];
+    b2 = b[14];
+    b3 = b[15];
     out[12] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
     out[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
     out[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
@@ -260,7 +311,9 @@ export function multiply(out, a, b) {
  * @returns {mat4} out
  */
 export function translate(out, a, v) {
-    let x = v[0], y = v[1], z = v[2];
+    let x = v[0],
+        y = v[1],
+        z = v[2];
     let a00, a01, a02, a03;
     let a10, a11, a12, a13;
     let a20, a21, a22, a23;
@@ -315,7 +368,9 @@ export function translate(out, a, v) {
  * @returns {mat4} out
  **/
 export function scale(out, a, v) {
-    let x = v[0], y = v[1], z = v[2];
+    let x = v[0],
+        y = v[1],
+        z = v[2];
 
     out[0] = a[0] * x;
     out[1] = a[1] * x;
@@ -346,8 +401,10 @@ export function scale(out, a, v) {
  * @returns {mat4} out
  */
 export function rotate(out, a, rad, axis) {
-    let x = axis[0], y = axis[1], z = axis[2];
-    let len = Math.hypot(x,y,z);
+    let x = axis[0],
+        y = axis[1],
+        z = axis[2];
+    let len = Math.hypot(x, y, z);
     let s, c, t;
     let a00, a01, a02, a03;
     let a10, a11, a12, a13;
@@ -407,7 +464,8 @@ export function rotate(out, a, rad, axis) {
     out[10] = a02 * b20 + a12 * b21 + a22 * b22;
     out[11] = a03 * b20 + a13 * b21 + a23 * b22;
 
-    if (a !== out) { // If the source and destination differ, copy the unchanged last row
+    if (a !== out) {
+        // If the source and destination differ, copy the unchanged last row
         out[12] = a[12];
         out[13] = a[13];
         out[14] = a[14];
@@ -488,17 +546,17 @@ export function getMaxScaleOnAxis(mat) {
  * @param {mat4} mat Matrix to be decomposed (input)
  * @return {quat} out
  */
-export const getRotation = (function() {
+export const getRotation = (function () {
     const temp = [0, 0, 0];
 
-    return function(out, mat) {
+    return function (out, mat) {
         let scaling = temp;
         getScaling(scaling, mat);
-    
+
         let is1 = 1 / scaling[0];
         let is2 = 1 / scaling[1];
         let is3 = 1 / scaling[2];
-    
+
         let sm11 = mat[0] * is1;
         let sm12 = mat[1] * is2;
         let sm13 = mat[2] * is3;
@@ -508,18 +566,18 @@ export const getRotation = (function() {
         let sm31 = mat[8] * is1;
         let sm32 = mat[9] * is2;
         let sm33 = mat[10] * is3;
-    
+
         let trace = sm11 + sm22 + sm33;
         let S = 0;
-    
+
         if (trace > 0) {
             S = Math.sqrt(trace + 1.0) * 2;
             out[3] = 0.25 * S;
             out[0] = (sm23 - sm32) / S;
             out[1] = (sm31 - sm13) / S;
             out[2] = (sm12 - sm21) / S;
-        } else if ((sm11 > sm22) && (sm11 > sm33)) {
-            S = Math.sqrt(1.0 + sm11 - sm22- sm33) * 2;
+        } else if (sm11 > sm22 && sm11 > sm33) {
+            S = Math.sqrt(1.0 + sm11 - sm22 - sm33) * 2;
             out[3] = (sm23 - sm32) / S;
             out[0] = 0.25 * S;
             out[1] = (sm12 + sm21) / S;
@@ -537,9 +595,9 @@ export const getRotation = (function() {
             out[1] = (sm23 + sm32) / S;
             out[2] = 0.25 * S;
         }
-    
+
         return out;
-    }
+    };
 })();
 
 /**
@@ -561,7 +619,10 @@ export const getRotation = (function() {
  */
 export function fromRotationTranslationScale(out, q, v, s) {
     // Quaternion math
-    let x = q[0], y = q[1], z = q[2], w = q[3];
+    let x = q[0],
+        y = q[1],
+        z = q[2],
+        w = q[3];
     let x2 = x + x;
     let y2 = y + y;
     let z2 = z + z;
@@ -608,7 +669,10 @@ export function fromRotationTranslationScale(out, q, v, s) {
  * @returns {mat4} out
  */
 export function fromQuat(out, q) {
-    let x = q[0], y = q[1], z = q[2], w = q[3];
+    let x = q[0],
+        y = q[1],
+        z = q[2],
+        w = q[3];
     let x2 = x + x;
     let y2 = y + y;
     let z2 = z + z;
@@ -673,7 +737,7 @@ export function perspective(out, fovy, aspect, near, far) {
     out[11] = -1;
     out[12] = 0;
     out[13] = 0;
-    out[14] = (2 * far * near) * nf;
+    out[14] = 2 * far * near * nf;
     out[15] = 0;
     return out;
 }
@@ -738,8 +802,7 @@ export function targetTo(out, eye, target, up) {
     if (len === 0) {
         // eye and target are in the same position
         z2 = 1;
-    }
-    else {
+    } else {
         len = 1 / Math.sqrt(len);
         z0 *= len;
         z1 *= len;
@@ -755,15 +818,13 @@ export function targetTo(out, eye, target, up) {
         // up and z are parallel
         if (upz) {
             upx += 1e-6;
-        } else if(upy) {
+        } else if (upy) {
             upz += 1e-6;
         } else {
             upy += 1e-6;
         }
-        x0 = upy * z2 - upz * z1,
-        x1 = upz * z0 - upx * z2,
-        x2 = upx * z1 - upy * z0;
-        
+        (x0 = upy * z2 - upz * z1), (x1 = upz * z0 - upx * z2), (x2 = upx * z1 - upy * z0);
+
         len = x0 * x0 + x1 * x1 + x2 * x2;
     }
 
@@ -789,7 +850,7 @@ export function targetTo(out, eye, target, up) {
     out[14] = eyez;
     out[15] = 1;
     return out;
-};
+}
 
 /**
  * Adds two mat4's

@@ -1,4 +1,4 @@
-import {Program} from '../core/Program.js';
+import { Program } from '../core/Program.js';
 
 const vertex = /* glsl */ `
     precision highp float;

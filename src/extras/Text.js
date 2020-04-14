@@ -23,7 +23,7 @@ export function Text({
 
     function parseFont() {
         glyphs = {};
-        font.chars.forEach(d => glyphs[d.char] = d);
+        font.chars.forEach((d) => (glyphs[d.char] = d));
     }
 
     function createGeometry() {
@@ -120,7 +120,6 @@ export function Text({
                 // Add wordspacing
                 advance += wordSpacing * size;
             } else {
-
                 // Add letterspacing
                 advance += letterSpacing * size;
             }
@@ -132,7 +131,6 @@ export function Text({
 
             // If width defined
             if (line.width > width) {
-
                 // If can break words, undo latest glyph if line not empty and create new line
                 if (wordBreak && line.glyphs.length > 1) {
                     line.width -= advance;
@@ -140,7 +138,7 @@ export function Text({
                     line = newLine();
                     continue;
 
-                // If not first word, undo current word and cursor and create new line
+                    // If not first word, undo current word and cursor and create new line
                 } else if (!wordBreak && wordWidth !== line.width) {
                     let numGlyphs = cursor - wordCursor + 1;
                     line.glyphs.splice(-numGlyphs, numGlyphs);
@@ -191,23 +189,13 @@ export function Text({
                 // each letter is a quad. axis bottom left
                 let w = glyph.width * scale;
                 let h = glyph.height * scale;
-                buffers.position.set([
-                    x,     y - h, 0,
-                    x,     y,     0,
-                    x + w, y - h, 0,
-                    x + w, y,     0
-                ], j * 4 * 3);
+                buffers.position.set([x, y - h, 0, x, y, 0, x + w, y - h, 0, x + w, y, 0], j * 4 * 3);
 
                 let u = glyph.x / texW;
                 let uw = glyph.width / texW;
                 let v = 1.0 - glyph.y / texH;
                 let vh = glyph.height / texH;
-                buffers.uv.set([
-                    u,      v - vh,
-                    u,      v,
-                    u + uw, v - vh,
-                    u + uw, v,
-                ], j * 4 * 2);
+                buffers.uv.set([u, v - vh, u, v, u + uw, v - vh, u + uw, v], j * 4 * 2);
 
                 // Reset cursor to baseline
                 y += glyph.yoffset * scale;
@@ -236,15 +224,14 @@ export function Text({
     }
 
     // Update buffers to layout with new layout
-    this.resize = function(options) {
-        ({width} = options);
+    this.resize = function (options) {
+        ({ width } = options);
         layout();
     };
 
     // Completely change text (like creating new Text)
-    this.update = function(options) {
-        ({text} = options);
-        createGeometry()
+    this.update = function (options) {
+        ({ text } = options);
+        createGeometry();
     };
 }
-

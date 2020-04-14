@@ -1,5 +1,5 @@
-import {Vec3} from '../math/Vec3.js';
-import {Quat} from '../math/Quat.js';
+import { Vec3 } from '../math/Vec3.js';
+import { Quat } from '../math/Quat.js';
 
 const prevPos = new Vec3();
 const prevRot = new Quat();
@@ -10,7 +10,7 @@ const nextRot = new Quat();
 const nextScl = new Vec3();
 
 export class Animation {
-    constructor({objects, data}) {
+    constructor({ objects, data }) {
         this.objects = objects;
         this.data = data;
         this.elapsed = 0;
@@ -28,7 +28,7 @@ export class Animation {
         const nextKey = this.data.frames[(floorFrame + 1) % this.duration];
 
         this.objects.forEach((object, i) => {
-            prevPos.fromArray(prevKey.position, i * 3)
+            prevPos.fromArray(prevKey.position, i * 3);
             prevRot.fromArray(prevKey.quaternion, i * 4);
             prevScl.fromArray(prevKey.scale, i * 3);
 

@@ -1,5 +1,5 @@
 import * as EulerFunc from './functions/EulerFunc.js';
-import {Mat4} from './Mat4.js';
+import { Mat4 } from './Mat4.js';
 
 const tmpMat4 = new Mat4();
 

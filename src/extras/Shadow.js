@@ -1,18 +1,14 @@
-import {Camera} from '../core/Camera.js';
-import {Program} from '../core/Program.js';
-import {RenderTarget} from '../core/RenderTarget.js';
+import { Camera } from '../core/Camera.js';
+import { Program } from '../core/Program.js';
+import { RenderTarget } from '../core/RenderTarget.js';
 
 export class Shadow {
-    constructor(gl, {
-        light = new Camera(gl),
-        width = 1024,
-        height = width,
-    }) {
+    constructor(gl, { light = new Camera(gl), width = 1024, height = width }) {
         this.gl = gl;
 
         this.light = light;
-        
-        this.target = new RenderTarget(gl, {width, height});
+
+        this.target = new RenderTarget(gl, { width, height });
 
         this.depthProgram = new Program(gl, {
             vertex: defaultVertex,
@@ -33,12 +29,11 @@ export class Shadow {
         uniformView = 'shadowViewMatrix',
         uniformTexture = 'tShadow',
     }) {
-
         // Add uniforms to existing program
         if (receive && !mesh.program.uniforms[uniformProjection]) {
-            mesh.program.uniforms[uniformProjection] = {value: this.light.projectionMatrix};
-            mesh.program.uniforms[uniformView] = {value: this.light.viewMatrix};
-            mesh.program.uniforms[uniformTexture] = {value: this.target.texture};
+            mesh.program.uniforms[uniformProjection] = { value: this.light.projectionMatrix };
+            mesh.program.uniforms[uniformView] = { value: this.light.viewMatrix };
+            mesh.program.uniforms[uniformTexture] = { value: this.target.texture };
         }
 
         if (!cast) return;
@@ -64,11 +59,10 @@ export class Shadow {
         });
     }
 
-    render({scene}) {
-
+    render({ scene }) {
         // For depth render, replace program with depth override.
         // Hide meshes not casting shadows.
-        scene.traverse(node => {
+        scene.traverse((node) => {
             if (!node.draw) return;
             if (!!~this.castMeshes.indexOf(node)) {
                 node.program = node.depthProgram;
@@ -80,13 +74,13 @@ export class Shadow {
 
         // Render the depth shadow map using the light as the camera
         this.gl.renderer.render({
-            scene, 
-            camera: this.light, 
+            scene,
+            camera: this.light,
             target: this.target,
         });
 
         // Then switch the program back to the normal one
-        scene.traverse(node => {
+        scene.traverse((node) => {
             if (!node.draw) return;
             if (!!~this.castMeshes.indexOf(node)) {
                 node.program = node.colorProgram;

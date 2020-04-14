@@ -42,8 +42,14 @@ export function setAxisAngle(out, axis, rad) {
  * @returns {quat} out
  */
 export function multiply(out, a, b) {
-    let ax = a[0], ay = a[1], az = a[2], aw = a[3];
-    let bx = b[0], by = b[1], bz = b[2], bw = b[3];
+    let ax = a[0],
+        ay = a[1],
+        az = a[2],
+        aw = a[3];
+    let bx = b[0],
+        by = b[1],
+        bz = b[2],
+        bw = b[3];
 
     out[0] = ax * bw + aw * bx + ay * bz - az * by;
     out[1] = ay * bw + aw * by + az * bx - ax * bz;
@@ -63,8 +69,12 @@ export function multiply(out, a, b) {
 export function rotateX(out, a, rad) {
     rad *= 0.5;
 
-    let ax = a[0], ay = a[1], az = a[2], aw = a[3];
-    let bx = Math.sin(rad), bw = Math.cos(rad);
+    let ax = a[0],
+        ay = a[1],
+        az = a[2],
+        aw = a[3];
+    let bx = Math.sin(rad),
+        bw = Math.cos(rad);
 
     out[0] = ax * bw + aw * bx;
     out[1] = ay * bw + az * bx;
@@ -84,8 +94,12 @@ export function rotateX(out, a, rad) {
 export function rotateY(out, a, rad) {
     rad *= 0.5;
 
-    let ax = a[0], ay = a[1], az = a[2], aw = a[3];
-    let by = Math.sin(rad), bw = Math.cos(rad);
+    let ax = a[0],
+        ay = a[1],
+        az = a[2],
+        aw = a[3];
+    let by = Math.sin(rad),
+        bw = Math.cos(rad);
 
     out[0] = ax * bw - az * by;
     out[1] = ay * bw + aw * by;
@@ -105,8 +119,12 @@ export function rotateY(out, a, rad) {
 export function rotateZ(out, a, rad) {
     rad *= 0.5;
 
-    let ax = a[0], ay = a[1], az = a[2], aw = a[3];
-    let bz = Math.sin(rad), bw = Math.cos(rad);
+    let ax = a[0],
+        ay = a[1],
+        az = a[2],
+        aw = a[3];
+    let bz = Math.sin(rad),
+        bw = Math.cos(rad);
 
     out[0] = ax * bw + ay * bz;
     out[1] = ay * bw - ax * bz;
@@ -127,8 +145,14 @@ export function rotateZ(out, a, rad) {
 export function slerp(out, a, b, t) {
     // benchmarks:
     //    http://jsperf.com/quaternion-slerp-implementations
-    let ax = a[0], ay = a[1], az = a[2], aw = a[3];
-    let bx = b[0], by = b[1], bz = b[2], bw = b[3];
+    let ax = a[0],
+        ay = a[1],
+        az = a[2],
+        aw = a[3];
+    let bx = b[0],
+        by = b[1],
+        bz = b[2],
+        bw = b[3];
 
     let omega, cosom, sinom, scale0, scale1;
 
@@ -143,7 +167,7 @@ export function slerp(out, a, b, t) {
         bw = -bw;
     }
     // calculate coefficients
-    if ((1.0 - cosom) > 0.000001) {
+    if (1.0 - cosom > 0.000001) {
         // standard case (slerp)
         omega = Math.acos(cosom);
         sinom = Math.sin(omega);
@@ -172,7 +196,10 @@ export function slerp(out, a, b, t) {
  * @returns {quat} out
  */
 export function invert(out, a) {
-    let a0 = a[0], a1 = a[1], a2 = a[2], a3 = a[3];
+    let a0 = a[0],
+        a1 = a[1],
+        a2 = a[2],
+        a3 = a[3];
     let dot = a0 * a0 + a1 * a1 + a2 * a2 + a3 * a3;
     let invDot = dot ? 1.0 / dot : 0;
 
@@ -220,19 +247,17 @@ export function fromMat3(out, m) {
 
     if (fTrace > 0.0) {
         // |w| > 1/2, may as well choose w > 1/2
-        fRoot = Math.sqrt(fTrace + 1.0);  // 2w
+        fRoot = Math.sqrt(fTrace + 1.0); // 2w
         out[3] = 0.5 * fRoot;
-        fRoot = 0.5 / fRoot;  // 1/(4w)
+        fRoot = 0.5 / fRoot; // 1/(4w)
         out[0] = (m[5] - m[7]) * fRoot;
         out[1] = (m[6] - m[2]) * fRoot;
         out[2] = (m[1] - m[3]) * fRoot;
     } else {
         // |w| <= 1/2
         let i = 0;
-        if (m[4] > m[0])
-            i = 1;
-        if (m[8] > m[i * 3 + i])
-            i = 2;
+        if (m[4] > m[0]) i = 1;
+        if (m[8] > m[i * 3 + i]) i = 2;
         let j = (i + 1) % 3;
         let k = (i + 2) % 3;
 

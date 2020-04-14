@@ -1,20 +1,23 @@
-import {Geometry} from '../core/Geometry.js';
-import {Program} from '../core/Program.js';
-import {Mesh} from '../core/Mesh.js';
-import {Vec2} from '../math/Vec2.js';
-import {Vec3} from '../math/Vec3.js';
-import {Color} from '../math/Color.js';
+import { Geometry } from '../core/Geometry.js';
+import { Program } from '../core/Program.js';
+import { Mesh } from '../core/Mesh.js';
+import { Vec2 } from '../math/Vec2.js';
+import { Vec3 } from '../math/Vec3.js';
+import { Color } from '../math/Color.js';
 
 const tmp = new Vec3();
 
 export class Polyline {
-    constructor(gl, {
-        points, // Array of Vec3s
-        vertex = defaultVertex,
-        fragment = defaultFragment,
-        uniforms = {},
-        attributes = {}, // For passing in custom attribs
-    }) {
+    constructor(
+        gl,
+        {
+            points, // Array of Vec3s
+            vertex = defaultVertex,
+            fragment = defaultFragment,
+            uniforms = {},
+            attributes = {}, // For passing in custom attribs
+        }
+    ) {
         this.gl = gl;
         this.points = points;
         this.count = points.length;
@@ -39,34 +42,37 @@ export class Polyline {
             index.set([ind + 2, ind + 1, ind + 3], (ind + 1) * 3);
         }
 
-        const geometry = this.geometry = new Geometry(gl, Object.assign(attributes, {
-            position: {size: 3, data: this.position},
-            prev: {size: 3, data: this.prev},
-            next: {size: 3, data: this.next},
-            side: {size: 1, data: side},
-            uv: {size: 2, data: uv},
-            index: {size: 1, data: index},
-        }));
+        const geometry = (this.geometry = new Geometry(
+            gl,
+            Object.assign(attributes, {
+                position: { size: 3, data: this.position },
+                prev: { size: 3, data: this.prev },
+                next: { size: 3, data: this.next },
+                side: { size: 1, data: side },
+                uv: { size: 2, data: uv },
+                index: { size: 1, data: index },
+            })
+        ));
 
         // Populate dynamic buffers
         this.updateGeometry();
 
-        if (!uniforms.uResolution) this.resolution = uniforms.uResolution = {value: new Vec2()};
-        if (!uniforms.uDPR) this.dpr = uniforms.uDPR = {value: 1};
-        if (!uniforms.uThickness) this.thickness = uniforms.uThickness = {value: 1};
-        if (!uniforms.uColor) this.color = uniforms.uColor = {value: new Color('#000')};
-        if (!uniforms.uMiter) this.miter = uniforms.uMiter = {value: 1};
+        if (!uniforms.uResolution) this.resolution = uniforms.uResolution = { value: new Vec2() };
+        if (!uniforms.uDPR) this.dpr = uniforms.uDPR = { value: 1 };
+        if (!uniforms.uThickness) this.thickness = uniforms.uThickness = { value: 1 };
+        if (!uniforms.uColor) this.color = uniforms.uColor = { value: new Color('#000') };
+        if (!uniforms.uMiter) this.miter = uniforms.uMiter = { value: 1 };
 
         // Set size uniforms' values
         this.resize();
 
-        const program = this.program = new Program(gl, {
+        const program = (this.program = new Program(gl, {
             vertex,
             fragment,
             uniforms,
-        });
-        
-        this.mesh = new Mesh(gl, {geometry, program});
+        }));
+
+        this.mesh = new Mesh(gl, { geometry, program });
     }
 
     updateGeometry() {
@@ -75,9 +81,10 @@ export class Polyline {
             p.toArray(this.position, i * 3 * 2 + 3);
 
             if (!i) {
-
                 // If first point, calculate prev using the distance to 2nd point
-                tmp.copy(p).sub(this.points[i + 1]).add(p);
+                tmp.copy(p)
+                    .sub(this.points[i + 1])
+                    .add(p);
                 tmp.toArray(this.prev, i * 3 * 2);
                 tmp.toArray(this.prev, i * 3 * 2 + 3);
             } else {
@@ -86,9 +93,10 @@ export class Polyline {
             }
 
             if (i === this.points.length - 1) {
-
                 // If last point, calculate next using distance to 2nd last point
-                tmp.copy(p).sub(this.points[i - 1]).add(p);
+                tmp.copy(p)
+                    .sub(this.points[i - 1])
+                    .add(p);
                 tmp.toArray(this.next, i * 3 * 2);
                 tmp.toArray(this.next, i * 3 * 2 + 3);
             } else {
@@ -104,12 +112,11 @@ export class Polyline {
 
     // Only need to call if not handling resolution uniforms manually
     resize() {
-
         // Update automatic uniforms if not overridden
         if (this.resolution) this.resolution.value.set(this.gl.canvas.width, this.gl.canvas.height);
         if (this.dpr) this.dpr.value = this.gl.renderer.dpr;
     }
-};
+}
 
 const defaultVertex = /* glsl */ `
     precision highp float;
@@ -174,7 +181,3 @@ const defaultFragment = /* glsl */ `
         gl_FragColor.a = 1.0;
     }
 `;
-
-
-
-

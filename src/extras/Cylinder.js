@@ -1,18 +1,21 @@
-import {Geometry} from '../core/Geometry.js';
-import {Vec3} from '../math/Vec3.js';
+import { Geometry } from '../core/Geometry.js';
+import { Vec3 } from '../math/Vec3.js';
 
 export class Cylinder extends Geometry {
-    constructor(gl, {
-        radiusTop = 0.5,
-        radiusBottom = 0.5,
-        height = 1,
-        radialSegments = 8,
-        heightSegments = 1,
-        openEnded = false,
-        thetaStart = 0,
-        thetaLength = Math.PI * 2,
-        attributes = {},
-    } = {}) {
+    constructor(
+        gl,
+        {
+            radiusTop = 0.5,
+            radiusBottom = 0.5,
+            height = 1,
+            radialSegments = 8,
+            heightSegments = 1,
+            openEnded = false,
+            thetaStart = 0,
+            thetaLength = Math.PI * 2,
+            attributes = {},
+        } = {}
+    ) {
         const rSegs = radialSegments;
         const hSegs = heightSegments;
         const tStart = thetaStart;
@@ -82,7 +85,7 @@ export class Cylinder extends Geometry {
 
             const centerIndex = i;
             position.set([0, 0.5 * height * sign, 0], i * 3);
-            normal.set([0, sign, 0], i * 3)
+            normal.set([0, sign, 0], i * 3);
             uv.set([0.5, 0.5], i * 2);
             i++;
 
@@ -110,10 +113,10 @@ export class Cylinder extends Geometry {
         }
 
         Object.assign(attributes, {
-            position: {size: 3, data: position},
-            normal: {size: 3, data: normal},
-            uv: {size: 2, data: uv},
-            index: {data: index},
+            position: { size: 3, data: position },
+            normal: { size: 3, data: normal },
+            uv: { size: 2, data: uv },
+            index: { data: index },
         });
 
         super(gl, attributes);

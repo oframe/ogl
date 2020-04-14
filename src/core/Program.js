@@ -8,18 +8,21 @@ let ID = 1;
 const arrayCacheF32 = {};
 
 export class Program {
-    constructor(gl, {
-        vertex,
-        fragment,
-        uniforms = {},
+    constructor(
+        gl,
+        {
+            vertex,
+            fragment,
+            uniforms = {},
 
-        transparent = false,
-        cullFace = gl.BACK,
-        frontFace = gl.CCW,
-        depthTest = true,
-        depthWrite = true,
-        depthFunc = gl.LESS,
-    } = {}) {
+            transparent = false,
+            cullFace = gl.BACK,
+            frontFace = gl.CCW,
+            depthTest = true,
+            depthWrite = true,
+            depthFunc = gl.LESS,
+        } = {}
+    ) {
         if (!gl.canvas) console.error('gl not passed as fist argument to Program');
         this.gl = gl;
         this.uniforms = uniforms;
@@ -82,9 +85,9 @@ export class Program {
 
             // split uniforms' names to separate array and struct declarations
             const split = uniform.name.match(/(\w+)/g);
-            
+
             uniform.uniformName = split[0];
-            
+
             if (split.length === 3) {
                 uniform.isStructArray = true;
                 uniform.structIndex = Number(split[1]);
@@ -97,7 +100,7 @@ export class Program {
 
         // Get active attribute locations
         this.attributeLocations = new Map();
-        const locations = []; 
+        const locations = [];
         const numAttribs = gl.getProgramParameter(this.program, gl.ACTIVE_ATTRIBUTES);
         for (let aIndex = 0; aIndex < numAttribs; aIndex++) {
             const attribute = gl.getActiveAttrib(this.program, aIndex);
@@ -135,13 +138,12 @@ export class Program {
         this.gl.renderer.setFrontFace(this.frontFace);
         this.gl.renderer.setDepthMask(this.depthWrite);
         this.gl.renderer.setDepthFunc(this.depthFunc);
-        if (this.blendFunc.src) this.gl.renderer.setBlendFunc(this.blendFunc.src, this.blendFunc.dst, this.blendFunc.srcAlpha, this.blendFunc.dstAlpha);
+        if (this.blendFunc.src)
+            this.gl.renderer.setBlendFunc(this.blendFunc.src, this.blendFunc.dst, this.blendFunc.srcAlpha, this.blendFunc.dstAlpha);
         if (this.blendEquation.modeRGB) this.gl.renderer.setBlendEquation(this.blendEquation.modeRGB, this.blendEquation.modeAlpha);
     }
 
-    use({
-        flipFaces = false,
-    } = {}) {
+    use({ flipFaces = false } = {}) {
         let textureUnit = -1;
         const programActive = this.gl.renderer.currentProgram === this.id;
 
@@ -178,7 +180,7 @@ export class Program {
 
             if (uniform.value.texture) {
                 textureUnit = textureUnit + 1;
-                
+
                 // Check if texture needs to be updated
                 uniform.value.update(textureUnit);
                 return setUniform(this.gl, activeUniform.type, location, textureUnit);
@@ -187,12 +189,12 @@ export class Program {
             // For texture arrays, set uniform as an array of texture units instead of just one
             if (uniform.value.length && uniform.value[0].texture) {
                 const textureUnits = [];
-                uniform.value.forEach(value => {
+                uniform.value.forEach((value) => {
                     textureUnit = textureUnit + 1;
                     value.update(textureUnit);
                     textureUnits.push(textureUnit);
                 });
-                
+
                 return setUniform(this.gl, activeUniform.type, location, textureUnits);
             }
 
@@ -215,7 +217,6 @@ function setUniform(gl, type, location, value) {
     // Avoid redundant uniform commands
     if (value.length) {
         if (setValue === undefined) {
-
             // clone array to store as cache
             gl.renderer.state.uniformLocations.set(location, value.slice(0));
         } else {
@@ -231,30 +232,41 @@ function setUniform(gl, type, location, value) {
     }
 
     switch (type) {
-        case 5126  : return value.length ? gl.uniform1fv(location, value) : gl.uniform1f(location, value); // FLOAT
-        case 35664 : return gl.uniform2fv(location, value); // FLOAT_VEC2
-        case 35665 : return gl.uniform3fv(location, value); // FLOAT_VEC3
-        case 35666 : return gl.uniform4fv(location, value); // FLOAT_VEC4
-        case 35670 : // BOOL
-        case 5124  : // INT
-        case 35678 : // SAMPLER_2D
-        case 35680 : return value.length ? gl.uniform1iv(location, value) : gl.uniform1i(location, value); // SAMPLER_CUBE
-        case 35671 : // BOOL_VEC2
-        case 35667 : return gl.uniform2iv(location, value); // INT_VEC2
-        case 35672 : // BOOL_VEC3
-        case 35668 : return gl.uniform3iv(location, value); // INT_VEC3
-        case 35673 : // BOOL_VEC4
-        case 35669 : return gl.uniform4iv(location, value); // INT_VEC4
-        case 35674 : return gl.uniformMatrix2fv(location, false, value); // FLOAT_MAT2
-        case 35675 : return gl.uniformMatrix3fv(location, false, value); // FLOAT_MAT3
-        case 35676 : return gl.uniformMatrix4fv(location, false, value); // FLOAT_MAT4
+        case 5126:
+            return value.length ? gl.uniform1fv(location, value) : gl.uniform1f(location, value); // FLOAT
+        case 35664:
+            return gl.uniform2fv(location, value); // FLOAT_VEC2
+        case 35665:
+            return gl.uniform3fv(location, value); // FLOAT_VEC3
+        case 35666:
+            return gl.uniform4fv(location, value); // FLOAT_VEC4
+        case 35670: // BOOL
+        case 5124: // INT
+        case 35678: // SAMPLER_2D
+        case 35680:
+            return value.length ? gl.uniform1iv(location, value) : gl.uniform1i(location, value); // SAMPLER_CUBE
+        case 35671: // BOOL_VEC2
+        case 35667:
+            return gl.uniform2iv(location, value); // INT_VEC2
+        case 35672: // BOOL_VEC3
+        case 35668:
+            return gl.uniform3iv(location, value); // INT_VEC3
+        case 35673: // BOOL_VEC4
+        case 35669:
+            return gl.uniform4iv(location, value); // INT_VEC4
+        case 35674:
+            return gl.uniformMatrix2fv(location, false, value); // FLOAT_MAT2
+        case 35675:
+            return gl.uniformMatrix3fv(location, false, value); // FLOAT_MAT3
+        case 35676:
+            return gl.uniformMatrix4fv(location, false, value); // FLOAT_MAT4
     }
 }
 
 function addLineNumbers(string) {
     let lines = string.split('\n');
-    for (let i = 0; i < lines.length; i ++) {
-        lines[i] = (i + 1) + ': ' + lines[i];
+    for (let i = 0; i < lines.length; i++) {
+        lines[i] = i + 1 + ': ' + lines[i];
     }
     return lines.join('\n');
 }
@@ -271,17 +283,17 @@ function flatten(a) {
 }
 
 function arraysEqual(a, b) {
-	if (a.length !== b.length) return false;
-	for (let i = 0, l = a.length; i < l; i ++) {
-		if (a[i] !== b[i]) return false;
-	}
-	return true;
+    if (a.length !== b.length) return false;
+    for (let i = 0, l = a.length; i < l; i++) {
+        if (a[i] !== b[i]) return false;
+    }
+    return true;
 }
 
 function setArray(a, b) {
-    for (let i = 0, l = a.length; i < l; i ++) {
-		a[i] = b[i];
-	}
+    for (let i = 0, l = a.length; i < l; i++) {
+        a[i] = b[i];
+    }
 }
 
 let warnCount = 0;
