@@ -8,6 +8,7 @@ html {
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
     height: 100%;
+    overscroll-behavior-y: contain;
 }
 
 body,
@@ -67,12 +68,14 @@ body {
 }
 
 .Side {
+    position: relative;
     width: 300px;
     height: 100%;
     overflow: auto;
     padding-bottom: 100px;
     padding-left: 20px;
     padding-right: 40px;
+    background: #fff;
 }
 .Iframe {
     position: absolute;
@@ -85,7 +88,6 @@ body {
     border: none;
     margin: 0;
 }
-
 .Title {
     font-size: 18px;
     margin: 20px 0;
@@ -110,12 +112,11 @@ div.Example {
     opacity: 0.2;
 }
 
+.SideIcon,
 .CodeIcon {
     position: absolute;
     display: block;
     z-index: 1;
-    bottom: 0;
-    right: 0;
     margin: 30px;
     width: 50px;
     height: 50px;
@@ -126,6 +127,36 @@ div.Example {
     font-size: 19px;
     letter-spacing: -0.1em;
     box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.1);
+}
+.CodeIcon {
+    bottom: 0;
+    right: 0;
+}
+.SideIcon {
+    top: 20px;
+    left: 245px;
+    display: none;
+}
+
+@media (max-width: 600px) {
+    .Side {
+        z-index: 1;
+    }
+    .Iframe {
+        left: 0;
+        width: 100%;
+    }
+    .SideIcon {
+        display: block;
+    }
+    [data-hideSidebar] .Side {
+        transform: translateX(-100%);
+    }
+    
+    [data-hideSidebar] .SideIcon {
+        left: 0;
+        transform: rotate(180deg);
+    }
 }
 
 .Info {

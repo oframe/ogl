@@ -82,13 +82,20 @@
 
     <iframe class="Iframe" allow="autoplay" src=""></iframe>
 
+    <a class="SideIcon">&lt;</a>
     <a class="CodeIcon" href="" target="_blank">&lt;&#47;&gt;</a>
 
     <script>
-        const sourceLink = document.querySelectorAll('.CodeIcon')[0];
+        const sourceLink = document.querySelector('.CodeIcon');
+        const toggleLink = document.querySelector('.SideIcon');
         const exampleLinks = document.querySelectorAll('a.Example');
-        const iFrame = document.querySelectorAll('.Iframe')[0];
+        const iFrame = document.querySelector('.Iframe');
         const sourcePath = 'https://github.com/oframe/ogl/tree/master/examples/';
+
+        toggleLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.body.toggleAttribute('data-hideSidebar');
+        });
 
         // Load query example in iFrame if linked
         let loadQuery = location.search.split('src=');
