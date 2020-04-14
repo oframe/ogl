@@ -29,7 +29,10 @@ export function fromMat4(out, a) {
  * @returns {mat3} out
  */
 export function fromQuat(out, q) {
-    let x = q[0], y = q[1], z = q[2], w = q[3];
+    let x = q[0],
+        y = q[1],
+        z = q[2],
+        w = q[3];
     let x2 = x + x;
     let y2 = y + y;
     let z2 = z + z;
@@ -127,7 +130,9 @@ export function identity(out) {
 export function transpose(out, a) {
     // If we are transposing ourselves we can skip a few steps but have to cache some values
     if (out === a) {
-        let a01 = a[1], a02 = a[2], a12 = a[5];
+        let a01 = a[1],
+            a02 = a[2],
+            a12 = a[5];
         out[1] = a[3];
         out[2] = a[6];
         out[3] = a01;
@@ -157,9 +162,15 @@ export function transpose(out, a) {
  * @returns {mat3} out
  */
 export function invert(out, a) {
-    let a00 = a[0], a01 = a[1], a02 = a[2];
-    let a10 = a[3], a11 = a[4], a12 = a[5];
-    let a20 = a[6], a21 = a[7], a22 = a[8];
+    let a00 = a[0],
+        a01 = a[1],
+        a02 = a[2];
+    let a10 = a[3],
+        a11 = a[4],
+        a12 = a[5];
+    let a20 = a[6],
+        a21 = a[7],
+        a22 = a[8];
 
     let b01 = a22 * a11 - a12 * a21;
     let b11 = -a22 * a10 + a12 * a20;
@@ -192,9 +203,15 @@ export function invert(out, a) {
  * @returns {Number} determinant of a
  */
 export function determinant(a) {
-    let a00 = a[0], a01 = a[1], a02 = a[2];
-    let a10 = a[3], a11 = a[4], a12 = a[5];
-    let a20 = a[6], a21 = a[7], a22 = a[8];
+    let a00 = a[0],
+        a01 = a[1],
+        a02 = a[2];
+    let a10 = a[3],
+        a11 = a[4],
+        a12 = a[5];
+    let a20 = a[6],
+        a21 = a[7],
+        a22 = a[8];
 
     return a00 * (a22 * a11 - a12 * a21) + a01 * (-a22 * a10 + a12 * a20) + a02 * (a21 * a10 - a11 * a20);
 }
@@ -208,13 +225,25 @@ export function determinant(a) {
  * @returns {mat3} out
  */
 export function multiply(out, a, b) {
-    let a00 = a[0], a01 = a[1], a02 = a[2];
-    let a10 = a[3], a11 = a[4], a12 = a[5];
-    let a20 = a[6], a21 = a[7], a22 = a[8];
+    let a00 = a[0],
+        a01 = a[1],
+        a02 = a[2];
+    let a10 = a[3],
+        a11 = a[4],
+        a12 = a[5];
+    let a20 = a[6],
+        a21 = a[7],
+        a22 = a[8];
 
-    let b00 = b[0], b01 = b[1], b02 = b[2];
-    let b10 = b[3], b11 = b[4], b12 = b[5];
-    let b20 = b[6], b21 = b[7], b22 = b[8];
+    let b00 = b[0],
+        b01 = b[1],
+        b02 = b[2];
+    let b10 = b[3],
+        b11 = b[4],
+        b12 = b[5];
+    let b20 = b[6],
+        b21 = b[7],
+        b22 = b[8];
 
     out[0] = b00 * a00 + b01 * a10 + b02 * a20;
     out[1] = b00 * a01 + b01 * a11 + b02 * a21;
@@ -239,10 +268,17 @@ export function multiply(out, a, b) {
  * @returns {mat3} out
  */
 export function translate(out, a, v) {
-    let a00 = a[0], a01 = a[1], a02 = a[2],
-        a10 = a[3], a11 = a[4], a12 = a[5],
-        a20 = a[6], a21 = a[7], a22 = a[8],
-        x = v[0], y = v[1];
+    let a00 = a[0],
+        a01 = a[1],
+        a02 = a[2],
+        a10 = a[3],
+        a11 = a[4],
+        a12 = a[5],
+        a20 = a[6],
+        a21 = a[7],
+        a22 = a[8],
+        x = v[0],
+        y = v[1];
 
     out[0] = a00;
     out[1] = a01;
@@ -267,10 +303,15 @@ export function translate(out, a, v) {
  * @returns {mat3} out
  */
 export function rotate(out, a, rad) {
-    let a00 = a[0], a01 = a[1], a02 = a[2],
-        a10 = a[3], a11 = a[4], a12 = a[5],
-        a20 = a[6], a21 = a[7], a22 = a[8],
-
+    let a00 = a[0],
+        a01 = a[1],
+        a02 = a[2],
+        a10 = a[3],
+        a11 = a[4],
+        a12 = a[5],
+        a20 = a[6],
+        a21 = a[7],
+        a22 = a[8],
         s = Math.sin(rad),
         c = Math.cos(rad);
 
@@ -286,7 +327,7 @@ export function rotate(out, a, rad) {
     out[7] = a21;
     out[8] = a22;
     return out;
-};
+}
 
 /**
  * Scales the mat3 by the dimensions in the given vec2
@@ -297,7 +338,8 @@ export function rotate(out, a, rad) {
  * @returns {mat3} out
  **/
 export function scale(out, a, v) {
-    let x = v[0], y = v[1];
+    let x = v[0],
+        y = v[1];
 
     out[0] = x * a[0];
     out[1] = x * a[1];
@@ -322,10 +364,22 @@ export function scale(out, a, v) {
  * @returns {mat3} out
  */
 export function normalFromMat4(out, a) {
-    let a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
-    let a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
-    let a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
-    let a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+    let a00 = a[0],
+        a01 = a[1],
+        a02 = a[2],
+        a03 = a[3];
+    let a10 = a[4],
+        a11 = a[5],
+        a12 = a[6],
+        a13 = a[7];
+    let a20 = a[8],
+        a21 = a[9],
+        a22 = a[10],
+        a23 = a[11];
+    let a30 = a[12],
+        a31 = a[13],
+        a32 = a[14],
+        a33 = a[15];
 
     let b00 = a00 * a11 - a01 * a10;
     let b01 = a00 * a12 - a02 * a10;

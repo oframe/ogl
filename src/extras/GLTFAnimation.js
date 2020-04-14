@@ -1,5 +1,5 @@
-import {Vec3} from '../math/Vec3.js';
-import {Quat} from '../math/Quat.js';
+import { Vec3 } from '../math/Vec3.js';
+import { Quat } from '../math/Quat.js';
 
 const tmpVec3A = new Vec3();
 const tmpVec3B = new Vec3();
@@ -13,7 +13,6 @@ const tmpQuatD = new Quat();
 
 export class GLTFAnimation {
     constructor(data, weight = 1) {
-
         this.data = data;
         this.elapsed = 0;
         this.weight = weight;
@@ -22,25 +21,20 @@ export class GLTFAnimation {
         this.loop = true;
 
         // Get duration from largest final time in all channels
-        this.duration = data.reduce((a, {times}) => Math.max(a, times[times.length - 1]), 0);
+        this.duration = data.reduce((a, { times }) => Math.max(a, times[times.length - 1]), 0);
     }
 
     update(totalWeight = 1, isSet) {
         const weight = isSet ? 1 : this.weight / totalWeight;
-        const elapsed = this.loop ?
-            this.elapsed % this.duration :
-            Math.min(this.elapsed, this.duration);
+        const elapsed = this.loop ? this.elapsed % this.duration : Math.min(this.elapsed, this.duration);
 
-        this.data.forEach(({
-            node,
-            transform,
-            interpolation,
-            times,
-            values,
-        }) => {
-
+        this.data.forEach(({ node, transform, interpolation, times, values }) => {
             // Get index of two time values elapsed is between
-            const prevIndex = Math.max(1, times.findIndex(t => t > elapsed)) - 1;
+            const prevIndex =
+                Math.max(
+                    1,
+                    times.findIndex((t) => t > elapsed)
+                ) - 1;
             const nextIndex = prevIndex + 1;
 
             // Get linear blend/alpha between the two
@@ -62,7 +56,6 @@ export class GLTFAnimation {
             }
 
             if (interpolation === 'CUBICSPLINE') {
-
                 // Get the prev and next values from the indices
                 prevVal.fromArray(values, prevIndex * size * 3 + size * 1);
                 prevTan.fromArray(values, prevIndex * size * 3 + size * 2);
@@ -73,7 +66,6 @@ export class GLTFAnimation {
                 prevVal = this.cubicSplineInterpolate(alpha, prevVal, prevTan, nextTan, nextVal);
                 if (size === 4) prevVal.normalize();
             } else {
-
                 // Get the prev and next values from the indices
                 prevVal.fromArray(values, prevIndex * size);
                 nextVal.fromArray(values, nextIndex * size);

@@ -1,7 +1,7 @@
-import {Vec3} from '../math/Vec3.js';
-import {Quat} from '../math/Quat.js';
-import {Mat4} from '../math/Mat4.js';
-import {Euler} from '../math/Euler.js';
+import { Vec3 } from '../math/Vec3.js';
+import { Quat } from '../math/Quat.js';
+import { Mat4 } from '../math/Mat4.js';
+import { Euler } from '../math/Euler.js';
 
 export class Transform {
     constructor() {
@@ -48,7 +48,7 @@ export class Transform {
             force = true;
         }
 
-        for (let i = 0, l = this.children.length; i < l; i ++) {
+        for (let i = 0, l = this.children.length; i < l; i++) {
             this.children[i].updateMatrixWorld(force);
         }
     }
@@ -59,10 +59,9 @@ export class Transform {
     }
 
     traverse(callback) {
-
         // Return true in callback to stop traversing children
         if (callback(this)) return;
-        for (let i = 0, l = this.children.length; i < l; i ++) {
+        for (let i = 0, l = this.children.length; i < l; i++) {
             this.children[i].traverse(callback);
         }
     }
@@ -79,5 +78,5 @@ export class Transform {
         else this.matrix.lookAt(target, this.position, this.up);
         this.matrix.getRotation(this.quaternion);
         this.rotation.fromQuaternion(this.quaternion);
-    };
+    }
 }

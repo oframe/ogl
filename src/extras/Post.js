@@ -1,34 +1,37 @@
 // TODO: Destroy render targets if size changed and exists
 
-import {Program} from '../core/Program.js';
-import {Mesh} from '../core/Mesh.js';
-import {RenderTarget} from '../core/RenderTarget.js';
-import {Triangle} from './Triangle.js';
+import { Program } from '../core/Program.js';
+import { Mesh } from '../core/Mesh.js';
+import { RenderTarget } from '../core/RenderTarget.js';
+import { Triangle } from './Triangle.js';
 
 export class Post {
-    constructor(gl, {
-        width,
-        height,
-        dpr,
-        wrapS = gl.CLAMP_TO_EDGE,
-        wrapT = gl.CLAMP_TO_EDGE,
-        minFilter = gl.LINEAR,
-        magFilter = gl.LINEAR,
-        geometry = new Triangle(gl),
-        targetOnly = null,
-    } = {}) {
+    constructor(
+        gl,
+        {
+            width,
+            height,
+            dpr,
+            wrapS = gl.CLAMP_TO_EDGE,
+            wrapT = gl.CLAMP_TO_EDGE,
+            minFilter = gl.LINEAR,
+            magFilter = gl.LINEAR,
+            geometry = new Triangle(gl),
+            targetOnly = null,
+        } = {}
+    ) {
         this.gl = gl;
 
-        this.options = {wrapS, wrapT, minFilter, magFilter};
+        this.options = { wrapS, wrapT, minFilter, magFilter };
 
         this.passes = [];
 
-        this.geometry = geometry;   
+        this.geometry = geometry;
 
-        this.uniform = {value: null};
+        this.uniform = { value: null };
         this.targetOnly = targetOnly;
 
-        const fbo = this.fbo = {
+        const fbo = (this.fbo = {
             read: null,
             write: null,
             swap: () => {
@@ -36,25 +39,19 @@ export class Post {
                 fbo.read = fbo.write;
                 fbo.write = temp;
             },
-        };
+        });
 
-        this.resize({width, height, dpr});
+        this.resize({ width, height, dpr });
     }
 
-    addPass({
-        vertex = defaultVertex,
-        fragment = defaultFragment,
-        uniforms = {},
-        textureUniform = 'tMap',
-        enabled = true,
-    } = {}) {
-        uniforms[textureUniform] = {value: this.fbo.read.texture};
+    addPass({ vertex = defaultVertex, fragment = defaultFragment, uniforms = {}, textureUniform = 'tMap', enabled = true } = {}) {
+        uniforms[textureUniform] = { value: this.fbo.read.texture };
 
-        const program = new Program(this.gl, {vertex, fragment, uniforms});
-        const mesh = new Mesh(this.gl, {geometry: this.geometry, program});
+        const program = new Program(this.gl, { vertex, fragment, uniforms });
+        const mesh = new Mesh(this.gl, { geometry: this.geometry, program });
 
         const pass = {
-            mesh, 
+            mesh,
             program,
             uniforms,
             enabled,
@@ -65,7 +62,7 @@ export class Post {
         return pass;
     }
 
-    resize({width, height, dpr} = {}) {
+    resize({ width, height, dpr } = {}) {
         if (dpr) this.dpr = dpr;
         if (width) {
             this.width = width;
@@ -84,27 +81,23 @@ export class Post {
     }
 
     // Uses same arguments as renderer.render
-    render({
-        scene,
-        camera,
-        target = null,
-        update = true,
-        sort = true,
-        frustumCull = true,
-    }) {
-        const enabledPasses = this.passes.filter(pass => pass.enabled);
-        
+    render({ scene, camera, target = null, update = true, sort = true, frustumCull = true }) {
+        const enabledPasses = this.passes.filter((pass) => pass.enabled);
+
         this.gl.renderer.render({
-            scene, camera,
+            scene,
+            camera,
             target: enabledPasses.length || (!target && this.targetOnly) ? this.fbo.write : target,
-            update, sort, frustumCull,
+            update,
+            sort,
+            frustumCull,
         });
         this.fbo.swap();
 
         enabledPasses.forEach((pass, i) => {
             pass.mesh.program.uniforms[pass.textureUniform].value = this.fbo.read.texture;
             this.gl.renderer.render({
-                scene: pass.mesh, 
+                scene: pass.mesh,
                 target: i === enabledPasses.length - 1 && (target || !this.targetOnly) ? target : this.fbo.write,
                 clear: true,
             });

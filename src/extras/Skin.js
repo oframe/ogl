@@ -1,35 +1,29 @@
-import {Mesh} from '../core/Mesh.js';
-import {Transform} from '../core/Transform.js';
-import {Mat4} from '../math/Mat4.js';
-import {Texture} from '../core/Texture.js';
-import {Animation} from './Animation.js';
+import { Mesh } from '../core/Mesh.js';
+import { Transform } from '../core/Transform.js';
+import { Mat4 } from '../math/Mat4.js';
+import { Texture } from '../core/Texture.js';
+import { Animation } from './Animation.js';
 
 const tempMat4 = new Mat4();
 
 export class Skin extends Mesh {
-    constructor(gl, {
-        rig,
-        geometry,
-        program,
-        mode = gl.TRIANGLES,
-    } = {}) {
-        super(gl, {geometry, program, mode});
+    constructor(gl, { rig, geometry, program, mode = gl.TRIANGLES } = {}) {
+        super(gl, { geometry, program, mode });
 
         this.createBones(rig);
         this.createBoneTexture();
         this.animations = [];
 
         Object.assign(this.program.uniforms, {
-            boneTexture: {value: this.boneTexture},
-            boneTextureSize: {value: this.boneTextureSize},
+            boneTexture: { value: this.boneTexture },
+            boneTextureSize: { value: this.boneTextureSize },
         });
     }
 
     createBones(rig) {
-
         // Create root so that can simply update world matrix of whole skeleton
         this.root = new Transform();
-        
+
         // Create bones
         this.bones = [];
         if (!rig.bones || !rig.bones.length) return;
@@ -37,13 +31,13 @@ export class Skin extends Mesh {
             const bone = new Transform();
 
             // Set initial values (bind pose)
-            bone.position.fromArray(rig.bindPose.position, i * 3)
+            bone.position.fromArray(rig.bindPose.position, i * 3);
             bone.quaternion.fromArray(rig.bindPose.quaternion, i * 4);
             bone.scale.fromArray(rig.bindPose.scale, i * 3);
 
             this.bones.push(bone);
-        };
-        
+        }
+
         // Once created, set the hierarchy
         rig.bones.forEach((data, i) => {
             this.bones[i].name = data.name;
@@ -55,7 +49,7 @@ export class Skin extends Mesh {
         this.root.updateMatrixWorld(true);
 
         // Store inverse of bind pose to calculate differences
-        this.bones.forEach(bone => {
+        this.bones.forEach((bone) => {
             bone.bindInverse = new Mat4(...bone.worldMatrix).inverse();
         });
     }
@@ -76,40 +70,34 @@ export class Skin extends Mesh {
     }
 
     addAnimation(data) {
-        const animation = new Animation({objects: this.bones, data});
+        const animation = new Animation({ objects: this.bones, data });
         this.animations.push(animation);
         return animation;
     }
 
     update() {
-
         // Calculate combined animation weight
         let total = 0;
-        this.animations.forEach(animation => total += animation.weight);
+        this.animations.forEach((animation) => (total += animation.weight));
 
         this.animations.forEach((animation, i) => {
-
             // force first animation to set in order to reset frame
             animation.update(total, i === 0);
         });
     }
 
-    draw({
-        camera,
-    } = {}) {
-
+    draw({ camera } = {}) {
         // Update world matrices manually, as not part of scene graph
         this.root.updateMatrixWorld(true);
 
         // Update bone texture
         this.bones.forEach((bone, i) => {
-
             // Find difference between current and bind pose
             tempMat4.multiply(bone.worldMatrix, bone.bindInverse);
             this.boneMatrices.set(tempMat4, i * 16);
         });
         if (this.boneTexture) this.boneTexture.needsUpdate = true;
 
-        super.draw({camera});
+        super.draw({ camera });
     }
 }

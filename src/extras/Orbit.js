@@ -3,35 +3,38 @@
 // TODO: make scroll zoom more accurate than just >/< zero
 // TODO: be able to pass in new camera position
 
-import {Vec3} from '../math/Vec3.js';
-import {Vec2} from '../math/Vec2.js';
+import { Vec3 } from '../math/Vec3.js';
+import { Vec2 } from '../math/Vec2.js';
 
-const STATE = {NONE: -1, ROTATE: 0, DOLLY: 1, PAN: 2, DOLLY_PAN: 3};
+const STATE = { NONE: -1, ROTATE: 0, DOLLY: 1, PAN: 2, DOLLY_PAN: 3 };
 const tempVec3 = new Vec3();
 const tempVec2a = new Vec2();
 const tempVec2b = new Vec2();
 
-export function Orbit(object, {
-    element = document,
-    enabled = true,
-    target = new Vec3(),
-    ease = 0.25,
-    inertia = 0.85,
-    enableRotate = true,
-    rotateSpeed = 0.1,
-    autoRotate = false,
-    autoRotateSpeed = 1.0,
-    enableZoom = true,
-    zoomSpeed = 1,
-    enablePan = true,
-    panSpeed = 0.1,
-    minPolarAngle = 0,
-    maxPolarAngle = Math.PI,
-    minAzimuthAngle = -Infinity,
-    maxAzimuthAngle = Infinity,
-    minDistance = 0,
-    maxDistance = Infinity,
-} = {}) {
+export function Orbit(
+    object,
+    {
+        element = document,
+        enabled = true,
+        target = new Vec3(),
+        ease = 0.25,
+        inertia = 0.85,
+        enableRotate = true,
+        rotateSpeed = 0.1,
+        autoRotate = false,
+        autoRotateSpeed = 1.0,
+        enableZoom = true,
+        zoomSpeed = 1,
+        enablePan = true,
+        panSpeed = 0.1,
+        minPolarAngle = 0,
+        maxPolarAngle = Math.PI,
+        minAzimuthAngle = -Infinity,
+        maxAzimuthAngle = Infinity,
+        minDistance = 0,
+        maxDistance = Infinity,
+    } = {}
+) {
     this.enabled = enabled;
     this.target = target;
 
@@ -43,9 +46,9 @@ export function Orbit(object, {
     this.maxDistance = maxDistance;
 
     // current position in sphericalTarget coordinates
-    const sphericalDelta = {radius: 1, phi: 0, theta: 0};
-    const sphericalTarget = {radius: 1, phi: 0, theta: 0};
-    const spherical = {radius: 1, phi: 0, theta: 0};
+    const sphericalDelta = { radius: 1, phi: 0, theta: 0 };
+    const sphericalTarget = { radius: 1, phi: 0, theta: 0 };
+    const spherical = { radius: 1, phi: 0, theta: 0 };
     const panDelta = new Vec3();
 
     // Grab initial position values
@@ -97,19 +100,15 @@ export function Orbit(object, {
         sphericalDelta.radius = 1;
     };
 
-
-
     // Everything below here just updates panDelta and sphericalDelta
     // Using those two objects' values, the orbit is calculated
-
-
 
     const rotateStart = new Vec2();
     const panStart = new Vec2();
     const dollyStart = new Vec2();
 
     let state = STATE.NONE;
-    this.mouseButtons = {ORBIT: 0, ZOOM: 1, PAN: 2};
+    this.mouseButtons = { ORBIT: 0, ZOOM: 1, PAN: 2 };
 
     function getZoomScale() {
         return Math.pow(0.95, zoomSpeed);
@@ -131,9 +130,9 @@ export function Orbit(object, {
         let el = element === document ? document.body : element;
         tempVec3.copy(object.position).sub(this.target);
         let targetDistance = tempVec3.distance();
-        targetDistance *= Math.tan(((object.fov || 45) / 2) * Math.PI / 180.0);
-        panLeft(2 * deltaX * targetDistance / el.clientHeight, object.matrix);
-        panUp(2 * deltaY * targetDistance / el.clientHeight, object.matrix);
+        targetDistance *= Math.tan((((object.fov || 45) / 2) * Math.PI) / 180.0);
+        panLeft((2 * deltaX * targetDistance) / el.clientHeight, object.matrix);
+        panUp((2 * deltaY * targetDistance) / el.clientHeight, object.matrix);
     };
 
     function dolly(dollyScale) {
@@ -141,16 +140,16 @@ export function Orbit(object, {
     }
 
     function handleAutoRotate() {
-        const angle = 2 * Math.PI / 60 / 60 * autoRotateSpeed;
+        const angle = ((2 * Math.PI) / 60 / 60) * autoRotateSpeed;
         sphericalDelta.theta -= angle;
-	}
+    }
 
     function handleMoveRotate(x, y) {
         tempVec2a.set(x, y);
         tempVec2b.sub(tempVec2a, rotateStart).multiply(rotateSpeed);
         let el = element === document ? document.body : element;
-        sphericalDelta.theta -= 2 * Math.PI * tempVec2b.x / el.clientHeight;
-        sphericalDelta.phi -= 2 * Math.PI * tempVec2b.y / el.clientHeight;
+        sphericalDelta.theta -= (2 * Math.PI * tempVec2b.x) / el.clientHeight;
+        sphericalDelta.phi -= (2 * Math.PI * tempVec2b.y) / el.clientHeight;
         rotateStart.copy(tempVec2a);
     }
 
@@ -321,13 +320,13 @@ export function Orbit(object, {
     function addHandlers() {
         element.addEventListener('contextmenu', onContextMenu, false);
         element.addEventListener('mousedown', onMouseDown, false);
-        element.addEventListener('wheel', onMouseWheel, {passive: false});
-        element.addEventListener('touchstart', onTouchStart, {passive: false});
+        element.addEventListener('wheel', onMouseWheel, { passive: false });
+        element.addEventListener('touchstart', onTouchStart, { passive: false });
         element.addEventListener('touchend', onTouchEnd, false);
-        element.addEventListener('touchmove', onTouchMove, {passive: false});
+        element.addEventListener('touchmove', onTouchMove, { passive: false });
     }
 
-    this.remove = function() {
+    this.remove = function () {
         element.removeEventListener('contextmenu', onContextMenu);
         element.removeEventListener('mousedown', onMouseDown);
         element.removeEventListener('wheel', onMouseWheel);
