@@ -216,7 +216,7 @@ function setUniform(gl, type, location, value) {
 
     // Avoid redundant uniform commands
     if (value.length) {
-        if (setValue === undefined) {
+        if (setValue === undefined || setValue.length !== value.length) {
             // clone array to store as cache
             gl.renderer.state.uniformLocations.set(location, value.slice(0));
         } else {
