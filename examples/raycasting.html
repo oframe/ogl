@@ -123,8 +123,12 @@
             // Set it to bounding sphere by adding a 'raycast' property set to sphere geometry
             sphere.geometry.raycast = 'sphere';
 
-            document.addEventListener('mousemove', move, false);
-            document.addEventListener('touchmove', move, false);
+            // Wrap in load event to prevent checks before page is ready
+            window.addEventListener('load', () => {
+                document.addEventListener('mousemove', move, false);
+                document.addEventListener('touchmove', move, false);
+            }, false);
+
             function move(e) {
                 mouse.set(
                     2.0 * (e.x / renderer.width) - 1.0,
@@ -140,6 +144,13 @@
                 // raycast.intersectBounds will test against the bounds of each mesh, and 
                 // return an array of intersected meshes in order of closest to farthest
                 const hits = raycast.intersectBounds(meshes);
+
+                // Can intersect with geometry if the bounds aren't enough, or if you need
+                // to find out the uv or normal value at the hit point.
+                // Optional 2nd and third arguments are backface culling, and max distance
+                // Both useful for doing early exits to help optimise.
+                // const hits = raycast.intersectMeshes(meshes, true, 10);
+                // if (hits.length) console.log(hits[0].hit.uv);
 
                 // Update our feedback using this array
                 hits.forEach(mesh => mesh.isHit = true);
