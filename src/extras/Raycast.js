@@ -1,4 +1,3 @@
-// TODO: maxDistance is compared locally - should be world space
 // TODO: barycentric code shouldn't be here, but where?
 
 import { Vec2 } from '../math/Vec2.js';
@@ -20,8 +19,7 @@ const tempVec3i = new Vec3();
 const tempMat4 = new Mat4();
 
 export class Raycast {
-    constructor(gl) {
-        this.gl = gl;
+    constructor() {
         this.origin = new Vec3();
         this.direction = new Vec3();
     }
@@ -64,18 +62,24 @@ export class Raycast {
 
         meshes.forEach((mesh) => {
             // Create bounds
-            if (!mesh.geometry.bounds || mesh.geometry.bounds.radius === Infinity)
-                mesh.geometry.computeBoundingSphere();
+            if (!mesh.geometry.bounds || mesh.geometry.bounds.radius === Infinity) mesh.geometry.computeBoundingSphere();
             const bounds = mesh.geometry.bounds;
+            invWorldMat4.inverse(mesh.worldMatrix);
+
+            // Get max distance locally
+            let localMaxDistance;
+            if (maxDistance) {
+                direction.copy(this.direction).scaleRotateMatrix4(invWorldMat4);
+                localMaxDistance = maxDistance * direction.len();
+            }
 
             // Take world space ray and make it object space to align with bounding box
-            invWorldMat4.inverse(mesh.worldMatrix);
             origin.copy(this.origin).applyMatrix4(invWorldMat4);
             direction.copy(this.direction).transformDirection(invWorldMat4);
 
             // Break out early if bounds too far away from origin
             if (maxDistance) {
-                if (origin.distance(bounds.center) - bounds.radius > maxDistance) return;
+                if (origin.distance(bounds.center) - bounds.radius > localMaxDistance) return;
             }
 
             let localDistance = 0;
@@ -86,7 +90,7 @@ export class Raycast {
             }
             if (!localDistance) return;
 
-            if (maxDistance && localDistance > maxDistance) return;
+            if (maxDistance && localDistance > localMaxDistance) return;
 
             // Create object on mesh to avoid generating lots of objects
             if (!mesh.hit) mesh.hit = { localPoint: new Vec3(), point: new Vec3() };
@@ -120,9 +124,16 @@ export class Raycast {
 
         for (let i = hits.length - 1; i >= 0; i--) {
             const mesh = hits[i];
-
-            // Take world space ray and make it object space to align with geometry
             invWorldMat4.inverse(mesh.worldMatrix);
+
+            // Get max distance locally
+            let localMaxDistance;
+            if (maxDistance) {
+                direction.copy(this.direction).scaleRotateMatrix4(invWorldMat4);
+                localMaxDistance = maxDistance * direction.len();
+            }
+
+            // Take world space ray and make it object space to align with bounding box
             origin.copy(this.origin).applyMatrix4(invWorldMat4);
             direction.copy(this.direction).transformDirection(invWorldMat4);
 
@@ -134,10 +145,7 @@ export class Raycast {
             const index = attributes.index;
 
             const start = Math.max(0, geometry.drawRange.start);
-            const end = Math.min(
-                index ? index.count : attributes.position.count,
-                geometry.drawRange.start + geometry.drawRange.count
-            );
+            const end = Math.min(index ? index.count : attributes.position.count, geometry.drawRange.start + geometry.drawRange.count);
 
             for (let j = start; j < end; j += 3) {
                 // Position attribute indices for each triangle
@@ -154,7 +162,7 @@ export class Raycast {
                 if (!distance) continue;
 
                 // Too far away
-                if (maxDistance && distance > maxDistance) continue;
+                if (maxDistance && distance > localMaxDistance) continue;
 
                 if (!localDistance || distance < localDistance) {
                     localDistance = distance;
@@ -175,6 +183,7 @@ export class Raycast {
             if (!mesh.hit.uv) {
                 mesh.hit.uv = new Vec2();
                 mesh.hit.localNormal = new Vec3();
+                mesh.hit.normal = new Vec3();
             }
 
             // Calculate barycoords to find uv and normal values at hit point
@@ -201,6 +210,8 @@ export class Raycast {
                     a.y * barycoord.x + b.y * barycoord.y + c.y * barycoord.z,
                     a.z * barycoord.x + b.z * barycoord.y + c.z * barycoord.z
                 );
+
+                mesh.hit.normal.copy(mesh.hit.localNormal).transformDirection(mesh.worldMatrix);
             }
         }
 
@@ -214,84 +225,51 @@ export class Raycast {
         const tca = ray.dot(direction);
         const d2 = ray.dot(ray) - tca * tca;
         const radius2 = sphere.radius * sphere.radius;
-
         if (d2 > radius2) return 0;
-
         const thc = Math.sqrt(radius2 - d2);
         const t0 = tca - thc;
         const t1 = tca + thc;
-
         if (t0 < 0 && t1 < 0) return 0;
-
         if (t0 < 0) return t1;
-
         return t0;
     }
 
     // Ray AABB - Ray Axis aligned bounding box testing
     intersectBox(box, origin = this.origin, direction = this.direction) {
         let tmin, tmax, tYmin, tYmax, tZmin, tZmax;
-
         const invdirx = 1 / direction.x;
         const invdiry = 1 / direction.y;
         const invdirz = 1 / direction.z;
-
         const min = box.min;
         const max = box.max;
-
         tmin = ((invdirx >= 0 ? min.x : max.x) - origin.x) * invdirx;
         tmax = ((invdirx >= 0 ? max.x : min.x) - origin.x) * invdirx;
-
         tYmin = ((invdiry >= 0 ? min.y : max.y) - origin.y) * invdiry;
         tYmax = ((invdiry >= 0 ? max.y : min.y) - origin.y) * invdiry;
-
         if (tmin > tYmax || tYmin > tmax) return 0;
-
         if (tYmin > tmin) tmin = tYmin;
         if (tYmax < tmax) tmax = tYmax;
-
         tZmin = ((invdirz >= 0 ? min.z : max.z) - origin.z) * invdirz;
         tZmax = ((invdirz >= 0 ? max.z : min.z) - origin.z) * invdirz;
-
         if (tmin > tZmax || tZmin > tmax) return 0;
         if (tZmin > tmin) tmin = tZmin;
         if (tZmax < tmax) tmax = tZmax;
-
         if (tmax < 0) return 0;
-
         return tmin >= 0 ? tmin : tmax;
     }
 
-    intersectTriangle(
-        a,
-        b,
-        c,
-        backfaceCulling = true,
-        origin = this.origin,
-        direction = this.direction
-    ) {
+    intersectTriangle(a, b, c, backfaceCulling = true, origin = this.origin, direction = this.direction) {
         // from https://github.com/mrdoob/three.js/blob/master/src/math/Ray.js
         // which is from http://www.geometrictools.com/GTEngine/Include/Mathematics/GteIntrRay3Triangle3.h
-
         const edge1 = tempVec3f;
         const edge2 = tempVec3g;
         const normal = tempVec3h;
         const diff = tempVec3i;
-
         edge1.sub(b, a);
         edge2.sub(c, a);
         normal.cross(edge1, edge2);
-
-        // Solve Q + t*D = b1*E1 + b2*E2 (Q = kDiff, D = ray direction,
-        // E1 = kEdge1, E2 = kEdge2, N = Cross(E1,E2)) by
-        //   |Dot(D,N)|*b1 = sign(Dot(D,N))*Dot(D,Cross(Q,E2))
-        //   |Dot(D,N)|*b2 = sign(Dot(D,N))*Dot(D,Cross(E1,Q))
-        //   |Dot(D,N)|*t = -sign(Dot(D,N))*Dot(Q,N)
         let DdN = direction.dot(normal);
-
-        // Parallel
         if (!DdN) return 0;
-
         let sign;
         if (DdN > 0) {
             if (backfaceCulling) return 0;
@@ -300,63 +278,37 @@ export class Raycast {
             sign = -1;
             DdN = -DdN;
         }
-
         diff.sub(origin, a);
         let DdQxE2 = sign * direction.dot(edge2.cross(diff, edge2));
-
-        // b1 < 0, no intersection
         if (DdQxE2 < 0) return 0;
-
         let DdE1xQ = sign * direction.dot(edge1.cross(diff));
-
-        // b2 < 0, no intersection
         if (DdE1xQ < 0) return 0;
-
-        // b1+b2 > 1, no intersection
         if (DdQxE2 + DdE1xQ > DdN) return 0;
-
-        // Line intersects triangle, check if ray does.
         let QdN = -sign * diff.dot(normal);
-
-        // t < 0, no intersection
         if (QdN < 0) return 0;
-
-        // Ray intersects triangle.
         return QdN / DdN;
     }
 
-    // From https://github.com/mrdoob/three.js/blob/master/src/math/Triangle.js
-    // static/instance method to calculate barycentric coordinates
-    // based on: http://www.blackpawn.com/texts/pointinpoly/default.html
     getBarycoord(point, a, b, c, target) {
+        // From https://github.com/mrdoob/three.js/blob/master/src/math/Triangle.js
+        // static/instance method to calculate barycentric coordinates
+        // based on: http://www.blackpawn.com/texts/pointinpoly/default.html
         const v0 = tempVec3g;
         const v1 = tempVec3h;
         const v2 = tempVec3i;
-
         v0.sub(c, a);
         v1.sub(b, a);
         v2.sub(point, a);
-
         const dot00 = v0.dot(v0);
         const dot01 = v0.dot(v1);
         const dot02 = v0.dot(v2);
         const dot11 = v1.dot(v1);
         const dot12 = v1.dot(v2);
-
         const denom = dot00 * dot11 - dot01 * dot01;
-
-        // collinear or singular triangle
-        if (denom === 0) {
-            // arbitrary location outside of triangle?
-            // not sure if this is the best idea, maybe should be returning undefined
-            return target.set(-2, -1, -1);
-        }
-
+        if (denom === 0) return target.set(-2, -1, -1);
         const invDenom = 1 / denom;
         const u = (dot11 * dot02 - dot01 * dot12) * invDenom;
         const v = (dot00 * dot12 - dot01 * dot02) * invDenom;
-
-        // barycentric coordinates must always sum to 1
         return target.set(1 - u - v, v, u);
     }
 }
