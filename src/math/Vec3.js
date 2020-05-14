@@ -123,6 +123,11 @@ export class Vec3 extends Array {
         return this;
     }
 
+    scaleRotateMatrix4(mat4) {
+        Vec3Func.scaleRotateMat4(this, this, mat4);
+        return this;
+    }
+
     applyQuaternion(q) {
         Vec3Func.transformQuat(this, this, q);
         return this;

@@ -283,6 +283,22 @@ export function transformMat4(out, a, m) {
 }
 
 /**
+ * Same as above but doesn't apply translation.
+ * Useful for rays.
+ */
+export function scaleRotateMat4(out, a, m) {
+    let x = a[0],
+        y = a[1],
+        z = a[2];
+    let w = m[3] * x + m[7] * y + m[11] * z + m[15];
+    w = w || 1.0;
+    out[0] = (m[0] * x + m[4] * y + m[8] * z) / w;
+    out[1] = (m[1] * x + m[5] * y + m[9] * z) / w;
+    out[2] = (m[2] * x + m[6] * y + m[10] * z) / w;
+    return out;
+}
+
+/**
  * Transforms the vec3 with a mat3.
  *
  * @param {vec3} out the receiving vector
