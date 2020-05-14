@@ -69,6 +69,9 @@ export class GLTFLoader {
         // Load buffers async
         const buffers = await this.loadBuffers(desc, dir);
 
+        // Unbind current VAO so that new buffers don't get added to active mesh
+        gl.renderer.bindVertexArray(null);
+
         // Create gl buffers from bufferViews
         const bufferViews = this.parseBufferViews(gl, desc, buffers);
 
