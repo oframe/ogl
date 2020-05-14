@@ -1,5 +1,5 @@
 // TODO: barycentric code shouldn't be here, but where?
-// TODO: SphereCast
+// TODO: SphereCast?
 
 import { Vec2 } from '../math/Vec2.js';
 import { Vec3 } from '../math/Vec3.js';
@@ -88,12 +88,26 @@ export class Raycast {
             }
 
             let localDistance = 0;
+
+            // Check origin isn't inside bounds before testing intersection
             if (mesh.geometry.raycast === 'sphere') {
-                localDistance = this.intersectSphere(bounds, origin, direction);
+                if (origin.distance(bounds.center) > bounds.radius) {
+                    localDistance = this.intersectSphere(bounds, origin, direction);
+                    if (!localDistance) return;
+                }
             } else {
-                localDistance = this.intersectBox(bounds, origin, direction);
+                if (
+                    origin.x < bounds.min.x ||
+                    origin.x > bounds.max.x ||
+                    origin.y < bounds.min.y ||
+                    origin.y > bounds.max.y ||
+                    origin.z < bounds.min.z ||
+                    origin.z > bounds.max.z
+                ) {
+                    localDistance = this.intersectBox(bounds, origin, direction);
+                    if (!localDistance) return;
+                }
             }
-            if (!localDistance) return;
 
             if (maxDistance && localDistance > localMaxDistance) return;
 
