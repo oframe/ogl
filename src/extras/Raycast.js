@@ -1,4 +1,5 @@
 // TODO: barycentric code shouldn't be here, but where?
+// TODO: SphereCast
 
 import { Vec2 } from '../math/Vec2.js';
 import { Vec3 } from '../math/Vec3.js';
@@ -7,6 +8,7 @@ import { Mat4 } from '../math/Mat4.js';
 const tempVec2a = new Vec2();
 const tempVec2b = new Vec2();
 const tempVec2c = new Vec2();
+
 const tempVec3a = new Vec3();
 const tempVec3b = new Vec3();
 const tempVec3c = new Vec3();
@@ -16,6 +18,9 @@ const tempVec3f = new Vec3();
 const tempVec3g = new Vec3();
 const tempVec3h = new Vec3();
 const tempVec3i = new Vec3();
+const tempVec3j = new Vec3();
+const tempVec3k = new Vec3();
+
 const tempMat4 = new Mat4();
 
 export class Raycast {
@@ -51,7 +56,7 @@ export class Raycast {
         }
     }
 
-    intersectBounds(meshes, maxDistance) {
+    intersectBounds(meshes, { maxDistance }) {
         if (!Array.isArray(meshes)) meshes = [meshes];
 
         const invWorldMat4 = tempMat4;
@@ -106,9 +111,9 @@ export class Raycast {
         return hits;
     }
 
-    intersectMeshes(meshes, cullFace = true, maxDistance) {
+    intersectMeshes(meshes, { cullFace = true, maxDistance, includeUV = true, includeNormal = true }) {
         // Test bounds first before testing geometry
-        const hits = this.intersectBounds(meshes, maxDistance);
+        const hits = this.intersectBounds(meshes, { maxDistance });
         if (!hits.length) return hits;
 
         const invWorldMat4 = tempMat4;
@@ -117,10 +122,12 @@ export class Raycast {
         const a = tempVec3c;
         const b = tempVec3d;
         const c = tempVec3e;
-        const barycoord = tempVec3f;
-        const a2 = tempVec2a;
-        const b2 = tempVec2b;
-        const c2 = tempVec2c;
+        const closestFaceNormal = tempVec3f;
+        const faceNormal = tempVec3g;
+        const barycoord = tempVec3h;
+        const uvA = tempVec2a;
+        const uvB = tempVec2b;
+        const uvC = tempVec2c;
 
         for (let i = hits.length - 1; i >= 0; i--) {
             const mesh = hits[i];
@@ -157,8 +164,7 @@ export class Raycast {
                 b.fromArray(attributes.position.data, bi * 3);
                 c.fromArray(attributes.position.data, ci * 3);
 
-                // localDistance = this.intersectTriangle(a, b, c, backfaceCulling, origin, direction);
-                const distance = this.intersectTriangle(a, b, c, cullFace, origin, direction);
+                const distance = this.intersectTriangle(a, b, c, cullFace, origin, direction, faceNormal);
                 if (!distance) continue;
 
                 // Too far away
@@ -169,6 +175,7 @@ export class Raycast {
                     closestA = ai;
                     closestB = bi;
                     closestC = ci;
+                    closestFaceNormal.copy(faceNormal);
                 }
             }
 
@@ -180,28 +187,38 @@ export class Raycast {
             mesh.hit.distance = mesh.hit.point.distance(this.origin);
 
             // Add unique hit objects on mesh to avoid generating lots of objects
-            if (!mesh.hit.uv) {
+            if (!mesh.hit.faceNormal) {
+                mesh.hit.localFaceNormal = new Vec3();
+                mesh.hit.faceNormal = new Vec3();
                 mesh.hit.uv = new Vec2();
                 mesh.hit.localNormal = new Vec3();
                 mesh.hit.normal = new Vec3();
             }
 
-            // Calculate barycoords to find uv and normal values at hit point
-            a.fromArray(attributes.position.data, closestA * 3);
-            b.fromArray(attributes.position.data, closestB * 3);
-            c.fromArray(attributes.position.data, closestC * 3);
-            this.getBarycoord(mesh.hit.localPoint, a, b, c, barycoord);
+            // Add face normal data which is already computed
+            mesh.hit.localFaceNormal.copy(closestFaceNormal);
+            mesh.hit.faceNormal.copy(mesh.hit.localFaceNormal).transformDirection(mesh.worldMatrix);
 
-            if (attributes.uv) {
-                a2.fromArray(attributes.uv.data, closestA * 2);
-                b2.fromArray(attributes.uv.data, closestB * 2);
-                c2.fromArray(attributes.uv.data, closestC * 2);
+            // Optional data, opt out to optimise a bit if necessary
+            if (includeUV || includeNormal) {
+                // Calculate barycoords to find uv values at hit point
+                a.fromArray(attributes.position.data, closestA * 3);
+                b.fromArray(attributes.position.data, closestB * 3);
+                c.fromArray(attributes.position.data, closestC * 3);
+                this.getBarycoord(mesh.hit.localPoint, a, b, c, barycoord);
+            }
+
+            if (includeUV && attributes.uv) {
+                uvA.fromArray(attributes.uv.data, closestA * 2);
+                uvB.fromArray(attributes.uv.data, closestB * 2);
+                uvC.fromArray(attributes.uv.data, closestC * 2);
                 mesh.hit.uv.set(
-                    a2.x * barycoord.x + b2.x * barycoord.y + c2.x * barycoord.z,
-                    a2.y * barycoord.x + b2.y * barycoord.y + c2.y * barycoord.z
+                    uvA.x * barycoord.x + uvB.x * barycoord.y + uvC.x * barycoord.z,
+                    uvA.y * barycoord.x + uvB.y * barycoord.y + uvC.y * barycoord.z
                 );
             }
-            if (attributes.normal) {
+
+            if (includeNormal && attributes.normal) {
                 a.fromArray(attributes.normal.data, closestA * 3);
                 b.fromArray(attributes.normal.data, closestB * 3);
                 c.fromArray(attributes.normal.data, closestC * 3);
@@ -258,13 +275,12 @@ export class Raycast {
         return tmin >= 0 ? tmin : tmax;
     }
 
-    intersectTriangle(a, b, c, backfaceCulling = true, origin = this.origin, direction = this.direction) {
+    intersectTriangle(a, b, c, backfaceCulling = true, origin = this.origin, direction = this.direction, normal = tempVec3g) {
         // from https://github.com/mrdoob/three.js/blob/master/src/math/Ray.js
         // which is from http://www.geometrictools.com/GTEngine/Include/Mathematics/GteIntrRay3Triangle3.h
-        const edge1 = tempVec3f;
-        const edge2 = tempVec3g;
-        const normal = tempVec3h;
-        const diff = tempVec3i;
+        const edge1 = tempVec3h;
+        const edge2 = tempVec3i;
+        const diff = tempVec3j;
         edge1.sub(b, a);
         edge2.sub(c, a);
         normal.cross(edge1, edge2);
@@ -289,13 +305,13 @@ export class Raycast {
         return QdN / DdN;
     }
 
-    getBarycoord(point, a, b, c, target) {
+    getBarycoord(point, a, b, c, target = tempVec3h) {
         // From https://github.com/mrdoob/three.js/blob/master/src/math/Triangle.js
         // static/instance method to calculate barycentric coordinates
         // based on: http://www.blackpawn.com/texts/pointinpoly/default.html
-        const v0 = tempVec3g;
-        const v1 = tempVec3h;
-        const v2 = tempVec3i;
+        const v0 = tempVec3i;
+        const v1 = tempVec3j;
+        const v2 = tempVec3k;
         v0.sub(c, a);
         v1.sub(b, a);
         v2.sub(point, a);
