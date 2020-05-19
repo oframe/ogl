@@ -28,6 +28,8 @@ const TYPE_ARRAY = {
     5123: Uint16Array,
     5125: Uint32Array,
     5126: Float32Array,
+    'image/jpeg': Uint8Array,
+    'image/png': Uint8Array,
 };
 
 const TYPE_SIZE = {
@@ -75,6 +77,8 @@ export class GLTFLoader {
         // Create gl buffers from bufferViews
         const bufferViews = this.parseBufferViews(gl, desc, buffers);
 
+        const images = this.parseImages(gl, desc, dir, bufferViews);
+
         // Create geometries for each mesh primitive
         const meshes = this.parseMeshes(gl, desc, bufferViews);
 
@@ -98,6 +102,7 @@ export class GLTFLoader {
             json: desc,
             buffers,
             bufferViews,
+            images,
             meshes,
             nodes,
             animations,
@@ -160,6 +165,13 @@ export class GLTFLoader {
             bufferViews[i].componentType = componentType;
         });
 
+        // Get mimetype of bufferView from images
+        desc.images &&
+            desc.images.forEach(({ uri, bufferView: i, mimeType }) => {
+                if (i === undefined) return;
+                bufferViews[i].mimeType = mimeType;
+            });
+
         // Push each bufferView to the GPU as a separate buffer
         bufferViews.forEach(
             (
@@ -173,19 +185,20 @@ export class GLTFLoader {
                     extensions, // optional
                     extras, // optional
 
-                    componentType, // required, added from accessor above
+                    componentType, // optional, added from accessor above
+                    mimeType, // optional, added from images above
                     isAttribute,
                 },
                 i
             ) => {
-                const TypeArray = TYPE_ARRAY[componentType];
+                const TypeArray = TYPE_ARRAY[componentType || mimeType];
                 const elementBytes = TypeArray.BYTES_PER_ELEMENT;
 
                 const data = new TypeArray(buffers[bufferIndex], byteOffset, byteLength / elementBytes);
                 bufferViews[i].data = data;
 
-                // Create gl buffers for the bufferView, pushing it to the GPU
                 if (!isAttribute) return;
+                // Create gl buffers for the bufferView, pushing it to the GPU
                 const buffer = gl.createBuffer();
                 gl.bindBuffer(target, buffer);
                 gl.renderer.state.boundBuffer = buffer;
@@ -195,6 +208,21 @@ export class GLTFLoader {
         );
 
         return bufferViews;
+    }
+
+    static parseImages(gl, desc, dir, bufferViews) {
+        if (!desc.images) return null;
+        return desc.images.map(({ uri, bufferView: bufferViewIndex, mimeType, name }) => {
+            const image = new Image();
+            if (uri) {
+                image.src = this.resolveURI(uri, dir);
+            } else if (bufferViewIndex !== undefined) {
+                const { data } = bufferViews[bufferViewIndex];
+                const blob = new Blob([data], { type: mimeType });
+                image.src = URL.createObjectURL(blob);
+            }
+            return image;
+        });
     }
 
     static parseMeshes(gl, desc, bufferViews) {
