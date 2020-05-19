@@ -16,9 +16,7 @@
 
 // TODO: fit in transform feedback
 // TODO: when would I disableVertexAttribArray ?
-// TODO: add fallback for non vao support (ie)
 // TODO: use offset/stride if exists
-// TODO: check size of position (eg triangle with Vec2)
 
 import { Vec3 } from '../math/Vec3.js';
 
