@@ -40,7 +40,7 @@ export function Orbit(
 
     // Catch attempts to disable - set to 1 so has no effect
     ease = ease || 1;
-    inertia = inertia || 1;
+    inertia = inertia || 0;
 
     this.minDistance = minDistance;
     this.maxDistance = maxDistance;
