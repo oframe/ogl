@@ -127,7 +127,7 @@ export class Geometry {
 
     bindAttributes(program) {
         // Link all attributes to program using gl.vertexAttribPointer
-        program.attributeLocations.forEach((location, name) => {
+        program.attributeLocations.forEach((location, { name, type }) => {
             // If geometry missing a required shader attribute
             if (!this.attributes[name]) {
                 console.warn(`active attribute ${name} not being supplied`);
@@ -138,12 +138,25 @@ export class Geometry {
 
             this.gl.bindBuffer(attr.target, attr.buffer);
             this.glState.boundBuffer = attr.buffer;
-            this.gl.vertexAttribPointer(location, attr.size, attr.type, attr.normalized, attr.stride, attr.offset);
-            this.gl.enableVertexAttribArray(location);
 
-            // For instanced attributes, divisor needs to be set.
-            // For firefox, need to set back to 0 if non-instanced drawn after instanced. Else won't render
-            this.gl.renderer.vertexAttribDivisor(location, attr.divisor);
+            // For matrix attributes, buffer needs to be defined per column
+            let numLoc = 1;
+            if (type === 35674) numLoc = 2; // mat2
+            if (type === 35675) numLoc = 3; // mat3
+            if (type === 35676) numLoc = 4; // mat4
+
+            const size = attr.size / numLoc;
+            const stride = numLoc === 1 ? 0 : numLoc * numLoc * numLoc;
+            const offset = numLoc === 1 ? 0 : numLoc * numLoc;
+
+            for (let i = 0; i < numLoc; i++) {
+                this.gl.vertexAttribPointer(location + i, size, attr.type, attr.normalized, attr.stride + stride, attr.offset + i * offset);
+                this.gl.enableVertexAttribArray(location + i);
+
+                // For instanced attributes, divisor needs to be set.
+                // For firefox, need to set back to 0 if non-instanced drawn after instanced. Else won't render
+                this.gl.renderer.vertexAttribDivisor(location + i, attr.divisor);
+            }
         });
 
         // Bind indices if geometry indexed
@@ -158,7 +171,7 @@ export class Geometry {
         }
 
         // Check if any attributes need updating
-        program.attributeLocations.forEach((location, name) => {
+        program.attributeLocations.forEach((location, { name }) => {
             const attr = this.attributes[name];
             if (attr.needsUpdate) this.updateAttribute(attr);
         });
