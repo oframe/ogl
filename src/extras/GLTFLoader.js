@@ -18,12 +18,14 @@ import { NormalProgram } from './NormalProgram.js';
 // [x] Animation
 // [ ] Cameras
 // [ ] Extensions
+// [x] GLB support
 
 // TODO: Sparse accessor packing? For morph targets basically
 // TODO: init accessor missing bufferView with 0s
 // TODO: morph target animations
 // TODO: what to do if multiple instances are in different groups? Only uses local matrices
 // TODO: what if instancing isn't wanted? Eg collision maps
+// TODO: ie11 fallback for TextDecoder?
 
 const TYPE_ARRAY = {
     5121: Uint8Array,
@@ -67,7 +69,7 @@ export class GLTFLoader {
         const dir = src.split('/').slice(0, -1).join('/') + '/';
 
         // load main description json
-        const desc = await fetch(src).then((res) => res.json());
+        const desc = await this.parseDesc(src);
 
         if (desc.asset === undefined || desc.asset.version[0] < 2) console.warn('Only GLTF >=2.0 supported. Attempting to parse.');
 
@@ -122,6 +124,44 @@ export class GLTFLoader {
         };
     }
 
+    static async parseDesc(src) {
+        if (!src.match(/\.glb$/)) {
+            return await fetch(src).then((res) => res.json());
+        } else {
+            return await fetch(src)
+                .then((res) => res.arrayBuffer())
+                .then((glb) => this.unpackGLB(glb));
+        }
+    }
+
+    // From https://github.com/donmccurdy/glTF-Transform/blob/e4108cc/packages/core/src/io/io.ts#L32
+    static unpackGLB(glb) {
+        // Decode and verify GLB header.
+        const header = new Uint32Array(glb, 0, 3);
+        if (header[0] !== 0x46546c67) {
+            throw new Error('Invalid glTF asset.');
+        } else if (header[1] !== 2) {
+            throw new Error(`Unsupported glTF binary version, "${header[1]}".`);
+        }
+        // Decode and verify chunk headers.
+        const jsonChunkHeader = new Uint32Array(glb, 12, 2);
+        const jsonByteOffset = 20;
+        const jsonByteLength = jsonChunkHeader[0];
+        const binaryChunkHeader = new Uint32Array(glb, jsonByteOffset + jsonByteLength, 2);
+        if (jsonChunkHeader[1] !== 0x4e4f534a || binaryChunkHeader[1] !== 0x004e4942) {
+            throw new Error('Unexpected GLB layout.');
+        }
+        // Decode content.
+        const jsonText = new TextDecoder().decode(glb.slice(jsonByteOffset, jsonByteOffset + jsonByteLength));
+        const json = JSON.parse(jsonText);
+        const binaryByteOffset = jsonByteOffset + jsonByteLength + 8;
+        const binaryByteLength = binaryChunkHeader[0];
+        const binary = glb.slice(binaryByteOffset, binaryByteOffset + binaryByteLength);
+        // Attach binary to buffer
+        json.buffers[0].binary = binary;
+        return json;
+    }
+
     // Threejs GLTF Loader https://github.com/mrdoob/three.js/blob/master/examples/js/loaders/GLTFLoader.js#L1085
     static resolveURI(uri, dir) {
         // Invalid URI
@@ -149,6 +189,8 @@ export class GLTFLoader {
         if (!desc.buffers) return null;
         return await Promise.all(
             desc.buffers.map((buffer) => {
+                // For GLB, binary buffer ready to go
+                if (buffer.binary) return buffer.binary;
                 const uri = this.resolveURI(buffer.uri, dir);
                 return fetch(uri).then((res) => res.arrayBuffer());
             })
