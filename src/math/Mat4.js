@@ -154,4 +154,44 @@ export class Mat4 extends Array {
     determinant() {
         return Mat4Func.determinant(this);
     }
+
+    fromArray(a, o = 0) {
+        this[0] = a[o];
+        this[1] = a[o + 1];
+        this[2] = a[o + 2];
+        this[3] = a[o + 3];
+        this[4] = a[o + 4];
+        this[5] = a[o + 5];
+        this[6] = a[o + 6];
+        this[7] = a[o + 7];
+        this[8] = a[o + 8];
+        this[9] = a[o + 9];
+        this[10] = a[o + 10];
+        this[11] = a[o + 11];
+        this[12] = a[o + 12];
+        this[13] = a[o + 13];
+        this[14] = a[o + 14];
+        this[15] = a[o + 15];
+        return this;
+    }
+
+    toArray(a = [], o = 0) {
+        a[o] = this[0];
+        a[o + 1] = this[1];
+        a[o + 2] = this[2];
+        a[o + 3] = this[3];
+        a[o + 4] = this[4];
+        a[o + 5] = this[5];
+        a[o + 6] = this[6];
+        a[o + 7] = this[7];
+        a[o + 8] = this[8];
+        a[o + 9] = this[9];
+        a[o + 10] = this[10];
+        a[o + 11] = this[11];
+        a[o + 12] = this[12];
+        a[o + 13] = this[13];
+        a[o + 14] = this[14];
+        a[o + 15] = this[15];
+        return a;
+    }
 }
