@@ -10,6 +10,7 @@ import { NormalProgram } from './NormalProgram.js';
 // [x] Geometry
 // [ ] Sparse support
 // [x] Nodes and Hierarchy
+// [x] Instancing
 // [ ] Morph Targets
 // [x] Skins
 // [ ] Materials
@@ -21,6 +22,8 @@ import { NormalProgram } from './NormalProgram.js';
 // TODO: Sparse accessor packing? For morph targets basically
 // TODO: init accessor missing bufferView with 0s
 // TODO: morph target animations
+// TODO: what to do if multiple instances are in different groups? Only uses local matrices
+// TODO: what if instancing isn't wanted? Eg collision maps
 
 const TYPE_ARRAY = {
     5121: Uint8Array,
@@ -83,11 +86,11 @@ export class GLTFLoader {
         // Just pass through material data for now
         const materials = this.parseMaterials(gl, desc, images);
 
-        // Create geometries for each mesh primitive
-        const meshes = this.parseMeshes(gl, desc, bufferViews, materials);
-
         // Fetch the inverse bind matrices for skeleton joints
         const skins = this.parseSkins(gl, desc, bufferViews);
+
+        // Create geometries for each mesh primitive
+        const meshes = this.parseMeshes(gl, desc, bufferViews, materials, skins);
 
         // Create transforms, meshes and hierarchy
         const nodes = this.parseNodes(gl, desc, meshes, skins);
@@ -101,6 +104,9 @@ export class GLTFLoader {
         // Get top level nodes for each scene
         const scenes = this.parseScenes(desc, nodes);
         const scene = scenes[desc.scene];
+
+        // Remove null nodes (instanced transforms)
+        for (let i = nodes.length; i >= 0; i--) if (!nodes[i]) nodes.splice(i, 1);
 
         return {
             json: desc,
@@ -154,18 +160,19 @@ export class GLTFLoader {
         // Clone to leave description pure
         const bufferViews = desc.bufferViews.map((o) => Object.assign({}, o));
 
-        desc.meshes.forEach(({ primitives }) => {
-            primitives.forEach(({ attributes, indices }) => {
-                // Flag bufferView as an attribute, so it knows to create a gl buffer
-                for (let attr in attributes) bufferViews[desc.accessors[attributes[attr]].bufferView].isAttribute = true;
+        desc.meshes &&
+            desc.meshes.forEach(({ primitives }) => {
+                primitives.forEach(({ attributes, indices }) => {
+                    // Flag bufferView as an attribute, so it knows to create a gl buffer
+                    for (let attr in attributes) bufferViews[desc.accessors[attributes[attr]].bufferView].isAttribute = true;
 
-                if (indices === undefined) return;
-                bufferViews[desc.accessors[indices].bufferView].isAttribute = true;
+                    if (indices === undefined) return;
+                    bufferViews[desc.accessors[indices].bufferView].isAttribute = true;
 
-                // Make sure indices bufferView have a target property for gl buffer binding
-                bufferViews[desc.accessors[indices].bufferView].target = gl.ELEMENT_ARRAY_BUFFER;
+                    // Make sure indices bufferView have a target property for gl buffer binding
+                    bufferViews[desc.accessors[indices].bufferView].target = gl.ELEMENT_ARRAY_BUFFER;
+                });
             });
-        });
 
         // Get componentType of each bufferView from the accessors
         desc.accessors.forEach(({ bufferView: i, componentType }) => {
@@ -273,25 +280,6 @@ export class GLTFLoader {
         );
     }
 
-    static parseMeshes(gl, desc, bufferViews, materials) {
-        if (!desc.meshes) return null;
-        return desc.meshes.map(
-            ({
-                primitives, // required
-                weights, // optional
-                name, // optional
-                extensions, // optional
-                extras, // optional
-            }) => {
-                return {
-                    primitives: this.parsePrimitives(gl, primitives, desc, bufferViews, materials),
-                    weights,
-                    name,
-                };
-            }
-        );
-    }
-
     static parseSkins(gl, desc, bufferViews) {
         if (!desc.skins) return null;
         return desc.skins.map(
@@ -312,19 +300,58 @@ export class GLTFLoader {
         );
     }
 
-    static populateSkins(skins, nodes) {
-        if (!skins) return;
-        skins.forEach((skin) => {
-            skin.joints = skin.joints.map((i, index) => {
-                const joint = nodes[i];
-                joint.bindInverse = new Mat4(...skin.inverseBindMatrices.data.slice(index * 16, (index + 1) * 16));
-                return joint;
-            });
-            skin.skeleton = nodes[skin.skeleton];
-        });
+    static parseMeshes(gl, desc, bufferViews, materials, skins) {
+        if (!desc.meshes) return null;
+        return desc.meshes.map(
+            (
+                {
+                    primitives, // required
+                    weights, // optional
+                    name, // optional
+                    extensions, // optional
+                    extras, // optional
+                },
+                meshIndex
+            ) => {
+                // TODO: weights stuff ?
+                // Parse through nodes to see how many instances there are
+                // and if there is a skin attached
+                let numInstances = 0;
+                let skinIndex = false;
+                desc.nodes &&
+                    desc.nodes.forEach(({ mesh, skin }) => {
+                        if (mesh === meshIndex) {
+                            numInstances++;
+                            if (skin !== undefined) skinIndex = skin;
+                        }
+                    });
+
+                primitives = this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances).map(({ geometry, program, mode }) => {
+                    // Create either skinned mesh or regular mesh
+                    const mesh =
+                        typeof skinIndex === 'number'
+                            ? new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode })
+                            : new Mesh(gl, { geometry, program, mode });
+                    mesh.name = name;
+                    if (mesh.geometry.isInstanced) {
+                        // Tag mesh so that nodes can add their transforms to the instance attribute
+                        mesh.numInstances = numInstances;
+                        // Avoid incorrect culling for instances
+                        mesh.frustumCulled = false;
+                    }
+                    return mesh;
+                });
+
+                return {
+                    primitives,
+                    weights,
+                    name,
+                };
+            }
+        );
     }
 
-    static parsePrimitives(gl, primitives, desc, bufferViews, materials) {
+    static parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances) {
         return primitives.map(
             ({
                 attributes, // required
@@ -343,7 +370,18 @@ export class GLTFLoader {
                 }
 
                 // Add index attribute if found
-                if (indices !== undefined) geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews));
+                if (indices !== undefined) {
+                    geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews));
+                }
+
+                // Add instanced transform attribute if multiple instances
+                if (numInstances > 1) {
+                    geometry.addAttribute('instanceMatrix', {
+                        instanced: 1,
+                        size: 16,
+                        data: new Float32Array(numInstances * 16),
+                    });
+                }
 
                 // TODO: materials
                 const program = new NormalProgram(gl);
@@ -436,19 +474,51 @@ export class GLTFLoader {
                     if (rotation) node.quaternion.copy(rotation);
                     if (scale) node.scale.copy(scale);
                     if (translation) node.position.copy(translation);
+                    node.updateMatrix();
                 }
+
+                // Flags for avoiding duplicate transforms and removing unused instance nodes
+                let isInstanced = false;
+                let isFirstInstance = true;
 
                 // add mesh if included
                 if (meshIndex !== undefined) {
-                    meshes[meshIndex].primitives.forEach(({ geometry, program, mode }) => {
-                        if (typeof skinIndex === 'number') {
-                            const skin = new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode });
-                            skin.setParent(node);
+                    meshes[meshIndex].primitives.forEach((mesh) => {
+                        if (mesh.geometry.isInstanced) {
+                            isInstanced = true;
+                            if (!mesh.instanceCount) {
+                                mesh.instanceCount = 0;
+                            } else {
+                                isFirstInstance = false;
+                            }
+                            node.matrix.toArray(mesh.geometry.attributes.instanceMatrix.data, mesh.instanceCount * 16);
+                            mesh.instanceCount++;
+
+                            if (mesh.instanceCount === mesh.numInstances) {
+                                // Remove properties once all instances added
+                                delete mesh.numInstances;
+                                delete mesh.instanceCount;
+                                // Flag attribute as dirty
+                                mesh.geometry.attributes.instanceMatrix.needsUpdate = true;
+                            }
+                        }
+
+                        // For instances, only the first node will actually have the mesh
+                        if (isInstanced) {
+                            if (isFirstInstance) mesh.setParent(node);
                         } else {
-                            const mesh = new Mesh(gl, { geometry, program, mode });
                             mesh.setParent(node);
                         }
                     });
+                }
+
+                // Reset node if instanced to not duplicate transforms
+                if (isInstanced) {
+                    // Remove unused nodes just providing an instance transform
+                    if (!isFirstInstance) return null;
+                    // Avoid duplicate transform for node containing the instanced mesh
+                    node.matrix.identity();
+                    node.decompose();
                 }
 
                 return node;
@@ -458,11 +528,24 @@ export class GLTFLoader {
         desc.nodes.forEach(({ children = [] }, i) => {
             // Set hierarchy now all nodes created
             children.forEach((childIndex) => {
+                if (!nodes[childIndex]) return;
                 nodes[childIndex].setParent(nodes[i]);
             });
         });
 
         return nodes;
+    }
+
+    static populateSkins(skins, nodes) {
+        if (!skins) return;
+        skins.forEach((skin) => {
+            skin.joints = skin.joints.map((i, index) => {
+                const joint = nodes[i];
+                joint.bindInverse = new Mat4(...skin.inverseBindMatrices.data.slice(index * 16, (index + 1) * 16));
+                return joint;
+            });
+            skin.skeleton = nodes[skin.skeleton];
+        });
     }
 
     static parseAnimations(gl, desc, nodes, bufferViews) {
@@ -531,7 +614,11 @@ export class GLTFLoader {
                 extensions,
                 extras,
             }) => {
-                return nodesIndices.map((i) => nodes[i]);
+                return nodesIndices.reduce((map, i) => {
+                    // Don't add null nodes (instanced transforms)
+                    if (nodes[i]) map.push(nodes[i]);
+                    return map;
+                }, []);
             }
         );
     }
