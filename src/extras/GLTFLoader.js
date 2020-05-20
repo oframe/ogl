@@ -77,10 +77,14 @@ export class GLTFLoader {
         // Create gl buffers from bufferViews
         const bufferViews = this.parseBufferViews(gl, desc, buffers);
 
+        // Create images from either bufferViews or separate image files
         const images = this.parseImages(gl, desc, dir, bufferViews);
 
+        // Just pass through material data for now
+        const materials = this.parseMaterials(gl, desc, images);
+
         // Create geometries for each mesh primitive
-        const meshes = this.parseMeshes(gl, desc, bufferViews);
+        const meshes = this.parseMeshes(gl, desc, bufferViews, materials);
 
         // Fetch the inverse bind matrices for skeleton joints
         const skins = this.parseSkins(gl, desc, bufferViews);
@@ -103,6 +107,7 @@ export class GLTFLoader {
             buffers,
             bufferViews,
             images,
+            materials,
             meshes,
             nodes,
             animations,
@@ -135,6 +140,7 @@ export class GLTFLoader {
     }
 
     static async loadBuffers(desc, dir) {
+        if (!desc.buffers) return null;
         return await Promise.all(
             desc.buffers.map((buffer) => {
                 const uri = this.resolveURI(buffer.uri, dir);
@@ -144,6 +150,7 @@ export class GLTFLoader {
     }
 
     static parseBufferViews(gl, desc, buffers) {
+        if (!desc.bufferViews) return null;
         // Clone to leave description pure
         const bufferViews = desc.bufferViews.map((o) => Object.assign({}, o));
 
@@ -225,7 +232,49 @@ export class GLTFLoader {
         });
     }
 
-    static parseMeshes(gl, desc, bufferViews) {
+    static parseMaterials(gl, desc, images) {
+        if (!desc.materials) return null;
+        return desc.materials.map(
+            ({
+                name,
+                extensions,
+                extras,
+                pbrMetallicRoughness = {},
+                normalTexture,
+                occlusionTexture,
+                emissiveTexture,
+                emissiveFactor = [0, 0, 0],
+                alphaMode = 'OPAQUE',
+                alphaCutoff = 0.5,
+                doubleSided = false,
+            }) => {
+                const {
+                    baseColorFactor = [1, 1, 1, 1],
+                    baseColorTexture,
+                    metallicFactor = 1,
+                    roughnessFactor = 1,
+                    metallicRoughnessTexture,
+                    //   extensions,
+                    //   extras,
+                } = pbrMetallicRoughness;
+
+                return {
+                    name,
+                    pbrMetallicRoughness,
+                    normalTexture,
+                    occlusionTexture,
+                    emissiveTexture,
+                    emissiveFactor,
+                    alphaMode,
+                    alphaCutoff,
+                    doubleSided,
+                };
+            }
+        );
+    }
+
+    static parseMeshes(gl, desc, bufferViews, materials) {
+        if (!desc.meshes) return null;
         return desc.meshes.map(
             ({
                 primitives, // required
@@ -235,7 +284,7 @@ export class GLTFLoader {
                 extras, // optional
             }) => {
                 return {
-                    primitives: this.parsePrimitives(gl, primitives, desc, bufferViews),
+                    primitives: this.parsePrimitives(gl, primitives, desc, bufferViews, materials),
                     weights,
                     name,
                 };
@@ -275,12 +324,12 @@ export class GLTFLoader {
         });
     }
 
-    static parsePrimitives(gl, primitives, desc, bufferViews) {
+    static parsePrimitives(gl, primitives, desc, bufferViews, materials) {
         return primitives.map(
             ({
                 attributes, // required
                 indices, // optional
-                material, // optional
+                material: materialIndex, // optional
                 mode = 4, // optional
                 targets, // optional
                 extensions, // optional
@@ -298,6 +347,9 @@ export class GLTFLoader {
 
                 // TODO: materials
                 const program = new NormalProgram(gl);
+                if (materialIndex !== undefined) {
+                    program.gltfMaterial = materials[materialIndex];
+                }
 
                 return {
                     geometry,
@@ -357,6 +409,7 @@ export class GLTFLoader {
     }
 
     static parseNodes(gl, desc, meshes, skins) {
+        if (!desc.nodes) return null;
         const nodes = desc.nodes.map(
             ({
                 camera, // optional
@@ -470,6 +523,7 @@ export class GLTFLoader {
     }
 
     static parseScenes(desc, nodes) {
+        if (!desc.scenes) return null;
         return desc.scenes.map(
             ({
                 nodes: nodesIndices = [],
