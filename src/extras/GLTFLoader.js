@@ -1,5 +1,6 @@
 import { Geometry } from '../core/Geometry.js';
 import { Transform } from '../core/Transform.js';
+import { Texture } from '../core/Texture.js';
 import { Mesh } from '../core/Mesh.js';
 import { GLTFAnimation } from './GLTFAnimation.js';
 import { GLTFSkin } from './GLTFSkin.js';
@@ -14,7 +15,7 @@ import { NormalProgram } from './NormalProgram.js';
 // [ ] Morph Targets
 // [x] Skins
 // [ ] Materials
-// [ ] Textures
+// [x] Textures
 // [x] Animation
 // [ ] Cameras
 // [ ] Extensions
@@ -85,8 +86,10 @@ export class GLTFLoader {
         // Create images from either bufferViews or separate image files
         const images = this.parseImages(gl, desc, dir, bufferViews);
 
+        const textures = this.parseTextures(gl, desc, images);
+
         // Just pass through material data for now
-        const materials = this.parseMaterials(gl, desc, images);
+        const materials = this.parseMaterials(gl, desc, textures);
 
         // Fetch the inverse bind matrices for skeleton joints
         const skins = this.parseSkins(gl, desc, bufferViews);
@@ -270,6 +273,7 @@ export class GLTFLoader {
         if (!desc.images) return null;
         return desc.images.map(({ uri, bufferView: bufferViewIndex, mimeType, name }) => {
             const image = new Image();
+            image.name = name;
             if (uri) {
                 image.src = this.resolveURI(uri, dir);
             } else if (bufferViewIndex !== undefined) {
@@ -277,11 +281,37 @@ export class GLTFLoader {
                 const blob = new Blob([data], { type: mimeType });
                 image.src = URL.createObjectURL(blob);
             }
+            image.ready = new Promise((res) => {
+                image.onload = () => res();
+            });
             return image;
         });
     }
 
-    static parseMaterials(gl, desc, images) {
+    static parseTextures(gl, desc, images) {
+        if (!desc.textures) return null;
+        return desc.textures.map(({ sampler: samplerIndex, source: sourceIndex, name, extensions, extras }) => {
+            const options = {
+                flipY: false,
+                wrapS: gl.REPEAT, // Repeat by default, opposed to OGL's clamp by default
+                wrapT: gl.REPEAT,
+            };
+            const sampler = samplerIndex !== undefined ? desc.samplers[samplerIndex] : null;
+            if (sampler) {
+                ['magFilter', 'minFilter', 'wrapS', 'wrapT'].forEach((prop) => {
+                    if (sampler[prop]) options[prop] = sampler[prop];
+                });
+            }
+            const texture = new Texture(gl, options);
+            texture.name = name;
+            const image = images[sourceIndex];
+            image.ready.then(() => (texture.image = image));
+
+            return texture;
+        });
+    }
+
+    static parseMaterials(gl, desc, textures) {
         if (!desc.materials) return null;
         return desc.materials.map(
             ({
@@ -307,9 +337,32 @@ export class GLTFLoader {
                     //   extras,
                 } = pbrMetallicRoughness;
 
+                if (baseColorTexture) {
+                    baseColorTexture.texture = textures[baseColorTexture.index];
+                    // texCoord
+                }
+                if (normalTexture) {
+                    normalTexture.texture = textures[normalTexture.index];
+                    // scale: 1
+                    // texCoord
+                }
+                if (occlusionTexture) {
+                    occlusionTexture.texture = textures[occlusionTexture.index];
+                    // strength 1
+                    // texCoord
+                }
+                if (emissiveTexture) {
+                    emissiveTexture.texture = textures[emissiveTexture.index];
+                    // texCoord
+                }
+
                 return {
                     name,
-                    pbrMetallicRoughness,
+                    baseColorFactor,
+                    baseColorTexture,
+                    metallicFactor,
+                    roughnessFactor,
+                    metallicRoughnessTexture,
                     normalTexture,
                     occlusionTexture,
                     emissiveTexture,
