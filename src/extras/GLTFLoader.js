@@ -639,7 +639,7 @@ export class GLTFLoader {
                 joint.bindInverse = new Mat4(...skin.inverseBindMatrices.data.slice(index * 16, (index + 1) * 16));
                 return joint;
             });
-            skin.skeleton = nodes[skin.skeleton];
+            if (skin.skeleton) skin.skeleton = nodes[skin.skeleton];
         });
     }
 
