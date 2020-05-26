@@ -34,7 +34,7 @@ export class Torus extends Geometry {
                 // normal
                 center.x = radius * Math.cos(u);
                 center.y = radius * Math.sin(u);
-                normal.sub(vertex).sub(center).normalize();
+                normal.sub(vertex, center).normalize();
 
                 normals.set([normal.x, normal.y, normal.z], idx * 3);
 
