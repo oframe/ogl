@@ -170,6 +170,8 @@ export class TextureLoader {
                 if (imgBmp.close) imgBmp.close();
                 texture.onUpdate = null;
             };
+
+            return imgBmp;
         });
     }
 
