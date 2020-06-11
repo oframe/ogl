@@ -155,13 +155,21 @@ export class GLTFLoader {
         const jsonChunkHeader = new Uint32Array(glb, 12, 2);
         const jsonByteOffset = 20;
         const jsonByteLength = jsonChunkHeader[0];
+        if (jsonChunkHeader[1] !== 0x4e4f534a) {
+            throw new Error('Unexpected GLB layout.');
+        }
+
+        // Decode JSON.
+        const jsonText = new TextDecoder().decode(glb.slice(jsonByteOffset, jsonByteOffset + jsonByteLength));
+        const json = JSON.parse(jsonText);
+        // JSON only
+        if (jsonByteOffset + jsonByteLength === glb.byteLength) return json;
+
         const binaryChunkHeader = new Uint32Array(glb, jsonByteOffset + jsonByteLength, 2);
-        if (jsonChunkHeader[1] !== 0x4e4f534a || binaryChunkHeader[1] !== 0x004e4942) {
+        if (binaryChunkHeader[1] !== 0x004e4942) {
             throw new Error('Unexpected GLB layout.');
         }
         // Decode content.
-        const jsonText = new TextDecoder().decode(glb.slice(jsonByteOffset, jsonByteOffset + jsonByteLength));
-        const json = JSON.parse(jsonText);
         const binaryByteOffset = jsonByteOffset + jsonByteLength + 8;
         const binaryByteLength = binaryChunkHeader[0];
         const binary = glb.slice(binaryByteOffset, binaryByteOffset + binaryByteLength);
