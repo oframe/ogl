@@ -67,7 +67,9 @@ export class GLTFSkin extends Mesh {
 
         // Switch this world matrix with root node's to populate uniforms
         const _worldMatrix = this.worldMatrix;
-        if (this.skeleton.skeleton) this.worldMatrix = this.skeleton.skeleton.worldMatrix;
+
+        // TODO: figure out what's the deal with this
+        // if (this.skeleton.skeleton) this.worldMatrix = this.skeleton.skeleton.worldMatrix;
 
         super.draw({ camera });
 
