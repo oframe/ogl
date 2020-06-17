@@ -23,7 +23,7 @@ export class GLTFSkin extends Mesh {
             image: this.boneMatrices,
             generateMipmaps: false,
             type: this.gl.FLOAT,
-            internalFormat: this.gl.renderer.isWebgl2 ? this.gl.RGBA16F : this.gl.RGBA,
+            internalFormat: this.gl.renderer.isWebgl2 ? this.gl.RGBA32F : this.gl.RGBA,
             flipY: false,
             width: size,
         });
