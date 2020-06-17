@@ -40,3 +40,4 @@ export { Shadow } from './extras/Shadow.js';
 export { KTXTexture } from './extras/KTXTexture.js';
 export { TextureLoader } from './extras/TextureLoader.js';
 export { GLTFLoader } from './extras/GLTFLoader.js';
+export { GLTFSkin } from './extras/GLTFSkin.js';
