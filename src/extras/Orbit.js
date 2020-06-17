@@ -58,6 +58,8 @@ export function Orbit(
     spherical.theta = sphericalTarget.theta = Math.atan2(offset.x, offset.z);
     spherical.phi = sphericalTarget.phi = Math.acos(Math.min(Math.max(offset.y / sphericalTarget.radius, -1), 1));
 
+    this.offset = offset;
+
     this.update = () => {
         if (autoRotate) {
             handleAutoRotate();
@@ -98,6 +100,15 @@ export function Orbit(
 
         // Reset scale every frame to avoid applying scale multiple times
         sphericalDelta.radius = 1;
+    };
+
+    // Updates internals with new position
+    this.forcePosition = () => {
+        offset.copy(object.position).sub(this.target);
+        spherical.radius = sphericalTarget.radius = offset.distance();
+        spherical.theta = sphericalTarget.theta = Math.atan2(offset.x, offset.z);
+        spherical.phi = sphericalTarget.phi = Math.acos(Math.min(Math.max(offset.y / sphericalTarget.radius, -1), 1));
+        object.lookAt(this.target);
     };
 
     // Everything below here just updates panDelta and sphericalDelta
