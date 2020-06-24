@@ -31,5 +31,18 @@
     "devDependencies": {
         "rollup": "^1.27.13"
     },
-    "homepage": "https://github.com/oframe/ogl#readme"
+    "homepage": "https://github.com/oframe/ogl#readme",
+    "prettier": {
+        "arrowParens": "always",
+        "bracketSpacing": true,
+        "endOfLine": "lf",
+        "htmlWhitespaceSensitivity": "css",
+        "printWidth": 150,
+        "quoteProps": "as-needed",
+        "semi": true,
+        "singleQuote": true,
+        "tabWidth": 4,
+        "trailingComma": "es5",
+        "useTabs": false
+    }
 }
