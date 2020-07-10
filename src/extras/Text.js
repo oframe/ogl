@@ -96,7 +96,7 @@ export function Text({
                 continue;
             }
 
-            const glyph = glyphs[char];
+            const glyph = glyphs[char] || glyphs[' '];
 
             // Find any applicable kern pairs
             if (line.glyphs.length) {
