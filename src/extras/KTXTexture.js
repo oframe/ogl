@@ -4,12 +4,14 @@ import { Texture } from '../core/Texture.js';
 // Generate textures using https://github.com/TimvanScherpenzeel/texture-compressor
 
 export class KTXTexture extends Texture {
-    constructor(gl, { buffer, wrapS = gl.CLAMP_TO_EDGE, wrapT = gl.CLAMP_TO_EDGE, anisotropy = 0 } = {}) {
+    constructor(gl, { buffer, wrapS = gl.CLAMP_TO_EDGE, wrapT = gl.CLAMP_TO_EDGE, anisotropy = 0, minFilter, magFilter } = {}) {
         super(gl, {
             generateMipmaps: false,
             wrapS,
             wrapT,
             anisotropy,
+            minFilter,
+            magFilter,
         });
 
         if (buffer) return this.parseBuffer(buffer);
@@ -22,7 +24,7 @@ export class KTXTexture extends Texture {
         // Update texture
         this.image = ktx.mipmaps;
         this.internalFormat = ktx.glInternalFormat;
-        this.minFilter = ktx.numberOfMipmapLevels > 1 ? this.gl.NEAREST_MIPMAP_LINEAR : this.gl.LINEAR;
+        if (this.minFilter === this.gl.LINEAR && ktx.numberOfMipmapLevels > 1) this.minFilter = this.gl.NEAREST_MIPMAP_LINEAR;
 
         // TODO: support cube maps
         // ktx.numberOfFaces
