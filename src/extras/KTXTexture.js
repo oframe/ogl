@@ -24,7 +24,11 @@ export class KTXTexture extends Texture {
         // Update texture
         this.image = ktx.mipmaps;
         this.internalFormat = ktx.glInternalFormat;
-        if (this.minFilter === this.gl.LINEAR && ktx.numberOfMipmapLevels > 1) this.minFilter = this.gl.NEAREST_MIPMAP_LINEAR;
+        if (ktx.numberOfMipmapLevels > 1) {
+            if (this.minFilter === this.gl.LINEAR) this.minFilter = this.gl.NEAREST_MIPMAP_LINEAR;
+        } else {
+            if (this.minFilter === this.gl.NEAREST_MIPMAP_LINEAR) this.minFilter = this.gl.LINEAR;
+        }
 
         // TODO: support cube maps
         // ktx.numberOfFaces
