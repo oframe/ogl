@@ -268,6 +268,7 @@ export class GLTFLoader {
 
                 const data = new TypeArray(buffers[bufferIndex], byteOffset, byteLength / elementBytes);
                 bufferViews[i].data = data;
+                bufferViews[i].originalBuffer = buffers[bufferIndex];
 
                 if (!isAttribute) return;
                 // Create gl buffers for the bufferView, pushing it to the GPU
@@ -531,8 +532,9 @@ export class GLTFLoader {
 
         const {
             data, // attached in parseBufferViews
+            originalBuffer, // attached in parseBufferViews
             buffer, // replaced to be the actual GL buffer
-            // byteOffset = 0, // applied in parseBufferViews
+            byteOffset: bufferByteOffset = 0,
             // byteLength, // applied in parseBufferViews
             byteStride = 0,
             target,
@@ -543,9 +545,19 @@ export class GLTFLoader {
 
         const size = TYPE_SIZE[type];
 
+        // Parse data from joined buffers
+        const TypeArray = TYPE_ARRAY[componentType];
+        const elementBytes = data.BYTES_PER_ELEMENT;
+        const componentOffset = byteOffset / elementBytes;
+        const componentStride = byteStride / elementBytes;
+        const isInterleaved = !!byteStride && componentStride !== size;
+
+        // TODO: interleaved
+        const newData = isInterleaved ? data : new TypeArray(originalBuffer, byteOffset + bufferByteOffset, count * size);
+
         // Return attribute data
         return {
-            data, // Optional. Used for computing bounds if no min/max
+            data: newData, // Optional. Used for computing bounds if no min/max
             size,
             type: componentType,
             normalized,
@@ -694,10 +706,8 @@ export class GLTFLoader {
 
                         const node = nodes[nodeIndex];
                         const transform = TRANSFORMS[path];
-                        const timesAcc = this.parseAccessor(inputIndex, desc, bufferViews);
-                        const times = timesAcc.data.slice(timesAcc.offset / 4, timesAcc.offset / 4 + timesAcc.count * timesAcc.size);
-                        const valuesAcc = this.parseAccessor(outputIndex, desc, bufferViews);
-                        const values = valuesAcc.data.slice(valuesAcc.offset / 4, valuesAcc.offset / 4 + valuesAcc.count * valuesAcc.size);
+                        const times = this.parseAccessor(inputIndex, desc, bufferViews).data;
+                        const values = this.parseAccessor(outputIndex, desc, bufferViews).data;
 
                         return {
                             node,
