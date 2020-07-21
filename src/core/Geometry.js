@@ -200,7 +200,7 @@ export class Geometry {
     getPositionArray() {
         // Use position buffer, or min/max if available
         const attr = this.attributes.position;
-        if (attr.min) return [...attr.min, ...attr.max];
+        // if (attr.min) return [...attr.min, ...attr.max];
         if (attr.data) return attr.data;
         if (isBoundsWarned) return;
         console.warn('No position buffer data found to compute bounds');

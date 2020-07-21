@@ -557,7 +557,7 @@ export class GLTFLoader {
 
         // Return attribute data
         return {
-            data: newData, // Optional. Used for computing bounds if no min/max
+            data: newData,
             size,
             type: componentType,
             normalized,
