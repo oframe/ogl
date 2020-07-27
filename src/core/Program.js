@@ -140,7 +140,7 @@ export class Program {
         this.gl.renderer.setDepthFunc(this.depthFunc);
         if (this.blendFunc.src)
             this.gl.renderer.setBlendFunc(this.blendFunc.src, this.blendFunc.dst, this.blendFunc.srcAlpha, this.blendFunc.dstAlpha);
-        if (this.blendEquation.modeRGB) this.gl.renderer.setBlendEquation(this.blendEquation.modeRGB, this.blendEquation.modeAlpha);
+        this.gl.renderer.setBlendEquation(this.blendEquation.modeRGB, this.blendEquation.modeAlpha);
     }
 
     use({ flipFaces = false } = {}) {

@@ -155,6 +155,7 @@ export class Renderer {
     }
 
     setBlendEquation(modeRGB, modeAlpha) {
+        modeRGB = modeRGB || this.gl.FUNC_ADD;
         if (this.state.blendEquation.modeRGB === modeRGB && this.state.blendEquation.modeAlpha === modeAlpha) return;
         this.state.blendEquation.modeRGB = modeRGB;
         this.state.blendEquation.modeAlpha = modeAlpha;
