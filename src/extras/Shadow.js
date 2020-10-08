@@ -52,7 +52,7 @@ export class Shadow {
         }
 
         // Create custom override program
-        mesh.depthProgram = new Program(gl, {
+        mesh.depthProgram = new Program(this.gl, {
             vertex,
             fragment,
             cullFace: null,
