@@ -33,6 +33,7 @@
             uniform mat4 modelMatrix;
             uniform mat4 modelViewMatrix;
             uniform mat4 projectionMatrix;
+            uniform mat3 normalMatrix;
 
             uniform vec3 u_lightWorldPosition;
             uniform vec3 cameraPosition;
@@ -48,7 +49,7 @@
                 v_uv = uv;
 
                 // Calculate World Space Normal
-                v_normal = mat3(modelMatrix) * normal;
+                v_normal = normalMatrix * normal;
 
                 // Compute the world position of the surface
                 vec3 surfaceWorldPosition = mat3(modelMatrix) * position;
@@ -70,11 +71,13 @@
             varying vec3 v_surfaceToLight;
             varying vec3 v_surfaceToView;
             varying vec2 v_uv;
-            varying float v_dt;
 
+
+            uniform float u_dt;
             uniform float u_shininess;
             uniform sampler2D colMap;
             uniform sampler2D specMap;
+            uniform sampler2D cloudMap;
             
 
             void main() {
@@ -101,7 +104,11 @@
                 // Mapping textures
                 vec3 colMap = texture2D(colMap, v_uv).rgb;
                 vec3 spec = texture2D(specMap, v_uv).rgb;
-                gl_FragColor.rgb = colMap;
+
+                vec2 cloudUV = vec2(v_uv.x + u_dt, v_uv.y);
+                vec3 cloud = texture2D(cloudMap, cloudUV).rgb;
+
+                gl_FragColor.rgb = colMap + cloud;
 
                 // Add Point Lighting
                 gl_FragColor.rgb *= light;
@@ -150,14 +157,22 @@
                 specMap_img.onload = () => (specMap.image = specMap_img);
                 specMap_img.src = 'assets/earth_specular.jpg';
 
+                // Cloud Map
+                const cloudMap = new Texture(gl, { wrapS: gl.REPEAT, wrapT: gl.REPEAT });
+                const cloudMap_img = new Image();
+                cloudMap_img.onload = () => (cloudMap.image = cloudMap_img);
+                cloudMap_img.src = 'assets/earth_cloud.jpg';
+
                 const program = new Program(gl, {
                     vertex: VERTEX_SHADER,
                     fragment: FRAGMENT_SHADER,
                     uniforms: {
+                        u_dt: { value: 0 },
                         u_lightWorldPosition: { value: light }, // Position of the Light
                         u_shininess: { value: 1.5 },
                         colMap: { value: colMap }, // Color Map
                         specMap: { value: specMap }, // Specular Map
+                        cloudMap: { value: cloudMap }, // Cloud Map
                     },
                 });
 
@@ -176,7 +191,9 @@
                 function update(dt) {
                     requestAnimationFrame(update);
 
-                    mesh.rotation.y += 0.01;
+                    mesh.rotation.y += 0.005;
+
+                    program.uniforms.u_dt.value = -dt * 0.00002;
 
                     controls.update();
                     renderer.render({ scene, camera });
