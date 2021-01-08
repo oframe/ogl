@@ -20,39 +20,35 @@
             import { Renderer, Geometry, Program, Mesh, Camera, Transform, Texture, Sphere, Orbit } from '../src/index.mjs';
 
             const vertex = /* glsl */ `
-            precision highp float;
-            precision highp int;
+                attribute vec2 uv;
+                attribute vec3 position;
+                attribute vec3 normal;
 
-            attribute vec2 uv;
-            attribute vec3 position;
-            attribute vec3 normal;
+                uniform mat4 modelViewMatrix;
+                uniform mat4 projectionMatrix;
 
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
+                varying vec2 vUv;
 
-            varying vec2 vUv;
-
-            void main() {
-                vUv = uv;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
 
             const fragment = /* glsl */ `
-            precision highp float;
-            precision highp int;
+                precision highp float;
 
-            uniform sampler2D tMap;
+                uniform sampler2D tMap;
 
-            varying vec2 vUv;
+                varying vec2 vUv;
 
-            void main() {
-                vec3 tex = texture2D(tMap, vUv).rgb;
-                
-                gl_FragColor.rgb = tex;
-                gl_FragColor.a = 1.0;
-            }
-        `;
+                void main() {
+                    vec3 tex = texture2D(tMap, vUv).rgb;
+                    
+                    gl_FragColor.rgb = tex;
+                    gl_FragColor.a = 1.0;
+                }
+            `;
 
             {
                 const renderer = new Renderer({ dpr: 2 });

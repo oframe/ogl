@@ -18,66 +18,66 @@
             import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Orbit, Plane, Shadow } from '../src/index.mjs';
 
             const vertexColor = /* glsl */ `
-            attribute vec3 position;
-            attribute vec2 uv;
+                attribute vec3 position;
+                attribute vec2 uv;
 
-            uniform mat4 modelMatrix;
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
+                uniform mat4 modelMatrix;
+                uniform mat4 modelViewMatrix;
+                uniform mat4 projectionMatrix;
 
-            uniform mat4 shadowViewMatrix;
-            uniform mat4 shadowProjectionMatrix;
+                uniform mat4 shadowViewMatrix;
+                uniform mat4 shadowProjectionMatrix;
 
-            varying vec2 vUv;
-            varying vec4 vLightNDC;
+                varying vec2 vUv;
+                varying vec4 vLightNDC;
 
-            // Matrix to shift range from -1->1 to 0->1
-            const mat4 depthScaleMatrix = mat4(
-                0.5, 0, 0, 0, 
-                0, 0.5, 0, 0, 
-                0, 0, 0.5, 0, 
-                0.5, 0.5, 0.5, 1
-            );
+                // Matrix to shift range from -1->1 to 0->1
+                const mat4 depthScaleMatrix = mat4(
+                    0.5, 0, 0, 0, 
+                    0, 0.5, 0, 0, 
+                    0, 0, 0.5, 0, 
+                    0.5, 0.5, 0.5, 1
+                );
 
-            void main() {
-                vUv = uv;
-                
-                // Calculate the NDC (normalized device coords) for the light to compare against shadowmap
-                vLightNDC = depthScaleMatrix * shadowProjectionMatrix * shadowViewMatrix * modelMatrix * vec4(position, 1.0);
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
+                void main() {
+                    vUv = uv;
+                    
+                    // Calculate the NDC (normalized device coords) for the light to compare against shadowmap
+                    vLightNDC = depthScaleMatrix * shadowProjectionMatrix * shadowViewMatrix * modelMatrix * vec4(position, 1.0);
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
 
             const fragmentColor = /* glsl */ `
-            precision highp float;
+                precision highp float;
 
-            uniform sampler2D tMap;
-            uniform sampler2D tShadow;
+                uniform sampler2D tMap;
+                uniform sampler2D tShadow;
 
-            varying vec2 vUv;
-            varying vec4 vLightNDC;
+                varying vec2 vUv;
+                varying vec4 vLightNDC;
 
-            float unpackRGBA (vec4 v) {
-                return dot(v, 1.0 / vec4(1.0, 255.0, 65025.0, 16581375.0));
-            }
+                float unpackRGBA (vec4 v) {
+                    return dot(v, 1.0 / vec4(1.0, 255.0, 65025.0, 16581375.0));
+                }
 
-            void main() {
-                vec3 tex = texture2D(tMap, vUv).rgb;
+                void main() {
+                    vec3 tex = texture2D(tMap, vUv).rgb;
 
-                vec3 lightPos = vLightNDC.xyz / vLightNDC.w;
+                    vec3 lightPos = vLightNDC.xyz / vLightNDC.w;
 
-                float bias = 0.001;
-                float depth = lightPos.z - bias;
-                float occluder = unpackRGBA(texture2D(tShadow, lightPos.xy));
+                    float bias = 0.001;
+                    float depth = lightPos.z - bias;
+                    float occluder = unpackRGBA(texture2D(tShadow, lightPos.xy));
 
-                // Compare actual depth from light to the occluded depth rendered in the depth map
-                // If the occluded depth is smaller, we must be in shadow
-                float shadow = mix(0.2, 1.0, step(depth, occluder));
+                    // Compare actual depth from light to the occluded depth rendered in the depth map
+                    // If the occluded depth is smaller, we must be in shadow
+                    float shadow = mix(0.2, 1.0, step(depth, occluder));
 
-                gl_FragColor.rgb = tex * shadow;
-                gl_FragColor.a = 1.0;
-            }
-        `;
+                    gl_FragColor.rgb = tex * shadow;
+                    gl_FragColor.a = 1.0;
+                }
+            `;
 
             {
                 const renderer = new Renderer({ dpr: 2 });

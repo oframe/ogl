@@ -18,35 +18,31 @@
             import { Renderer, Camera, Transform, Program, Mesh, Sphere, Polyline, Orbit, Vec3, Color, Curve } from '../src/index.mjs';
 
             const vertex = /* glsl */ `
-          precision highp float;
-          precision highp int;
+                attribute vec3 position;
+                attribute vec3 normal;
 
-          attribute vec3 position;
-          attribute vec3 normal;
+                uniform mat3 normalMatrix;
+                uniform mat4 modelViewMatrix;
+                uniform mat4 projectionMatrix;
 
-          uniform mat3 normalMatrix;
-          uniform mat4 modelViewMatrix;
-          uniform mat4 projectionMatrix;
+                varying vec3 vNormal;
 
-          varying vec3 vNormal;
-
-          void main() {
-              vNormal = normalize(normalMatrix * normal);
-              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `;
+                void main() {
+                    vNormal = normalize(normalMatrix * normal);
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
 
             const fragment = /* glsl */ `
-          precision highp float;
-          precision highp int;
+                precision highp float;
 
-          varying vec3 vNormal;
+                varying vec3 vNormal;
 
-          void main() {
-              gl_FragColor.rgb = normalize(vNormal);
-              gl_FragColor.a = 1.0;
-          }
-        `;
+                void main() {
+                    gl_FragColor.rgb = normalize(vNormal);
+                    gl_FragColor.a = 1.0;
+                }
+            `;
 
             {
                 const renderer = new Renderer({ dpr: 2 });

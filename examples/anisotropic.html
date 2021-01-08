@@ -26,37 +26,37 @@
             import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Plane } from '../src/index.mjs';
 
             const vertex = /* glsl */ `
-            attribute vec2 uv;
-            attribute vec3 position;
+                attribute vec2 uv;
+                attribute vec3 position;
 
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
+                uniform mat4 modelViewMatrix;
+                uniform mat4 projectionMatrix;
 
-            varying vec2 vUv;
+                varying vec2 vUv;
 
-            void main() {
-                vUv = uv;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
 
             const fragment = /* glsl */ `
-            precision highp float;
+                precision highp float;
 
-            uniform sampler2D tMap;
-            uniform sampler2D tMapA;
-            uniform float fSlide;
-            
-            varying vec2 vUv;
-
-            void main() {
-                vec3 tex = texture2D(tMap, vUv).rgb;
-                vec3 texA = texture2D(tMapA, vUv).rgb;
+                uniform sampler2D tMap;
+                uniform sampler2D tMapA;
+                uniform float fSlide;
                 
-                gl_FragColor.rgb = mix(tex, texA, step(fSlide, vUv.x)) + 0.1;
-                gl_FragColor.a = 1.0;
-            }
-        `;
+                varying vec2 vUv;
+
+                void main() {
+                    vec3 tex = texture2D(tMap, vUv).rgb;
+                    vec3 texA = texture2D(tMapA, vUv).rgb;
+                    
+                    gl_FragColor.rgb = mix(tex, texA, step(fSlide, vUv.x)) + 0.1;
+                    gl_FragColor.a = 1.0;
+                }
+            `;
 
             {
                 const renderer = new Renderer({ dpr: 2 });
