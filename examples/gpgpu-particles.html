@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • GPGPU Particles (General-Purpose computing on Graphics Processing Units)</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">GPGPU Particles (General-Purpose computing on Graphics Processing Units)</div>
-    <script type="module">
-        import {Renderer, Camera, Geometry, Program, Texture, Mesh, Vec2, GPGPU} from '../src/index.mjs';
-        
-        const vertex = /* glsl */ `
+        <title>OGL • GPGPU Particles (General-Purpose computing on Graphics Processing Units)</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">GPGPU Particles (General-Purpose computing on Graphics Processing Units)</div>
+        <script type="module">
+            import { Renderer, Camera, Geometry, Program, Texture, Mesh, Vec2, GPGPU } from '../src/index.mjs';
+
+            const vertex = /* glsl */ `
             precision highp float;
 
             attribute vec2 coords;
@@ -46,7 +49,7 @@
             }
         `;
 
-        const fragment = /* glsl */ `
+            const fragment = /* glsl */ `
             precision highp float;
 
             varying vec4 vRandom;
@@ -67,7 +70,7 @@
             }
         `;
 
-        const positionFragment = /* glsl */ `
+            const positionFragment = /* glsl */ `
             precision highp float;
 
             uniform float uTime;
@@ -94,7 +97,7 @@
             }
         `;
 
-        const velocityFragment = /* glsl */ `
+            const velocityFragment = /* glsl */ `
             precision highp float;
 
             uniform float uTime;
@@ -120,137 +123,132 @@
             }
         `;
 
-        {
-            const renderer = new Renderer({dpr: 2});
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            gl.clearColor(1, 1, 1, 1);
+            {
+                const renderer = new Renderer({ dpr: 2 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 45});
-            camera.position.set(0, 0, 5);
+                const camera = new Camera(gl, { fov: 45 });
+                camera.position.set(0, 0, 5);
 
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
-
-            // Common uniforms
-            const time = {value: 0};
-            const mouse = {value: new Vec2()};
-
-            // The number of particles will determine how large the GPGPU textures are,
-            // and therefore how expensive the GPU calculations will be.
-            // Below I'm using 65536 to use every pixel of a 256x256 texture. If I used one more (65537), 
-            // it would need to use a 512x512 texture - the GPU would then perform calculations for each pixel,
-            // meaning that nearly 3/4 of the texture (196607 pixels) would be redundant.
-            const numParticles = 65536;
-
-            // Create the initial data arrays for position and velocity. 4 values for RGBA channels in texture.
-            const initialPositionData = new Float32Array(numParticles * 4);
-            const initialVelocityData = new Float32Array(numParticles * 4);
-
-            // Random to be used as regular static attribute
-            const random = new Float32Array(numParticles * 4);
-            for (let i = 0; i < numParticles; i++) {
-                initialPositionData.set([
-                    (Math.random() - 0.5) * 2.0,
-                    (Math.random() - 0.5) * 2.0,
-                    0, // the Green and Alpha channels go unused in this example, however I set
-                    1, // unused Alpha to 1 so that texture is visible in WebGL debuggers
-                ], i * 4);
-                initialVelocityData.set([0, 0, 0, 1], i * 4);
-                random.set([
-                    Math.random(),
-                    Math.random(),
-                    Math.random(),
-                    Math.random(),
-                ], i * 4);
-            }
-
-            // Initialise the GPGPU classes, creating the FBOs and corresponding texture coordinates
-            const position = new GPGPU(gl, {data: initialPositionData});
-            const velocity = new GPGPU(gl, {data: initialVelocityData});
-
-            // Add the simulation shaders as passes to each GPGPU class
-            position.addPass({
-                fragment: positionFragment,
-                uniforms: {
-                    uTime: time,
-                    tVelocity: velocity.uniform,
-                },
-            });
-            velocity.addPass({
-                fragment: velocityFragment,
-                uniforms: {
-                    uTime: time,
-                    uMouse: mouse,
-                    tPosition: position.uniform,
-                },
-            });
-
-            // Now we can create our geometry, using the coordinates from above.
-            // We don't use the velocity or position data as attributes, 
-            // instead we will get this from the FBO textures in the shader.
-            const geometry = new Geometry(gl, {
-                random: {size: 4, data: random},
-
-                // Could use either position or velocity coords, as they are the same
-                coords: {size: 2, data: position.coords},
-            });
-
-            const program = new Program(gl, {
-                vertex,
-                fragment,
-                uniforms: {
-                    uTime: time,
-                    tPosition: position.uniform,
-                    tVelocity: velocity.uniform,
-                },
-            });
-
-            const points = new Mesh(gl, {geometry, program, mode: gl.POINTS});
-
-            // Add handlers to get mouse position
-            const isTouchCapable = 'ontouchstart' in window;
-            if (isTouchCapable) {
-                window.addEventListener('touchstart', updateMouse, false);
-                window.addEventListener('touchmove', updateMouse, false);
-            } else {
-                window.addEventListener('mousemove', updateMouse, false);
-            }
-
-            function updateMouse(e) {
-                if (e.changedTouches && e.changedTouches.length) {
-                    e.x = e.changedTouches[0].pageX;
-                    e.y = e.changedTouches[0].pageY;
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
                 }
-                if (e.x === undefined) {
-                    e.x = e.pageX;
-                    e.y = e.pageY;
+                window.addEventListener('resize', resize, false);
+                resize();
+
+                // Common uniforms
+                const time = { value: 0 };
+                const mouse = { value: new Vec2() };
+
+                // The number of particles will determine how large the GPGPU textures are,
+                // and therefore how expensive the GPU calculations will be.
+                // Below I'm using 65536 to use every pixel of a 256x256 texture. If I used one more (65537),
+                // it would need to use a 512x512 texture - the GPU would then perform calculations for each pixel,
+                // meaning that nearly 3/4 of the texture (196607 pixels) would be redundant.
+                const numParticles = 65536;
+
+                // Create the initial data arrays for position and velocity. 4 values for RGBA channels in texture.
+                const initialPositionData = new Float32Array(numParticles * 4);
+                const initialVelocityData = new Float32Array(numParticles * 4);
+
+                // Random to be used as regular static attribute
+                const random = new Float32Array(numParticles * 4);
+                for (let i = 0; i < numParticles; i++) {
+                    initialPositionData.set(
+                        [
+                            (Math.random() - 0.5) * 2.0,
+                            (Math.random() - 0.5) * 2.0,
+                            0, // the Green and Alpha channels go unused in this example, however I set
+                            1, // unused Alpha to 1 so that texture is visible in WebGL debuggers
+                        ],
+                        i * 4
+                    );
+                    initialVelocityData.set([0, 0, 0, 1], i * 4);
+                    random.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4);
                 }
 
-                // Get mouse value in -1 to 1 range, with y flipped
-                mouse.value.set(
-                    (e.x / gl.renderer.width) * 2 - 1,
-                    (1.0 - e.y / gl.renderer.height) * 2 - 1
-                );
-            }
+                // Initialise the GPGPU classes, creating the FBOs and corresponding texture coordinates
+                const position = new GPGPU(gl, { data: initialPositionData });
+                const velocity = new GPGPU(gl, { data: initialVelocityData });
 
-            requestAnimationFrame(update);
-            function update(t) {
+                // Add the simulation shaders as passes to each GPGPU class
+                position.addPass({
+                    fragment: positionFragment,
+                    uniforms: {
+                        uTime: time,
+                        tVelocity: velocity.uniform,
+                    },
+                });
+                velocity.addPass({
+                    fragment: velocityFragment,
+                    uniforms: {
+                        uTime: time,
+                        uMouse: mouse,
+                        tPosition: position.uniform,
+                    },
+                });
+
+                // Now we can create our geometry, using the coordinates from above.
+                // We don't use the velocity or position data as attributes,
+                // instead we will get this from the FBO textures in the shader.
+                const geometry = new Geometry(gl, {
+                    random: { size: 4, data: random },
+
+                    // Could use either position or velocity coords, as they are the same
+                    coords: { size: 2, data: position.coords },
+                });
+
+                const program = new Program(gl, {
+                    vertex,
+                    fragment,
+                    uniforms: {
+                        uTime: time,
+                        tPosition: position.uniform,
+                        tVelocity: velocity.uniform,
+                    },
+                });
+
+                const points = new Mesh(gl, { geometry, program, mode: gl.POINTS });
+
+                // Add handlers to get mouse position
+                const isTouchCapable = 'ontouchstart' in window;
+                if (isTouchCapable) {
+                    window.addEventListener('touchstart', updateMouse, false);
+                    window.addEventListener('touchmove', updateMouse, false);
+                } else {
+                    window.addEventListener('mousemove', updateMouse, false);
+                }
+
+                function updateMouse(e) {
+                    if (e.changedTouches && e.changedTouches.length) {
+                        e.x = e.changedTouches[0].pageX;
+                        e.y = e.changedTouches[0].pageY;
+                    }
+                    if (e.x === undefined) {
+                        e.x = e.pageX;
+                        e.y = e.pageY;
+                    }
+
+                    // Get mouse value in -1 to 1 range, with y flipped
+                    mouse.value.set((e.x / gl.renderer.width) * 2 - 1, (1.0 - e.y / gl.renderer.height) * 2 - 1);
+                }
+
                 requestAnimationFrame(update);
+                function update(t) {
+                    requestAnimationFrame(update);
 
-                time.value = t * 0.001;
+                    time.value = t * 0.001;
 
-                // Update the GPGPU classes
-                velocity.render();
-                position.render();
+                    // Update the GPGPU classes
+                    velocity.render();
+                    position.render();
 
-                renderer.render({scene: points, camera});
+                    renderer.render({ scene: points, camera });
+                }
             }
-        }
-    </script>
-</body>
+        </script>
+    </body>
 </html>

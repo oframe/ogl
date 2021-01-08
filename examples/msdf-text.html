@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • MSDF Text Glyphs (Multichannel Signed Distance Fields)</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">MSDF Text Glyphs (Multichannel Signed Distance Fields)</div>
-    <script type="module">
-        import {Renderer, Camera, Transform, Geometry, Texture, Program, Mesh, Orbit, Text} from '../src/index.mjs';
-        
-        const vertex100 = /* glsl */ `
+        <title>OGL • MSDF Text Glyphs (Multichannel Signed Distance Fields)</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">MSDF Text Glyphs (Multichannel Signed Distance Fields)</div>
+        <script type="module">
+            import { Renderer, Camera, Transform, Geometry, Texture, Program, Mesh, Orbit, Text } from '../src/index.mjs';
+
+            const vertex100 = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -33,7 +36,7 @@
             }
         `;
 
-        const fragment100 = /* glsl */ `
+            const fragment100 = /* glsl */ `
             #extension GL_OES_standard_derivatives : enable
 
             precision highp float;
@@ -56,8 +59,8 @@
                 gl_FragColor.a = alpha;
             }
         `;
-        
-        const vertex300 = /* glsl */ `#version 300 es
+
+            const vertex300 = /* glsl */ `#version 300 es
             precision highp float;
             precision highp int;
 
@@ -76,7 +79,7 @@
             }
         `;
 
-        const fragment300 = /* glsl */ `#version 300 es
+            const fragment300 = /* glsl */ `#version 300 es
             precision highp float;
             precision highp int;
 
@@ -100,27 +103,27 @@
             }
         `;
 
-        {
-            const renderer = new Renderer({dpr: 2});
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            gl.clearColor(1, 1, 1, 1);
+            {
+                const renderer = new Renderer({ dpr: 2 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 45});
-            camera.position.set(0, 0, 7);
+                const camera = new Camera(gl, { fov: 45 });
+                camera.position.set(0, 0, 7);
 
-            const controls = new Orbit(camera);
+                const controls = new Orbit(camera);
 
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-            const scene = new Transform();
+                const scene = new Transform();
 
-            /*
+                /*
             
             Instructions to generate necessary MSDF assets
 
@@ -135,63 +138,61 @@
 
             */
 
-            const texture = new Texture(gl, {
-                generateMipmaps: false,
-            });
-            const img = new Image();
-            img.onload = () => texture.image = img;
-            img.src = 'assets/fonts/FiraSans-Bold.png';
+                const texture = new Texture(gl, {
+                    generateMipmaps: false,
+                });
+                const img = new Image();
+                img.onload = () => (texture.image = img);
+                img.src = 'assets/fonts/FiraSans-Bold.png';
 
-            const program = new Program(gl, {
-                
-                // Get fallback shader for WebGL1 - needed for OES_standard_derivatives ext
-                vertex: renderer.isWebgl2 ? vertex300 : vertex100,
-                fragment: renderer.isWebgl2 ? fragment300 : fragment100,
-                uniforms: {
-                    tMap: {value: texture},
-                },
-                transparent: true,
-                cullFace: null,
-                depthWrite: false,
-            });
-
-            loadText();
-            async function loadText() {
-                const font = await (await fetch('assets/fonts/FiraSans-Bold.json')).json();
-                
-                const text = new Text({
-                    font,
-                    text: 'don\'t panic',
-                    width: 4,
-                    align: 'center',
-                    letterSpacing: -0.05,
-                    size: 1,
-                    lineHeight: 1.1,
+                const program = new Program(gl, {
+                    // Get fallback shader for WebGL1 - needed for OES_standard_derivatives ext
+                    vertex: renderer.isWebgl2 ? vertex300 : vertex100,
+                    fragment: renderer.isWebgl2 ? fragment300 : fragment100,
+                    uniforms: {
+                        tMap: { value: texture },
+                    },
+                    transparent: true,
+                    cullFace: null,
+                    depthWrite: false,
                 });
 
-                // Pass the generated buffers into a geometry
-                const geometry = new Geometry(gl, {
-                    position: {size: 3, data: text.buffers.position},
-                    uv: {size: 2, data: text.buffers.uv},
-                    id: {size: 1, data: text.buffers.id},
-                    index: {data: text.buffers.index},
-                });
+                loadText();
+                async function loadText() {
+                    const font = await (await fetch('assets/fonts/FiraSans-Bold.json')).json();
 
-                const mesh = new Mesh(gl, {geometry, program});
+                    const text = new Text({
+                        font,
+                        text: "don't panic",
+                        width: 4,
+                        align: 'center',
+                        letterSpacing: -0.05,
+                        size: 1,
+                        lineHeight: 1.1,
+                    });
 
-                // Use the height value to position text vertically. Here it is centered.
-                mesh.position.y = text.height * 0.5;
-                mesh.setParent(scene);
-            }
+                    // Pass the generated buffers into a geometry
+                    const geometry = new Geometry(gl, {
+                        position: { size: 3, data: text.buffers.position },
+                        uv: { size: 2, data: text.buffers.uv },
+                        id: { size: 1, data: text.buffers.id },
+                        index: { data: text.buffers.index },
+                    });
 
-            requestAnimationFrame(update);
-            function update(t) {
+                    const mesh = new Mesh(gl, { geometry, program });
+
+                    // Use the height value to position text vertically. Here it is centered.
+                    mesh.position.y = text.height * 0.5;
+                    mesh.setParent(scene);
+                }
+
                 requestAnimationFrame(update);
-                controls.update();
-                renderer.render({scene, camera});
+                function update(t) {
+                    requestAnimationFrame(update);
+                    controls.update();
+                    renderer.render({ scene, camera });
+                }
             }
-        }
-
-    </script>
-</body>
+        </script>
+    </body>
 </html>

@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • Textures</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">Textures. Model by Google Poly. Film by Studio Ghibli.</div>
-    <script type="module">
-        import {Renderer, Camera, Transform, Texture, TextureLoader, Program, Geometry, Mesh, Box} from '../src/index.mjs';
-        
-        const vertex = /* glsl */ `
+        <title>OGL • Textures</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">Textures. Model by Google Poly. Film by Studio Ghibli.</div>
+        <script type="module">
+            import { Renderer, Camera, Transform, Texture, TextureLoader, Program, Geometry, Mesh, Box } from '../src/index.mjs';
+
+            const vertex = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -37,7 +40,7 @@
             }
         `;
 
-        const fragment = /* glsl */ `
+            const fragment = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -58,119 +61,118 @@
             }
         `;
 
-        {
-            const renderer = new Renderer({dpr: 2});
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            gl.clearColor(1, 1, 1, 1);
+            {
+                const renderer = new Renderer({ dpr: 2 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 45});
-            camera.position.set(3, 1.5, 4);
-            camera.lookAt([1, 0.2, 0]);
+                const camera = new Camera(gl, { fov: 45 });
+                camera.position.set(3, 1.5, 4);
+                camera.lookAt([1, 0.2, 0]);
 
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-            const scene = new Transform();
+                const scene = new Transform();
 
-            // Upload empty texture while source loading
-            const texture = new Texture(gl);
-            
-            // update image value with source once loaded
-            const img = new Image();
-            img.src = 'assets/saddle.jpg';
-            img.onload = () => texture.image = img;
+                // Upload empty texture while source loading
+                const texture = new Texture(gl);
 
-            // Alternatively, you can use the TextureLoader class's load method that handles
-            // these steps for you. It also handles compressed textures and fallbacks.
-            // const texture = TextureLoader.load(gl, { src: 'assets/saddle.jpg'});
+                // update image value with source once loaded
+                const img = new Image();
+                img.src = 'assets/saddle.jpg';
+                img.onload = () => (texture.image = img);
 
-            const program = new Program(gl, {
-                vertex,
-                fragment,
-                uniforms: {
-                    tMap: {value: texture},
-                },
-            });
+                // Alternatively, you can use the TextureLoader class's load method that handles
+                // these steps for you. It also handles compressed textures and fallbacks.
+                // const texture = TextureLoader.load(gl, { src: 'assets/saddle.jpg'});
 
-            let mesh;
-            loadModel();
-            async function loadModel() {
-                const data = await (await fetch(`assets/saddle.json`)).json();
-
-                const geometry = new Geometry(gl, {
-                    position: {size: 3, data: new Float32Array(data.position)},
-                    uv: {size: 2, data: new Float32Array(data.uv)},
-                    normal: {size: 3, data: new Float32Array(data.normal)},
+                const program = new Program(gl, {
+                    vertex,
+                    fragment,
+                    uniforms: {
+                        tMap: { value: texture },
+                    },
                 });
 
-                mesh = new Mesh(gl, {geometry, program});
-                mesh.position.set(0, 0, 0);
-                mesh.setParent(scene);
-            }
+                let mesh;
+                loadModel();
+                async function loadModel() {
+                    const data = await (await fetch(`assets/saddle.json`)).json();
 
-            const videoGeometry = new Box(gl, {width: 1.78, height: 1, depth: 1.78});
+                    const geometry = new Geometry(gl, {
+                        position: { size: 3, data: new Float32Array(data.position) },
+                        uv: { size: 2, data: new Float32Array(data.uv) },
+                        normal: { size: 3, data: new Float32Array(data.normal) },
+                    });
 
-            // Init empty texture while source loading
-            const videoTexture = new Texture(gl, {
-                generateMipmaps: false,
-                width: 1024,
-                height: 512,
-            });
-
-            // Create video with attributes that let it autoplay
-            // Check update loop to see when video is attached to texture
-            let video = document.createElement('video');
-            video.src = 'assets/laputa.mp4';
-
-            // Disclaimer: video autoplay is a confusing, constantly-changing browser feature.
-            // The best approach is to never assume that it will work, and therefore prepare for a fallback.
-            // Tested on mac: Chrome, Safari, Firefox; android: chrome
-            video.loop = true;
-            video.muted = true;
-            video.play();
-
-            // TODO: test ios. Possible add following
-            // video.setAttribute('crossorigin', 'anonymous');
-            // video.setAttribute('webkit-playsinline', true);
-            // video.setAttribute('playsinline', true);
-
-            const videoProgram = new Program(gl, {
-                vertex,
-                fragment,
-                uniforms: {
-                    tMap: {value: videoTexture},
-                },
-                cullFace: null,
-            });
-            const videoMesh = new Mesh(gl, {
-                geometry: videoGeometry,
-                program: videoProgram
-            });
-            videoMesh.position.set(0, 0.5, -4);
-            videoMesh.scale.set(1.5);
-            videoMesh.setParent(scene);
-
-            requestAnimationFrame(update);
-            function update(t) {
-                requestAnimationFrame(update);
-
-                // Attach video and/or update texture when video is ready
-                if (video.readyState >= video.HAVE_ENOUGH_DATA) {
-                    if (!videoTexture.image) videoTexture.image = video;
-                    videoTexture.needsUpdate = true;
+                    mesh = new Mesh(gl, { geometry, program });
+                    mesh.position.set(0, 0, 0);
+                    mesh.setParent(scene);
                 }
 
-                if (mesh) mesh.rotation.y -= 0.005;
-                videoMesh.rotation.y += 0.003;
-                renderer.render({scene, camera});
-            }
-        }
+                const videoGeometry = new Box(gl, { width: 1.78, height: 1, depth: 1.78 });
 
-    </script>
-</body>
+                // Init empty texture while source loading
+                const videoTexture = new Texture(gl, {
+                    generateMipmaps: false,
+                    width: 1024,
+                    height: 512,
+                });
+
+                // Create video with attributes that let it autoplay
+                // Check update loop to see when video is attached to texture
+                let video = document.createElement('video');
+                video.src = 'assets/laputa.mp4';
+
+                // Disclaimer: video autoplay is a confusing, constantly-changing browser feature.
+                // The best approach is to never assume that it will work, and therefore prepare for a fallback.
+                // Tested on mac: Chrome, Safari, Firefox; android: chrome
+                video.loop = true;
+                video.muted = true;
+                video.play();
+
+                // TODO: test ios. Possible add following
+                // video.setAttribute('crossorigin', 'anonymous');
+                // video.setAttribute('webkit-playsinline', true);
+                // video.setAttribute('playsinline', true);
+
+                const videoProgram = new Program(gl, {
+                    vertex,
+                    fragment,
+                    uniforms: {
+                        tMap: { value: videoTexture },
+                    },
+                    cullFace: null,
+                });
+                const videoMesh = new Mesh(gl, {
+                    geometry: videoGeometry,
+                    program: videoProgram,
+                });
+                videoMesh.position.set(0, 0.5, -4);
+                videoMesh.scale.set(1.5);
+                videoMesh.setParent(scene);
+
+                requestAnimationFrame(update);
+                function update(t) {
+                    requestAnimationFrame(update);
+
+                    // Attach video and/or update texture when video is ready
+                    if (video.readyState >= video.HAVE_ENOUGH_DATA) {
+                        if (!videoTexture.image) videoTexture.image = video;
+                        videoTexture.needsUpdate = true;
+                    }
+
+                    if (mesh) mesh.rotation.y -= 0.005;
+                    videoMesh.rotation.y += 0.003;
+                    renderer.render({ scene, camera });
+                }
+            }
+        </script>
+    </body>
 </html>

@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • Instancing</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">Instancing with GPU Picking. Model by Google Poly</div>
-    <script type="module">
-        import {Renderer, Camera, RenderTarget, Vec3, Transform, Texture, Program, Box, Mesh, NormalProgram} from '../src/index.mjs';
-        
-        const vertex = /* glsl */ `
+        <title>OGL • Instancing</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">Instancing with GPU Picking. Model by Google Poly</div>
+        <script type="module">
+            import { Renderer, Camera, RenderTarget, Vec3, Transform, Texture, Program, Box, Mesh, NormalProgram } from '../src/index.mjs';
+
+            const vertex = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -60,7 +63,7 @@
             }
         `;
 
-        const fragment = /* glsl */ `
+            const fragment = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -86,152 +89,152 @@
             }
         `;
 
-        {
-            const renderer = new Renderer({dpr: 2});
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            gl.clearColor(1, 1, 1, 1);
-
-            const camera = new Camera(gl, {fov: 15});
-            camera.position.z = 15;
-
-            let target;
-
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-                target = new RenderTarget(gl);
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
-
-            const scene = new Transform();
-
-            const program = new Program(gl, {
-                vertex,
-                fragment,
-                uniforms: {
-                    uTime: {value: 0},
-                    uTargetRender: {value: 0},
-                },
-            });
-
-            let mesh, highlight, objects = [];
             {
-                const num = 20;
+                const renderer = new Renderer({ dpr: 2 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-                let offsetData = new Float32Array(num * 3);
-                let randomData = new Float32Array(num * 3);
-                let idData = new Float32Array(num * 4);
-                for (let i = 0; i < num; i++) {
-                    const offset = [
-                        Math.random() * 2 - 1,
-                        Math.random() * 2 - 1,
-                        Math.random() * 2 - 1,
-                    ]
-                    offsetData.set(offset, i * 3);
+                const camera = new Camera(gl, { fov: 15 });
+                camera.position.z = 15;
 
-                    let id = i + 1;
-                    idData.set([
-                        ((id >>  0) & 0xFF) / 0xFF,
-                        ((id >>  8) & 0xFF) / 0xFF,
-                        ((id >> 16) & 0xFF) / 0xFF,
-                        ((id >> 24) & 0xFF) / 0xFF,
-                    ], i * 4);
+                let target;
 
-                    const random = [Math.random(), Math.random(), Math.random()];
-                    randomData.set(random, i * 3);
-
-                    objects.push({id, offset, random});
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    target = new RenderTarget(gl);
                 }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-                const geometry = new Box(gl, {
-                    width: 0.2,
-                    height: 0.2,
-                    depth: 0.2,
-                    attributes: {
-                        offset: {instanced: 1, size: 3, data: offsetData},
-                        random: {instanced: 1, size: 3, data: randomData},
-                        // Add id data. This way we can recognize the instance later.
-                        id:     {instanced: 1, size: 4, data: idData},
-                    }
+                const scene = new Transform();
+
+                const program = new Program(gl, {
+                    vertex,
+                    fragment,
+                    uniforms: {
+                        uTime: { value: 0 },
+                        uTargetRender: { value: 0 },
+                    },
                 });
 
-                mesh = new Mesh(gl, {geometry, program});
-                mesh.setParent(scene);
+                let mesh,
+                    highlight,
+                    objects = [];
+                {
+                    const num = 20;
 
-                // Create a single non-instanced copy
-                highlight = new Mesh(gl, {geometry, program: NormalProgram(gl)});
-                highlight.setParent(scene);
-                highlight.visible = false;
-            }
+                    let offsetData = new Float32Array(num * 3);
+                    let randomData = new Float32Array(num * 3);
+                    let idData = new Float32Array(num * 4);
+                    for (let i = 0; i < num; i++) {
+                        const offset = [Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1];
+                        offsetData.set(offset, i * 3);
 
-            // Wrap in load event to prevent checks before page is ready
-            window.addEventListener('load', () => {
-                document.addEventListener('mousemove', move, false);
-                document.addEventListener('touchmove', move, false);
-            }, false);
+                        let id = i + 1;
+                        idData.set(
+                            [((id >> 0) & 0xff) / 0xff, ((id >> 8) & 0xff) / 0xff, ((id >> 16) & 0xff) / 0xff, ((id >> 24) & 0xff) / 0xff],
+                            i * 4
+                        );
 
-            const mouse = new Vec3();
-            function move(e) {
-                mouse.set(
-                    e.x * gl.canvas.width / gl.canvas.clientWidth,
-                    gl.canvas.height - e.y * gl.canvas.height / gl.canvas.clientHeight - 1
-                );
-            }
+                        const random = [Math.random(), Math.random(), Math.random()];
+                        randomData.set(random, i * 3);
 
-            requestAnimationFrame(update);
-            function update(t) {
-                requestAnimationFrame(update);
-                if  (!mesh) return;
-                
-                let time = t * 0.001;
-                program.uniforms.uTime.value = time;
+                        objects.push({ id, offset, random });
+                    }
 
-                // Draw to texture
-                mesh.program.uniforms.uTargetRender.value = 1;
-                gl.clearColor(0, 0, 0, 0);
+                    const geometry = new Box(gl, {
+                        width: 0.2,
+                        height: 0.2,
+                        depth: 0.2,
+                        attributes: {
+                            offset: { instanced: 1, size: 3, data: offsetData },
+                            random: { instanced: 1, size: 3, data: randomData },
+                            // Add id data. This way we can recognize the instance later.
+                            id: { instanced: 1, size: 4, data: idData },
+                        },
+                    });
 
-                // Render ids to render target
-                renderer.render({scene: mesh, camera, target});
+                    mesh = new Mesh(gl, { geometry, program });
+                    mesh.setParent(scene);
 
-                // Read pixel data from target
-                const data = new Uint8Array(4);
-                gl.readPixels(
-                    mouse.x,           // x
-                    mouse.y,           // y
-                    1,                 // width
-                    1,                 // height
-                    gl.RGBA,           // format
-                    gl.UNSIGNED_BYTE,  // type
-                    data);             // typed array to hold result
-                
-                // Transform color back to id
-                const id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
-
-                if (id) {
-                    // Restore same transformations as in shader
-                    // but only for the higlighted item
-                    let data = objects[id - 1];
-                    let [rx, ry, rz] = data.random;
-                    highlight.scale.set(0.9 + ry * 0.2).scale(1.005);
-                    highlight.rotation.set(0);
-                    highlight.rotation.y = rx * 6.28 + 4 * time * (ry - 0.5);
-                    highlight.position.set(data.offset);
-                    highlight.visible = true;
-                } else {
+                    // Create a single non-instanced copy
+                    highlight = new Mesh(gl, { geometry, program: NormalProgram(gl) });
+                    highlight.setParent(scene);
                     highlight.visible = false;
                 }
 
-                // Reset
-                mesh.program.uniforms.uTargetRender.value = 0;
-                program.uniforms.uTime.value = time;
-                gl.clearColor(1, 1, 1, 1);
+                // Wrap in load event to prevent checks before page is ready
+                window.addEventListener(
+                    'load',
+                    () => {
+                        document.addEventListener('mousemove', move, false);
+                        document.addEventListener('touchmove', move, false);
+                    },
+                    false
+                );
 
-                renderer.render({scene, camera});
+                const mouse = new Vec3();
+                function move(e) {
+                    mouse.set(
+                        (e.x * gl.canvas.width) / gl.canvas.clientWidth,
+                        gl.canvas.height - (e.y * gl.canvas.height) / gl.canvas.clientHeight - 1
+                    );
+                }
+
+                requestAnimationFrame(update);
+                function update(t) {
+                    requestAnimationFrame(update);
+                    if (!mesh) return;
+
+                    let time = t * 0.001;
+                    program.uniforms.uTime.value = time;
+
+                    // Draw to texture
+                    mesh.program.uniforms.uTargetRender.value = 1;
+                    gl.clearColor(0, 0, 0, 0);
+
+                    // Render ids to render target
+                    renderer.render({ scene: mesh, camera, target });
+
+                    // Read pixel data from target
+                    const data = new Uint8Array(4);
+                    gl.readPixels(
+                        mouse.x, // x
+                        mouse.y, // y
+                        1, // width
+                        1, // height
+                        gl.RGBA, // format
+                        gl.UNSIGNED_BYTE, // type
+                        data
+                    ); // typed array to hold result
+
+                    // Transform color back to id
+                    const id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
+
+                    if (id) {
+                        // Restore same transformations as in shader
+                        // but only for the higlighted item
+                        let data = objects[id - 1];
+                        let [rx, ry, rz] = data.random;
+                        highlight.scale.set(0.9 + ry * 0.2).scale(1.005);
+                        highlight.rotation.set(0);
+                        highlight.rotation.y = rx * 6.28 + 4 * time * (ry - 0.5);
+                        highlight.position.set(data.offset);
+                        highlight.visible = true;
+                    } else {
+                        highlight.visible = false;
+                    }
+
+                    // Reset
+                    mesh.program.uniforms.uTargetRender.value = 0;
+                    program.uniforms.uTime.value = time;
+                    gl.clearColor(1, 1, 1, 1);
+
+                    renderer.render({ scene, camera });
+                }
             }
-        }
-
-    </script>
-</body>
+        </script>
+    </body>
 </html>

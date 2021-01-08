@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • Post FXAA (Fast Approximate Anti-Aliasing)</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">Post FXAA (Fast Approximate Anti-Aliasing)</div>
-    <script type="module">
-        import {Renderer, Camera, Program, Mesh, Vec2, Post, Box, NormalProgram} from '../src/index.mjs';
+        <title>OGL • Post FXAA (Fast Approximate Anti-Aliasing)</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">Post FXAA (Fast Approximate Anti-Aliasing)</div>
+        <script type="module">
+            import { Renderer, Camera, Program, Mesh, Vec2, Post, Box, NormalProgram } from '../src/index.mjs';
 
-        const fragment = /* glsl */ `
+            const fragment = /* glsl */ `
             precision highp float;
 
             // Default uniform for previous pass is 'tMap'.
@@ -76,59 +79,58 @@
             }
         `;
 
-        {
-            const renderer = new Renderer({dpr: 1});
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            gl.clearColor(1, 1, 1, 1);
+            {
+                const renderer = new Renderer({ dpr: 1 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 35});
-            camera.position.set(0, 1, 5);
-            camera.lookAt([0, 0, 0]);
+                const camera = new Camera(gl, { fov: 35 });
+                camera.position.set(0, 1, 5);
+                camera.lookAt([0, 0, 0]);
 
-            // Post copies the current renderer values (width, height, dpr) if none are passed in
-            const post = new Post(gl);
+                // Post copies the current renderer values (width, height, dpr) if none are passed in
+                const post = new Post(gl);
 
-            // Create uniform for pass
-            const resolution = {value: new Vec2()};
+                // Create uniform for pass
+                const resolution = { value: new Vec2() };
 
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-                
-                // Need to resize post as render targets need to be re-created
-                post.resize();
-                resolution.value.set(gl.canvas.width, gl.canvas.height);
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
 
-            const geometry = new Box(gl);
-            const mesh = new Mesh(gl, {geometry, program: new NormalProgram(gl)});
+                    // Need to resize post as render targets need to be re-created
+                    post.resize();
+                    resolution.value.set(gl.canvas.width, gl.canvas.height);
+                }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-            // Add pass like you're creating a Program. Then use the 'enabled'
-            // property to toggle the pass.
-            const pass = post.addPass({
-                
-                // If not passed in, pass will use the default vertex/fragment
-                // shaders found within the class.
-                fragment,
-                uniforms: {
-                    uResolution: resolution,
-                },
-            });
+                const geometry = new Box(gl);
+                const mesh = new Mesh(gl, { geometry, program: new NormalProgram(gl) });
 
-            requestAnimationFrame(update);
-            function update() {
+                // Add pass like you're creating a Program. Then use the 'enabled'
+                // property to toggle the pass.
+                const pass = post.addPass({
+                    // If not passed in, pass will use the default vertex/fragment
+                    // shaders found within the class.
+                    fragment,
+                    uniforms: {
+                        uResolution: resolution,
+                    },
+                });
+
                 requestAnimationFrame(update);
+                function update() {
+                    requestAnimationFrame(update);
 
-                mesh.rotation.y -= 0.005;
-                mesh.rotation.x -= 0.01;
-                
-                // Replace Renderer.render with post.render. Use the same arguments.
-                post.render({scene: mesh, camera});
+                    mesh.rotation.y -= 0.005;
+                    mesh.rotation.x -= 0.01;
+
+                    // Replace Renderer.render with post.render. Use the same arguments.
+                    post.render({ scene: mesh, camera });
+                }
             }
-        }
-    </script>
-</body>
+        </script>
+    </body>
 </html>

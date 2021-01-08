@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • Indexed vs Non-Indexed</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">Indexed vs Non-Indexed</div>
-    <script type="module">
-        import {Renderer, Camera, Transform, Geometry, Program, Mesh} from '../src/index.mjs';
-        
-        const vertex = /* glsl */ `
+        <title>OGL • Indexed vs Non-Indexed</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">Indexed vs Non-Indexed</div>
+        <script type="module">
+            import { Renderer, Camera, Transform, Geometry, Program, Mesh } from '../src/index.mjs';
+
+            const vertex = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -33,7 +36,7 @@
             }
         `;
 
-        const fragment = /* glsl */ `
+            const fragment = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -47,89 +50,130 @@
             }
         `;
 
-        {
-            const renderer = new Renderer();
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            gl.clearColor(1, 1, 1, 1);
+            {
+                const renderer = new Renderer();
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 15});
-            camera.position.z = 15;
+                const camera = new Camera(gl, { fov: 15 });
+                camera.position.z = 15;
 
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-            const scene = new Transform();
+                const scene = new Transform();
 
-            // 4 vertices, using 6 indices to designate 2 triangles using the default gl.TRIANGLES draw mode
-            const indexedGeometry = new Geometry(gl, {
-                position: {size: 3, data: new Float32Array([
-                    -0.5,  0.5, 0, // vertex 0
-                    -0.5, -0.5, 0, // vertex 1
-                     0.5,  0.5, 0, // vertex 2
-                     0.5, -0.5, 0, // vertex 3
-                ])},
-                uv: {size: 2, data: new Float32Array([
-                    0, 1, // vertex 0
-                    1, 1, // vertex 1
-                    0, 0, // vertex 2
-                    1, 0, // vertex 3
-                ])},
+                // 4 vertices, using 6 indices to designate 2 triangles using the default gl.TRIANGLES draw mode
+                const indexedGeometry = new Geometry(gl, {
+                    position: {
+                        size: 3,
+                        data: new Float32Array([
+                            -0.5,
+                            0.5,
+                            0, // vertex 0
+                            -0.5,
+                            -0.5,
+                            0, // vertex 1
+                            0.5,
+                            0.5,
+                            0, // vertex 2
+                            0.5,
+                            -0.5,
+                            0, // vertex 3
+                        ]),
+                    },
+                    uv: {
+                        size: 2,
+                        data: new Float32Array([
+                            0,
+                            1, // vertex 0
+                            1,
+                            1, // vertex 1
+                            0,
+                            0, // vertex 2
+                            1,
+                            0, // vertex 3
+                        ]),
+                    },
 
-                // the indices attribute must use the name 'index' to be treated as an ELEMENT_ARRAY_BUFFER
-                index: {data: new Uint16Array([0, 1, 2, 1, 3, 2])},
-            });
+                    // the indices attribute must use the name 'index' to be treated as an ELEMENT_ARRAY_BUFFER
+                    index: { data: new Uint16Array([0, 1, 2, 1, 3, 2]) },
+                });
 
-            // To recreate the same square using non-indexed geometry, 6 vertices need to be passed in, including 2 duplicates.
-            // If only the original 4 vertices were supplied, only one triangle would be drawn.
-            const nonIndexedGeometry = new Geometry(gl, {
-                position: {size: 3, data: new Float32Array([
-                    -0.5,  0.5, 0, // vertex 0
-                    -0.5, -0.5, 0, // vertex 1
-                     0.5,  0.5, 0, // vertex 2
-                    -0.5, -0.5, 0, // vertex 1
-                     0.5, -0.5, 0, // vertex 3
-                     0.5,  0.5, 0, // vertex 2
-                ])},
-                uv: {size: 2, data: new Float32Array([
-                    0, 1, // vertex 0
-                    1, 1, // vertex 1
-                    0, 0, // vertex 2
-                    1, 1, // vertex 1
-                    1, 0, // vertex 3
-                    0, 0, // vertex 2
-                ])},
-            });
+                // To recreate the same square using non-indexed geometry, 6 vertices need to be passed in, including 2 duplicates.
+                // If only the original 4 vertices were supplied, only one triangle would be drawn.
+                const nonIndexedGeometry = new Geometry(gl, {
+                    position: {
+                        size: 3,
+                        data: new Float32Array([
+                            -0.5,
+                            0.5,
+                            0, // vertex 0
+                            -0.5,
+                            -0.5,
+                            0, // vertex 1
+                            0.5,
+                            0.5,
+                            0, // vertex 2
+                            -0.5,
+                            -0.5,
+                            0, // vertex 1
+                            0.5,
+                            -0.5,
+                            0, // vertex 3
+                            0.5,
+                            0.5,
+                            0, // vertex 2
+                        ]),
+                    },
+                    uv: {
+                        size: 2,
+                        data: new Float32Array([
+                            0,
+                            1, // vertex 0
+                            1,
+                            1, // vertex 1
+                            0,
+                            0, // vertex 2
+                            1,
+                            1, // vertex 1
+                            1,
+                            0, // vertex 3
+                            0,
+                            0, // vertex 2
+                        ]),
+                    },
+                });
 
-            const program = new Program(gl, {
-                vertex,
-                fragment,
-                uniforms: {
-                    uTime: {value: 0},
-                },
-            });
+                const program = new Program(gl, {
+                    vertex,
+                    fragment,
+                    uniforms: {
+                        uTime: { value: 0 },
+                    },
+                });
 
-            const indexedMesh = new Mesh(gl, {geometry: indexedGeometry, program});
-            indexedMesh.setParent(scene);
-            indexedMesh.position.y = 0.9;
+                const indexedMesh = new Mesh(gl, { geometry: indexedGeometry, program });
+                indexedMesh.setParent(scene);
+                indexedMesh.position.y = 0.9;
 
-            const nonIndexedMesh = new Mesh(gl, {geometry: nonIndexedGeometry, program});
-            nonIndexedMesh.setParent(scene);
-            nonIndexedMesh.position.y = -0.9;
+                const nonIndexedMesh = new Mesh(gl, { geometry: nonIndexedGeometry, program });
+                nonIndexedMesh.setParent(scene);
+                nonIndexedMesh.position.y = -0.9;
 
-            requestAnimationFrame(update);
-            function update(t) {
                 requestAnimationFrame(update);
+                function update(t) {
+                    requestAnimationFrame(update);
 
-                program.uniforms.uTime.value = t * 0.001;
-                renderer.render({scene, camera});
+                    program.uniforms.uTime.value = t * 0.001;
+                    renderer.render({ scene, camera });
+                }
             }
-        }
-
-    </script>
-</body>
+        </script>
+    </body>
 </html>

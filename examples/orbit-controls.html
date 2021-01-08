@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • Orbit Controls</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">Orbit Controls. Model by Google Poly.</div>
-    <script type="module">
-        import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Vec3, Orbit} from '../src/index.mjs';
-        
-        const vertex = /* glsl */ `
+        <title>OGL • Orbit Controls</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">Orbit Controls. Model by Google Poly.</div>
+        <script type="module">
+            import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Vec3, Orbit } from '../src/index.mjs';
+
+            const vertex = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -37,7 +40,7 @@
             }
         `;
 
-        const fragment = /* glsl */ `
+            const fragment = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -58,67 +61,66 @@
             }
         `;
 
-        {
-            const renderer = new Renderer({dpr: 2});
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            gl.clearColor(1, 1, 1, 1);
+            {
+                const renderer = new Renderer({ dpr: 2 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 45});
-            camera.position.set(-2, 1, 2);
+                const camera = new Camera(gl, { fov: 45 });
+                camera.position.set(-2, 1, 2);
 
-            // Create controls and pass parameters
-            const controls = new Orbit(camera, {
-                target: new Vec3(0, 0.7, 0),
-            });
-
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
-
-            const scene = new Transform();
-
-            const texture = new Texture(gl);
-            const img = new Image();
-            img.onload = () => texture.image = img;
-            img.src = 'assets/macaw.jpg';
-
-            const program = new Program(gl, {
-                vertex,
-                fragment,
-                uniforms: {
-                    tMap: {value: texture},
-                },
-                cullFace: null,
-            });
-
-            loadModel();
-            async function loadModel() {
-                const data = await (await fetch(`assets/macaw.json`)).json();
-
-                const geometry = new Geometry(gl, {
-                    position: {size: 3, data: new Float32Array(data.position)},
-                    uv: {size: 2, data: new Float32Array(data.uv)},
-                    normal: {size: 3, data: new Float32Array(data.normal)},
+                // Create controls and pass parameters
+                const controls = new Orbit(camera, {
+                    target: new Vec3(0, 0.7, 0),
                 });
 
-                let mesh = new Mesh(gl, {geometry, program});
-                mesh.setParent(scene);
-            }
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-            requestAnimationFrame(update);
-            function update() {
+                const scene = new Transform();
+
+                const texture = new Texture(gl);
+                const img = new Image();
+                img.onload = () => (texture.image = img);
+                img.src = 'assets/macaw.jpg';
+
+                const program = new Program(gl, {
+                    vertex,
+                    fragment,
+                    uniforms: {
+                        tMap: { value: texture },
+                    },
+                    cullFace: null,
+                });
+
+                loadModel();
+                async function loadModel() {
+                    const data = await (await fetch(`assets/macaw.json`)).json();
+
+                    const geometry = new Geometry(gl, {
+                        position: { size: 3, data: new Float32Array(data.position) },
+                        uv: { size: 2, data: new Float32Array(data.uv) },
+                        normal: { size: 3, data: new Float32Array(data.normal) },
+                    });
+
+                    let mesh = new Mesh(gl, { geometry, program });
+                    mesh.setParent(scene);
+                }
+
                 requestAnimationFrame(update);
+                function update() {
+                    requestAnimationFrame(update);
 
-                // Need to update controls every frame
-                controls.update();
-                renderer.render({scene, camera});
+                    // Need to update controls every frame
+                    controls.update();
+                    renderer.render({ scene, camera });
+                }
             }
-        }
-
-    </script>
-</body>
+        </script>
+    </body>
 </html>

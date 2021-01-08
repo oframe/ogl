@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • Projection and Raycasting</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">Projection and Raycasting</div>
-    <script type="module">
-        import {Renderer, Camera, Transform, Program, Mesh, Vec2, Plane, Sphere, Box, Orbit, Raycast} from '../src/index.mjs';
-        
-        const vertex = /* glsl */ `
+        <title>OGL • Projection and Raycasting</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">Projection and Raycasting</div>
+        <script type="module">
+            import { Renderer, Camera, Transform, Program, Mesh, Vec2, Plane, Sphere, Box, Orbit, Raycast } from '../src/index.mjs';
+
+            const vertex = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -33,7 +36,7 @@
             }
         `;
 
-        const fragment = /* glsl */ `
+            const fragment = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -50,117 +53,118 @@
             }
         `;
 
-        {
-            const renderer = new Renderer({dpr: 2});
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            gl.clearColor(1, 1, 1, 1);
+            {
+                const renderer = new Renderer({ dpr: 2 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl);
-            camera.position.set(2, 1, 5);
+                const camera = new Camera(gl);
+                camera.position.set(2, 1, 5);
 
-            const orbit = new Orbit(camera);
+                const orbit = new Orbit(camera);
 
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-            const scene = new Transform();
+                const scene = new Transform();
 
-            const planeGeometry = new Plane(gl);
-            const sphereGeometry = new Sphere(gl);
-            const cubeGeometry = new Box(gl);
+                const planeGeometry = new Plane(gl);
+                const sphereGeometry = new Sphere(gl);
+                const cubeGeometry = new Box(gl);
 
-            const program = new Program(gl, {
-                vertex,
-                fragment,
-                cullFace: null,
-                uniforms: {
-                    uHit: {value: 0},
-                },
-            });
+                const program = new Program(gl, {
+                    vertex,
+                    fragment,
+                    cullFace: null,
+                    uniforms: {
+                        uHit: { value: 0 },
+                    },
+                });
 
-            const plane = new Mesh(gl, {geometry: planeGeometry, program});
-            plane.position.set(0, 1.3, 0);
-            plane.setParent(scene);
+                const plane = new Mesh(gl, { geometry: planeGeometry, program });
+                plane.position.set(0, 1.3, 0);
+                plane.setParent(scene);
 
-            const sphere = new Mesh(gl, {geometry: sphereGeometry, program});
-            sphere.setParent(scene);
+                const sphere = new Mesh(gl, { geometry: sphereGeometry, program });
+                sphere.setParent(scene);
 
-            const cube = new Mesh(gl, {geometry: cubeGeometry, program});
-            cube.position.set(0, -1.3, 0);
-            cube.setParent(scene);
+                const cube = new Mesh(gl, { geometry: cubeGeometry, program });
+                cube.position.set(0, -1.3, 0);
+                cube.setParent(scene);
 
-            // assign update functions to each mesh so they can share a program but
-            // still have unique uniforms by updating them just before being drawn
-            function updateHitUniform({mesh}) {
-                program.uniforms.uHit.value = mesh.isHit ? 1 : 0;
-            }
-            plane.onBeforeRender(updateHitUniform);
-            sphere.onBeforeRender(updateHitUniform);
-            cube.onBeforeRender(updateHitUniform);
+                // assign update functions to each mesh so they can share a program but
+                // still have unique uniforms by updating them just before being drawn
+                function updateHitUniform({ mesh }) {
+                    program.uniforms.uHit.value = mesh.isHit ? 1 : 0;
+                }
+                plane.onBeforeRender(updateHitUniform);
+                sphere.onBeforeRender(updateHitUniform);
+                cube.onBeforeRender(updateHitUniform);
 
-            requestAnimationFrame(update);
-            function update() {
                 requestAnimationFrame(update);
-                orbit.update();
+                function update() {
+                    requestAnimationFrame(update);
+                    orbit.update();
 
-                renderer.render({scene, camera});
-            }
+                    renderer.render({ scene, camera });
+                }
 
-            const mouse = new Vec2();
+                const mouse = new Vec2();
 
-            // Create a raycast object
-            const raycast = new Raycast(gl);
+                // Create a raycast object
+                const raycast = new Raycast(gl);
 
-            // Define an array of the meshes we want to test our ray against
-            const meshes = [plane, sphere, cube];
+                // Define an array of the meshes we want to test our ray against
+                const meshes = [plane, sphere, cube];
 
-            // By default, raycast.intersectBounds() tests against the bounding box.
-            // Set it to bounding sphere by adding a 'raycast' property set to sphere geometry
-            sphere.geometry.raycast = 'sphere';
+                // By default, raycast.intersectBounds() tests against the bounding box.
+                // Set it to bounding sphere by adding a 'raycast' property set to sphere geometry
+                sphere.geometry.raycast = 'sphere';
 
-            // Wrap in load event to prevent checks before page is ready
-            window.addEventListener('load', () => {
-                document.addEventListener('mousemove', move, false);
-                document.addEventListener('touchmove', move, false);
-            }, false);
-
-            function move(e) {
-                mouse.set(
-                    2.0 * (e.x / renderer.width) - 1.0,
-                    2.0 * (1.0 - e.y / renderer.height) - 1.0
+                // Wrap in load event to prevent checks before page is ready
+                window.addEventListener(
+                    'load',
+                    () => {
+                        document.addEventListener('mousemove', move, false);
+                        document.addEventListener('touchmove', move, false);
+                    },
+                    false
                 );
 
-                // Update the ray's origin and direction using the camera and mouse
-                raycast.castMouse(camera, mouse);
-                
-                // Just for the feedback in this example - reset each mesh's hit to false
-                meshes.forEach(mesh => mesh.isHit = false);
+                function move(e) {
+                    mouse.set(2.0 * (e.x / renderer.width) - 1.0, 2.0 * (1.0 - e.y / renderer.height) - 1.0);
 
-                // raycast.intersectBounds will test against the bounds of each mesh, and 
-                // return an array of intersected meshes in order of closest to farthest
-                const hits = raycast.intersectBounds(meshes);
+                    // Update the ray's origin and direction using the camera and mouse
+                    raycast.castMouse(camera, mouse);
 
-                // Can intersect with geometry if the bounds aren't enough, or if you need
-                // to find out the uv or normal value at the hit point.
-                // Optional 2nd and third arguments are backface culling, and max distance
-                // Both useful for doing early exits to help optimise.
-                // const hits = raycast.intersectMeshes(meshes, { 
-                //     cullFace: true, 
-                //     maxDistance: 10, 
-                //     includeUV: true, 
-                //     includeNormal: true,
-                // });
-                // if (hits.length) console.log(hits[0].hit.uv);
+                    // Just for the feedback in this example - reset each mesh's hit to false
+                    meshes.forEach((mesh) => (mesh.isHit = false));
 
-                // Update our feedback using this array
-                hits.forEach(mesh => mesh.isHit = true);
+                    // raycast.intersectBounds will test against the bounds of each mesh, and
+                    // return an array of intersected meshes in order of closest to farthest
+                    const hits = raycast.intersectBounds(meshes);
+
+                    // Can intersect with geometry if the bounds aren't enough, or if you need
+                    // to find out the uv or normal value at the hit point.
+                    // Optional 2nd and third arguments are backface culling, and max distance
+                    // Both useful for doing early exits to help optimise.
+                    // const hits = raycast.intersectMeshes(meshes, {
+                    //     cullFace: true,
+                    //     maxDistance: 10,
+                    //     includeUV: true,
+                    //     includeNormal: true,
+                    // });
+                    // if (hits.length) console.log(hits[0].hit.uv);
+
+                    // Update our feedback using this array
+                    hits.forEach((mesh) => (mesh.isHit = true));
+                }
             }
-        }
-    </script>
-</body>
+        </script>
+    </body>
 </html>
