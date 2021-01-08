@@ -20,9 +20,6 @@
             import { Renderer, Transform, Camera, Geometry, Texture, Program, Mesh, Orbit, Plane, Skin } from '../src/index.mjs';
 
             const vertex = /* glsl */ `
-                precision highp float;
-                precision highp int;
-
                 attribute vec3 position;
                 attribute vec3 normal;
                 attribute vec2 uv;
@@ -90,7 +87,6 @@
 
             const fragment = /* glsl */ `
                 precision highp float;
-                precision highp int;
 
                 uniform sampler2D tMap;
 

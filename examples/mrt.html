@@ -31,173 +31,173 @@
             } from '../src/index.mjs';
 
             const vertex100 = /* glsl */ `
-            attribute vec3 position;
-            attribute vec3 normal;
-            attribute vec2 uv;
-            attribute vec3 offset;
-            attribute vec3 random;
+                attribute vec3 position;
+                attribute vec3 normal;
+                attribute vec2 uv;
+                attribute vec3 offset;
+                attribute vec3 random;
 
-            uniform mat4 modelMatrix;
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
-            uniform mat3 normalMatrix;
+                uniform mat4 modelMatrix;
+                uniform mat4 modelViewMatrix;
+                uniform mat4 projectionMatrix;
+                uniform mat3 normalMatrix;
 
-            varying vec2 vUv;
-            varying vec3 vNormal;
-            varying vec3 vMPos;
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vMPos;
 
-            void rotate2d(inout vec2 v, float a){
-                mat2 m = mat2(cos(a), -sin(a), sin(a),  cos(a));
-                v = m * v;
-            }
+                void rotate2d(inout vec2 v, float a){
+                    mat2 m = mat2(cos(a), -sin(a), sin(a),  cos(a));
+                    v = m * v;
+                }
 
-            void main() {
-                vec3 pos = position;
-                pos *= 0.8 + random.y * 0.3;
-                rotate2d(pos.xz, random.x * 6.28 + 4.0 * (random.y - 0.5));
-                rotate2d(pos.zy, random.z * 0.9 * sin(random.x + random.z * 3.14));
-                pos += offset * vec3(2.5, 0.2, 2.5);
+                void main() {
+                    vec3 pos = position;
+                    pos *= 0.8 + random.y * 0.3;
+                    rotate2d(pos.xz, random.x * 6.28 + 4.0 * (random.y - 0.5));
+                    rotate2d(pos.zy, random.z * 0.9 * sin(random.x + random.z * 3.14));
+                    pos += offset * vec3(2.5, 0.2, 2.5);
 
-                vUv = uv;
-                vNormal = normalize(normalMatrix * normal);
-                vMPos = (modelMatrix * vec4(pos, 1.0)).xyz;
-                
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-            }
-        `;
+                    vUv = uv;
+                    vNormal = normalize(normalMatrix * normal);
+                    vMPos = (modelMatrix * vec4(pos, 1.0)).xyz;
+                    
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                }
+            `;
 
             const fragment100 = /* glsl */ `
-            #extension GL_EXT_draw_buffers : require 
+                #extension GL_EXT_draw_buffers : require 
 
-            precision highp float;
+                precision highp float;
 
-            uniform sampler2D tMap;
+                uniform sampler2D tMap;
 
-            varying vec2 vUv;
-            varying vec3 vNormal;
-            varying vec3 vMPos;
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vMPos;
 
-            void main() {
-                gl_FragData[0] = texture2D(tMap, vUv); 
-                gl_FragData[1] = vec4(vMPos, gl_FragCoord.z);
-            }
-        `;
+                void main() {
+                    gl_FragData[0] = texture2D(tMap, vUv); 
+                    gl_FragData[1] = vec4(vMPos, gl_FragCoord.z);
+                }
+            `;
 
             const vertex300 = /* glsl */ `#version 300 es
-            in vec3 position;
-            in vec3 normal;
-            in vec2 uv;
-            in vec3 offset;
-            in vec3 random;
+                in vec3 position;
+                in vec3 normal;
+                in vec2 uv;
+                in vec3 offset;
+                in vec3 random;
 
-            uniform mat4 modelMatrix;
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
-            uniform mat3 normalMatrix;
+                uniform mat4 modelMatrix;
+                uniform mat4 modelViewMatrix;
+                uniform mat4 projectionMatrix;
+                uniform mat3 normalMatrix;
 
-            out vec2 vUv;
-            out vec3 vNormal;
-            out vec3 vMPos;
+                out vec2 vUv;
+                out vec3 vNormal;
+                out vec3 vMPos;
 
-            void rotate2d(inout vec2 v, float a){
-                mat2 m = mat2(cos(a), -sin(a), sin(a),  cos(a));
-                v = m * v;
-            }
+                void rotate2d(inout vec2 v, float a){
+                    mat2 m = mat2(cos(a), -sin(a), sin(a),  cos(a));
+                    v = m * v;
+                }
 
-            void main() {
-                vec3 pos = position;
-                pos *= 0.8 + random.y * 0.3;
-                rotate2d(pos.xz, random.x * 6.28 + 4.0 * (random.y - 0.5));
-                rotate2d(pos.zy, random.z * 0.9 * sin(random.x + random.z * 3.14));
-                pos += offset * vec3(2.5, 0.2, 2.5);
+                void main() {
+                    vec3 pos = position;
+                    pos *= 0.8 + random.y * 0.3;
+                    rotate2d(pos.xz, random.x * 6.28 + 4.0 * (random.y - 0.5));
+                    rotate2d(pos.zy, random.z * 0.9 * sin(random.x + random.z * 3.14));
+                    pos += offset * vec3(2.5, 0.2, 2.5);
 
-                vUv = uv;
-                vNormal = normalize(normalMatrix * normal);
-                vMPos = (modelMatrix * vec4(pos, 1.0)).xyz;
-                
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-            }
-        `;
+                    vUv = uv;
+                    vNormal = normalize(normalMatrix * normal);
+                    vMPos = (modelMatrix * vec4(pos, 1.0)).xyz;
+                    
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                }
+            `;
 
             const fragment300 = /* glsl */ `#version 300 es
-            precision highp float;
+                precision highp float;
 
-            uniform sampler2D tMap;
+                uniform sampler2D tMap;
 
-            in vec2 vUv;
-            in vec3 vNormal;
-            in vec3 vMPos;
+                in vec2 vUv;
+                in vec3 vNormal;
+                in vec3 vMPos;
 
-            out vec4 FragData[2];
+                out vec4 FragData[2];
 
-            void main() {
-                FragData[0] = texture(tMap, vUv); 
-                FragData[1] = vec4(vMPos, gl_FragCoord.z);
-            }
-        `;
+                void main() {
+                    FragData[0] = texture(tMap, vUv); 
+                    FragData[1] = vec4(vMPos, gl_FragCoord.z);
+                }
+            `;
 
             const vertexPost = /* glsl */ `
-            attribute vec3 position;
-            attribute vec2 uv;
+                attribute vec3 position;
+                attribute vec2 uv;
 
-            varying vec2 vUv;
+                varying vec2 vUv;
 
-            void main() {
-                vUv = uv;
-                gl_Position = vec4(position, 1.0);
-            }
-        `;
+                void main() {
+                    vUv = uv;
+                    gl_Position = vec4(position, 1.0);
+                }
+            `;
 
             const fragmentPost = /* glsl */ `
-            precision highp float;
+                precision highp float;
 
-            uniform sampler2D tColor;
-            uniform sampler2D tPosition;
-            uniform vec3 uLights[10];
-            uniform float uAspect;
-            uniform float uTime;
+                uniform sampler2D tColor;
+                uniform sampler2D tPosition;
+                uniform vec3 uLights[10];
+                uniform float uAspect;
+                uniform float uTime;
 
-            varying vec2 vUv;
-            varying vec3 vNormal;
+                varying vec2 vUv;
+                varying vec3 vNormal;
 
-            void main() {
+                void main() {
 
-                // Extract data from render targets
-                vec3 color = texture2D(tColor, vUv).rgb;
-                vec4 pos = texture2D(tPosition, vUv);
-                float depth = pos.a;
+                    // Extract data from render targets
+                    vec3 color = texture2D(tColor, vUv).rgb;
+                    vec4 pos = texture2D(tPosition, vUv);
+                    float depth = pos.a;
 
-                // Add lighting
-                vec3 lights = vec3(0);
-                for (int i = 0; i < 10; ++i) {
-                    pos.xyz *= vec3(1, 0, 1);
-                    vec3 l = uLights[i];
+                    // Add lighting
+                    vec3 lights = vec3(0);
+                    for (int i = 0; i < 10; ++i) {
+                        pos.xyz *= vec3(1, 0, 1);
+                        vec3 l = uLights[i];
 
-                    // Move lights around
-                    vec3 lPos = sin(l.xyz * uTime + l.zyx * 6.28) * vec3(2, 0.5, 2);
-                    float strength = max(0.0, 1.0 - length(pos.xyz - lPos));
-                    lights = max(lights, (vec3(1) - normalize(l)) * strength);
+                        // Move lights around
+                        vec3 lPos = sin(l.xyz * uTime + l.zyx * 6.28) * vec3(2, 0.5, 2);
+                        float strength = max(0.0, 1.0 - length(pos.xyz - lPos));
+                        lights = max(lights, (vec3(1) - normalize(l)) * strength);
+                    }
+                    color *= lights;
+
+                    // Fade to black in distance
+                    color = mix(color, vec3(0), smoothstep(0.8, 1.05, pow(depth, 3.0)));
+
+                    gl_FragColor.rgb = color;
+                    gl_FragColor.a = 1.0;
+
+                    // Render raw render targets in corner
+                    vec2 uv = gl_FragCoord.xy / vec2(250.0 * uAspect, 250.0);
+                    if (uv.y < 1.0 && uv.x < 1.0) {
+                        gl_FragColor.rgb = vec3(texture2D(tPosition, mod(uv, 1.0)).a);
+                    } else if (uv.y < 2.0 && uv.x < 1.0) {
+                        gl_FragColor.rgb = texture2D(tPosition, mod(uv, 1.0)).rgb;
+                    } else if (uv.y < 3.0 && uv.x < 1.0) {
+                        gl_FragColor.rgb = texture2D(tColor, mod(uv, 1.0)).rgb;
+                    }
+
                 }
-                color *= lights;
-
-                // Fade to black in distance
-                color = mix(color, vec3(0), smoothstep(0.8, 1.05, pow(depth, 3.0)));
-
-                gl_FragColor.rgb = color;
-                gl_FragColor.a = 1.0;
-
-                // Render raw render targets in corner
-                vec2 uv = gl_FragCoord.xy / vec2(250.0 * uAspect, 250.0);
-                if (uv.y < 1.0 && uv.x < 1.0) {
-                    gl_FragColor.rgb = vec3(texture2D(tPosition, mod(uv, 1.0)).a);
-                } else if (uv.y < 2.0 && uv.x < 1.0) {
-                    gl_FragColor.rgb = texture2D(tPosition, mod(uv, 1.0)).rgb;
-                } else if (uv.y < 3.0 && uv.x < 1.0) {
-                    gl_FragColor.rgb = texture2D(tColor, mod(uv, 1.0)).rgb;
-                }
-
-            }
-        `;
+            `;
 
             {
                 const renderer = new Renderer({ dpr: 2 });

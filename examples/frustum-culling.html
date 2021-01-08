@@ -31,45 +31,45 @@
             } from '../src/index.mjs';
 
             const vertex = /* glsl */ `
-            attribute vec2 uv;
-            attribute vec3 position;
+                attribute vec2 uv;
+                attribute vec3 position;
 
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
+                uniform mat4 modelViewMatrix;
+                uniform mat4 projectionMatrix;
 
-            varying vec2 vUv;
-            varying vec4 vMVPos;
-            varying vec3 vPos;
+                varying vec2 vUv;
+                varying vec4 vMVPos;
+                varying vec3 vPos;
 
-            void main() {
-                vUv = uv;
-                vPos = position;
-                vMVPos = modelViewMatrix * vec4(position, 1.0);
-                gl_Position = projectionMatrix * vMVPos;
-            }
-        `;
+                void main() {
+                    vUv = uv;
+                    vPos = position;
+                    vMVPos = modelViewMatrix * vec4(position, 1.0);
+                    gl_Position = projectionMatrix * vMVPos;
+                }
+            `;
 
             const fragment = /* glsl */ `
-            precision highp float;
+                precision highp float;
 
-            uniform sampler2D tMap;
+                uniform sampler2D tMap;
 
-            varying vec2 vUv;
-            varying vec4 vMVPos;
-            varying vec3 vPos;
+                varying vec2 vUv;
+                varying vec4 vMVPos;
+                varying vec3 vPos;
 
-            void main() {
-                vec3 tex = texture2D(tMap, vUv).rgb;
-                
-                float dist = length(vMVPos);
-                float fog = smoothstep(2.0, 15.0, dist);
-                tex = mix(tex, vec3(1), fog * 0.8);
-                tex = mix(tex, vec3(1), smoothstep(1.0, 0.0, vPos.y)); 
-                
-                gl_FragColor.rgb = tex;
-                gl_FragColor.a = 1.0;
-            }
-        `;
+                void main() {
+                    vec3 tex = texture2D(tMap, vUv).rgb;
+                    
+                    float dist = length(vMVPos);
+                    float fog = smoothstep(2.0, 15.0, dist);
+                    tex = mix(tex, vec3(1), fog * 0.8);
+                    tex = mix(tex, vec3(1), smoothstep(1.0, 0.0, vPos.y)); 
+                    
+                    gl_FragColor.rgb = tex;
+                    gl_FragColor.a = 1.0;
+                }
+            `;
 
             {
                 const renderer = new Renderer({ dpr: 2 });

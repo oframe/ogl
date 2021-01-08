@@ -18,94 +18,94 @@
             import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Vec3, Orbit } from '../src/index.mjs';
 
             const vertex100 = /* glsl */ `
-            attribute vec3 position;
-            attribute vec3 barycentric;
+                attribute vec3 position;
+                attribute vec3 barycentric;
 
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
+                uniform mat4 modelViewMatrix;
+                uniform mat4 projectionMatrix;
 
-            varying vec3 vBarycentric;
+                varying vec3 vBarycentric;
 
-            void main() {
-                vBarycentric = barycentric;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
+                void main() {
+                    vBarycentric = barycentric;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
 
             const fragment100 = /* glsl */ `#extension GL_OES_standard_derivatives : enable
-            precision highp float;
+                precision highp float;
 
-            varying vec3 vBarycentric;
+                varying vec3 vBarycentric;
 
-            void main() {
-                vec3 bary = vBarycentric;
+                void main() {
+                    vec3 bary = vBarycentric;
 
-                vec3 color = vec3(0);
-                float alpha = 1.0;
+                    vec3 color = vec3(0);
+                    float alpha = 1.0;
 
-                // Line thickness - in pixels
-                float width = 1.0 * 0.5;
-                vec3 d = fwidth(bary);
-                vec3 s = smoothstep(d * (width + 0.5), d * (width - 0.5), bary);
-                alpha *= max(max(s.x, s.y), s.z);
+                    // Line thickness - in pixels
+                    float width = 1.0 * 0.5;
+                    vec3 d = fwidth(bary);
+                    vec3 s = smoothstep(d * (width + 0.5), d * (width - 0.5), bary);
+                    alpha *= max(max(s.x, s.y), s.z);
 
-                // Dashes
-                alpha *= step(0.0, sin(max(bary.x, bary.y) * 3.14 * 5.0));
+                    // Dashes
+                    alpha *= step(0.0, sin(max(bary.x, bary.y) * 3.14 * 5.0));
 
-                // Back face shading
-                color = mix(vec3(1, 0, 0), color, vec3(gl_FrontFacing));
-                alpha = mix(alpha * 0.1 + 0.02, alpha, float(gl_FrontFacing));
+                    // Back face shading
+                    color = mix(vec3(1, 0, 0), color, vec3(gl_FrontFacing));
+                    alpha = mix(alpha * 0.1 + 0.02, alpha, float(gl_FrontFacing));
 
-                gl_FragColor.rgb = color;
-                gl_FragColor.a = alpha;
-            }
-        `;
+                    gl_FragColor.rgb = color;
+                    gl_FragColor.a = alpha;
+                }
+            `;
 
             const vertex300 = /* glsl */ `#version 300 es
-            in vec3 position;
-            in vec3 barycentric;
+                in vec3 position;
+                in vec3 barycentric;
 
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
+                uniform mat4 modelViewMatrix;
+                uniform mat4 projectionMatrix;
 
-            out vec3 vBarycentric;
+                out vec3 vBarycentric;
 
-            void main() {
-                vBarycentric = barycentric;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
+                void main() {
+                    vBarycentric = barycentric;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
 
             const fragment300 = /* glsl */ `#version 300 es
-            precision highp float;
+                precision highp float;
 
-            in vec3 vBarycentric;
+                in vec3 vBarycentric;
 
-            out vec4 FragColor;
+                out vec4 FragColor;
 
-            void main() {
-                vec3 bary = vBarycentric;
+                void main() {
+                    vec3 bary = vBarycentric;
 
-                vec3 color = vec3(0);
-                float alpha = 1.0;
+                    vec3 color = vec3(0);
+                    float alpha = 1.0;
 
-                // Line thickness - in pixels
-                float width = 1.0 * 0.5;
-                vec3 d = fwidth(bary);
-                vec3 s = smoothstep(d * (width + 0.5), d * (width - 0.5), bary);
-                alpha *= max(max(s.x, s.y), s.z);
+                    // Line thickness - in pixels
+                    float width = 1.0 * 0.5;
+                    vec3 d = fwidth(bary);
+                    vec3 s = smoothstep(d * (width + 0.5), d * (width - 0.5), bary);
+                    alpha *= max(max(s.x, s.y), s.z);
 
-                // Dashes
-                alpha *= step(0.0, sin(max(bary.x, bary.y) * 3.14 * 5.0));
+                    // Dashes
+                    alpha *= step(0.0, sin(max(bary.x, bary.y) * 3.14 * 5.0));
 
-                // Back face shading
-                color = mix(vec3(1, 0, 0), color, vec3(gl_FrontFacing));
-                alpha = mix(alpha * 0.1 + 0.02, alpha, float(gl_FrontFacing));
+                    // Back face shading
+                    color = mix(vec3(1, 0, 0), color, vec3(gl_FrontFacing));
+                    alpha = mix(alpha * 0.1 + 0.02, alpha, float(gl_FrontFacing));
 
-                FragColor.rgb = color;
-                FragColor.a = alpha;
-            }
-        `;
+                    FragColor.rgb = color;
+                    FragColor.a = alpha;
+                }
+            `;
 
             {
                 const renderer = new Renderer({ dpr: 2 });

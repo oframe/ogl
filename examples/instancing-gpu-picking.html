@@ -18,76 +18,72 @@
             import { Renderer, Camera, RenderTarget, Vec3, Transform, Texture, Program, Box, Mesh, NormalProgram } from '../src/index.mjs';
 
             const vertex = /* glsl */ `
-            precision highp float;
-            precision highp int;
+                attribute vec2 uv;
+                attribute vec3 position;
+                attribute vec3 normal;
 
-            attribute vec2 uv;
-            attribute vec3 position;
-            attribute vec3 normal;
+                // Add instanced attributes just like any attribute
+                attribute vec3 offset;
+                attribute vec3 random;
+                attribute vec4 id;
 
-            // Add instanced attributes just like any attribute
-            attribute vec3 offset;
-            attribute vec3 random;
-            attribute vec4 id;
+                uniform mat4 modelViewMatrix;
+                uniform mat4 projectionMatrix;
+                uniform float uTime;
 
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
-            uniform float uTime;
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec4 vId;
 
-            varying vec2 vUv;
-            varying vec3 vNormal;
-            varying vec4 vId;
-
-            void rotate2d(inout vec2 v, float a){
-                mat2 m = mat2(cos(a), -sin(a), sin(a),  cos(a));
-                v = m * v;
-            }
-
-            void main() {
-                vUv = uv;
-                vId = id;
-                vNormal = normal;
-                
-                // copy position so that we can modify the instances
-                vec3 pos = position;
-                
-                // scale first
-                pos *= 0.9 + random.y * 0.2;
-                
-                // rotate around y axis
-                rotate2d(pos.xz, random.x * 6.28 + 4.0 * uTime * (random.y - 0.5));
-                
-                pos += offset;
-                
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-            }
-        `;
-
-            const fragment = /* glsl */ `
-            precision highp float;
-            precision highp int;
-
-            uniform float uTime;
-
-            // Re-use same program to render pick-texture
-            uniform bool uTargetRender;
-
-            varying vec2 vUv;
-            varying vec4 vId;
-            varying vec3 vNormal;
-
-            void main() {
-                if (uTargetRender) {
-                    gl_FragColor = vId;
-                    return;
+                void rotate2d(inout vec2 v, float a){
+                    mat2 m = mat2(cos(a), -sin(a), sin(a),  cos(a));
+                    v = m * v;
                 }
 
-                vec3 normal = normalize(vNormal);
-                float lighting = dot(normal, normalize(vec3(-0.3, 0.8, 0.6)));
-                gl_FragColor.rgb = vec3(0.2, 0.8, 1.0) + lighting * 0.1;
-                gl_FragColor.a = 1.0;
-            }
-        `;
+                void main() {
+                    vUv = uv;
+                    vId = id;
+                    vNormal = normal;
+                    
+                    // copy position so that we can modify the instances
+                    vec3 pos = position;
+                    
+                    // scale first
+                    pos *= 0.9 + random.y * 0.2;
+                    
+                    // rotate around y axis
+                    rotate2d(pos.xz, random.x * 6.28 + 4.0 * uTime * (random.y - 0.5));
+                    
+                    pos += offset;
+                    
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                }
+            `;
+
+            const fragment = /* glsl */ `
+                precision highp float;
+
+                uniform float uTime;
+
+                // Re-use same program to render pick-texture
+                uniform bool uTargetRender;
+
+                varying vec2 vUv;
+                varying vec4 vId;
+                varying vec3 vNormal;
+
+                void main() {
+                    if (uTargetRender) {
+                        gl_FragColor = vId;
+                        return;
+                    }
+
+                    vec3 normal = normalize(vNormal);
+                    float lighting = dot(normal, normalize(vec3(-0.3, 0.8, 0.6)));
+                    gl_FragColor.rgb = vec3(0.2, 0.8, 1.0) + lighting * 0.1;
+                    gl_FragColor.a = 1.0;
+                }
+            `;
 
             {
                 const renderer = new Renderer({ dpr: 2 });

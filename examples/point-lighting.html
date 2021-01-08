@@ -25,96 +25,96 @@
         <script type="module">
             import { Renderer, Camera, Vec3, Orbit, Sphere, Transform, Geometry, Program, Mesh, Texture } from '../src/index.mjs';
 
-            const VERTEX_SHADER = `
-            attribute vec2 uv;
-            attribute vec3 position;
-            attribute vec3 normal;
+            const VERTEX_SHADER = /* glsl */ `
+                attribute vec2 uv;
+                attribute vec3 position;
+                attribute vec3 normal;
 
-            uniform mat4 modelMatrix;
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
-            uniform mat3 normalMatrix;
+                uniform mat4 modelMatrix;
+                uniform mat4 modelViewMatrix;
+                uniform mat4 projectionMatrix;
+                uniform mat3 normalMatrix;
 
-            uniform vec3 u_lightWorldPosition;
-            uniform vec3 cameraPosition;
-            
+                uniform vec3 u_lightWorldPosition;
+                uniform vec3 cameraPosition;
+                
 
-            varying vec3 v_normal;
-            varying vec3 v_surfaceToLight;
-            varying vec3 v_surfaceToView;
-            varying vec2 v_uv;
+                varying vec3 v_normal;
+                varying vec3 v_surfaceToLight;
+                varying vec3 v_surfaceToView;
+                varying vec2 v_uv;
 
-            void main() {
-                // Pass UV information to Fragment Shader
-                v_uv = uv;
+                void main() {
+                    // Pass UV information to Fragment Shader
+                    v_uv = uv;
 
-                // Calculate World Space Normal
-                v_normal = normalMatrix * normal;
+                    // Calculate World Space Normal
+                    v_normal = normalMatrix * normal;
 
-                // Compute the world position of the surface
-                vec3 surfaceWorldPosition = mat3(modelMatrix) * position;
+                    // Compute the world position of the surface
+                    vec3 surfaceWorldPosition = mat3(modelMatrix) * position;
 
-                // Vector from the surface, to the light
-                v_surfaceToLight = u_lightWorldPosition - surfaceWorldPosition;
+                    // Vector from the surface, to the light
+                    v_surfaceToLight = u_lightWorldPosition - surfaceWorldPosition;
 
-                // Vector from the surface, to the camera
-                v_surfaceToView = cameraPosition - surfaceWorldPosition;
+                    // Vector from the surface, to the camera
+                    v_surfaceToView = cameraPosition - surfaceWorldPosition;
 
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
             `;
 
-            const FRAGMENT_SHADER = `
-            precision highp float;
+            const FRAGMENT_SHADER = /* glsl */ `
+                precision highp float;
 
-            varying vec3 v_normal;
-            varying vec3 v_surfaceToLight;
-            varying vec3 v_surfaceToView;
-            varying vec2 v_uv;
+                varying vec3 v_normal;
+                varying vec3 v_surfaceToLight;
+                varying vec3 v_surfaceToView;
+                varying vec2 v_uv;
 
 
-            uniform float u_dt;
-            uniform float u_shininess;
-            uniform sampler2D colMap;
-            uniform sampler2D specMap;
-            uniform sampler2D cloudMap;
-            
-
-            void main() {
-                // Re-normalize interpolated varyings
-                vec3 normal = normalize(v_normal);
-                vec3 surfaceToLightDirection = normalize(v_surfaceToLight);
-                vec3 surfaceToViewDirection = normalize(v_surfaceToView);
-
-                // Calculate Half-Vector, Vector that bisects the angle of reflection.
-                // This vector indecates the "brightest point"; A "refrence vector" if you will.
-                vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
-
-                // Then we can get the brightness at any point by seeing "how similar" 
-                // the surface normal is to the refrence vector. 
-                float light = dot(normal, surfaceToLightDirection);
+                uniform float u_dt;
+                uniform float u_shininess;
+                uniform sampler2D colMap;
+                uniform sampler2D specMap;
+                uniform sampler2D cloudMap;
                 
-                // By raising the specular vector to a power we can control the intensity
-                // of the light
-                float specular = 0.0;
-                if (light > 0.0) {
-                    specular = pow(dot(normal, halfVector), u_shininess * 100.0);
+
+                void main() {
+                    // Re-normalize interpolated varyings
+                    vec3 normal = normalize(v_normal);
+                    vec3 surfaceToLightDirection = normalize(v_surfaceToLight);
+                    vec3 surfaceToViewDirection = normalize(v_surfaceToView);
+
+                    // Calculate Half-Vector, Vector that bisects the angle of reflection.
+                    // This vector indecates the "brightest point"; A "refrence vector" if you will.
+                    vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
+
+                    // Then we can get the brightness at any point by seeing "how similar" 
+                    // the surface normal is to the refrence vector. 
+                    float light = dot(normal, surfaceToLightDirection);
+                    
+                    // By raising the specular vector to a power we can control the intensity
+                    // of the light
+                    float specular = 0.0;
+                    if (light > 0.0) {
+                        specular = pow(dot(normal, halfVector), u_shininess * 100.0);
+                    }
+
+                    // Mapping textures
+                    vec3 colMap = texture2D(colMap, v_uv).rgb;
+                    vec3 spec = texture2D(specMap, v_uv).rgb;
+
+                    vec2 cloudUV = vec2(v_uv.x + u_dt, v_uv.y);
+                    vec3 cloud = texture2D(cloudMap, cloudUV).rgb;
+
+                    gl_FragColor.rgb = colMap + cloud;
+
+                    // Add Point Lighting
+                    gl_FragColor.rgb *= light;
+                    // Add Specular Highlights
+                    gl_FragColor.rgb += specular * spec;
                 }
-
-                // Mapping textures
-                vec3 colMap = texture2D(colMap, v_uv).rgb;
-                vec3 spec = texture2D(specMap, v_uv).rgb;
-
-                vec2 cloudUV = vec2(v_uv.x + u_dt, v_uv.y);
-                vec3 cloud = texture2D(cloudMap, cloudUV).rgb;
-
-                gl_FragColor.rgb = colMap + cloud;
-
-                // Add Point Lighting
-                gl_FragColor.rgb *= light;
-                // Add Specular Highlights
-                gl_FragColor.rgb += specular * spec;
-            }
             `;
 
             {

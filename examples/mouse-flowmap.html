@@ -21,45 +21,44 @@
             import { Renderer, Program, Texture, Mesh, Vec2, Flowmap, Triangle } from '../src/index.mjs';
 
             const vertex = /* glsl */ `
-            attribute vec2 uv;
-            attribute vec2 position;
+                attribute vec2 uv;
+                attribute vec2 position;
 
-            varying vec2 vUv;
+                varying vec2 vUv;
 
-            void main() {
-                vUv = uv;
-                gl_Position = vec4(position, 0, 1);
-            }
-        `;
+                void main() {
+                    vUv = uv;
+                    gl_Position = vec4(position, 0, 1);
+                }
+            `;
 
             const fragment = /* glsl */ `
-            precision highp float;
-            precision highp int;
+                precision highp float;
 
-            uniform sampler2D tWater;
-            uniform sampler2D tFlow;
-            uniform float uTime;
+                uniform sampler2D tWater;
+                uniform sampler2D tFlow;
+                uniform float uTime;
 
-            varying vec2 vUv;
+                varying vec2 vUv;
 
-            void main() {
-                
-                // R and G values are velocity in the x and y direction
-                // B value is the velocity length
-                vec3 flow = texture2D(tFlow, vUv).rgb;
+                void main() {
+                    
+                    // R and G values are velocity in the x and y direction
+                    // B value is the velocity length
+                    vec3 flow = texture2D(tFlow, vUv).rgb;
 
-                // Use flow to adjust the uv lookup of a texture
-                vec2 uv = gl_FragCoord.xy / 600.0;
-                uv += flow.xy * 0.05;
-                vec3 tex = texture2D(tWater, uv).rgb;
+                    // Use flow to adjust the uv lookup of a texture
+                    vec2 uv = gl_FragCoord.xy / 600.0;
+                    uv += flow.xy * 0.05;
+                    vec3 tex = texture2D(tWater, uv).rgb;
 
-                // Oscillate between raw values and the affected texture above
-                tex = mix(tex, flow * 0.5 + 0.5, smoothstep( -0.3, 0.7, sin(uTime)));
+                    // Oscillate between raw values and the affected texture above
+                    tex = mix(tex, flow * 0.5 + 0.5, smoothstep( -0.3, 0.7, sin(uTime)));
 
-                gl_FragColor.rgb = tex;
-                gl_FragColor.a = 1.0;
-            }
-        `;
+                    gl_FragColor.rgb = tex;
+                    gl_FragColor.a = 1.0;
+                }
+            `;
 
             {
                 const renderer = new Renderer({ dpr: 2 });

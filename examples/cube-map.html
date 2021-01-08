@@ -18,37 +18,37 @@
             import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Box, Orbit } from '../src/index.mjs';
 
             const vertex = /* glsl */ `
-            attribute vec3 position;
+                attribute vec3 position;
 
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
+                uniform mat4 modelViewMatrix;
+                uniform mat4 projectionMatrix;
 
-            varying vec3 vDir;
+                varying vec3 vDir;
 
-            void main() {
-                vDir = normalize(position);
-                
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
+                void main() {
+                    vDir = normalize(position);
+                    
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
 
             const fragment = /* glsl */ `
-            precision highp float;
+                precision highp float;
 
-            // uniform type is samplerCube rather than sampler2D
-            uniform samplerCube tMap;
+                // uniform type is samplerCube rather than sampler2D
+                uniform samplerCube tMap;
 
-            varying vec3 vDir;
+                varying vec3 vDir;
 
-            void main() {
+                void main() {
 
-                // sample function is textureCube rather than texture2D
-                vec3 tex = textureCube(tMap, vDir).rgb;
-                
-                gl_FragColor.rgb = tex;
-                gl_FragColor.a = 1.0;
-            }
-        `;
+                    // sample function is textureCube rather than texture2D
+                    vec3 tex = textureCube(tMap, vDir).rgb;
+                    
+                    gl_FragColor.rgb = tex;
+                    gl_FragColor.a = 1.0;
+                }
+            `;
 
             {
                 const renderer = new Renderer({ dpr: 2 });
