@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • Fog</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">Fog. Model by Google Poly</div>
-    <script type="module">
-        import {Renderer, Camera, Transform, Texture, Program, Color, Geometry, Mesh} from '../src/index.mjs';
-        
-        const vertex = /* glsl */ `
+        <title>OGL • Fog</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">Fog. Model by Google Poly</div>
+        <script type="module">
+            import { Renderer, Camera, Transform, Texture, Program, Color, Geometry, Mesh } from '../src/index.mjs';
+
+            const vertex = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -64,7 +67,7 @@
             }
         `;
 
-        const fragment = /* glsl */ `
+            const fragment = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -94,91 +97,84 @@
             }
         `;
 
-        {
-            const renderer = new Renderer({dpr: 2});
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            gl.clearColor(1, 1, 1, 1);
+            {
+                const renderer = new Renderer({ dpr: 2 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 45});
-            camera.position.set(0, 4, 8);
-            camera.lookAt([0, 0, 0]);
+                const camera = new Camera(gl, { fov: 45 });
+                camera.position.set(0, 4, 8);
+                camera.lookAt([0, 0, 0]);
 
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
-
-            const scene = new Transform();
-
-            const texture = new Texture(gl);
-            const img = new Image();
-            img.onload = () => texture.image = img;
-            img.src = 'assets/forest.jpg';
-
-            const program = new Program(gl, {
-                vertex: vertex,
-                fragment: fragment,
-                uniforms: {
-                    uTime: {value: 0},
-                    tMap: {value: texture},
-
-                    // Pass relevant uniforms for fog
-                    uFogColor: {value: new Color('#ffffff')},
-                    uFogNear: {value: 2},
-                    uFogFar: {value: 15},
-                },
-            });
-
-
-            let mesh;
-            loadModel();
-            async function loadModel() {
-                const data = await (await fetch(`assets/forest.json`)).json();
-
-                const size = 8;
-                const num = size * size;
-
-                let offset = new Float32Array(num * 3);
-                let random = new Float32Array(num * 3);
-                for (let i = 0; i < num; i++) {
-
-                    // Layout in a grid
-                    offset.set([
-                        (i % size - size * 0.5) * 2,
-                        0,
-                        (Math.floor(i / size) - size * 0.5) * 2,
-                    ], i * 3);
-
-                    random.set([Math.random(), Math.random(), Math.random()], i * 3);
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
                 }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-                const geometry = new Geometry(gl, {
-                    position: {size: 3, data: new Float32Array(data.position)},
-                    uv: {size: 2, data: new Float32Array(data.uv)},
-                    offset: {instanced: true, size: 3, data: offset},
-                    random: {instanced: true, size: 3, data: random},
+                const scene = new Transform();
+
+                const texture = new Texture(gl);
+                const img = new Image();
+                img.onload = () => (texture.image = img);
+                img.src = 'assets/forest.jpg';
+
+                const program = new Program(gl, {
+                    vertex: vertex,
+                    fragment: fragment,
+                    uniforms: {
+                        uTime: { value: 0 },
+                        tMap: { value: texture },
+
+                        // Pass relevant uniforms for fog
+                        uFogColor: { value: new Color('#ffffff') },
+                        uFogNear: { value: 2 },
+                        uFogFar: { value: 15 },
+                    },
                 });
 
-                mesh = new Mesh(gl, {geometry, program});
-                mesh.setParent(scene);
-            }
+                let mesh;
+                loadModel();
+                async function loadModel() {
+                    const data = await (await fetch(`assets/forest.json`)).json();
 
-            requestAnimationFrame(update);
-            function update(t) {
-                requestAnimationFrame(update);
+                    const size = 8;
+                    const num = size * size;
 
-                if (mesh) {
-                    mesh.rotation.y += 0.003;
-                    mesh.position.z = Math.sin(t * 0.0004) * 3.0;
+                    let offset = new Float32Array(num * 3);
+                    let random = new Float32Array(num * 3);
+                    for (let i = 0; i < num; i++) {
+                        // Layout in a grid
+                        offset.set([((i % size) - size * 0.5) * 2, 0, (Math.floor(i / size) - size * 0.5) * 2], i * 3);
+
+                        random.set([Math.random(), Math.random(), Math.random()], i * 3);
+                    }
+
+                    const geometry = new Geometry(gl, {
+                        position: { size: 3, data: new Float32Array(data.position) },
+                        uv: { size: 2, data: new Float32Array(data.uv) },
+                        offset: { instanced: true, size: 3, data: offset },
+                        random: { instanced: true, size: 3, data: random },
+                    });
+
+                    mesh = new Mesh(gl, { geometry, program });
+                    mesh.setParent(scene);
                 }
-                program.uniforms.uTime.value = t * 0.001;
-                renderer.render({scene, camera});
-            }
-        }
 
-    </script>
-</body>
+                requestAnimationFrame(update);
+                function update(t) {
+                    requestAnimationFrame(update);
+
+                    if (mesh) {
+                        mesh.rotation.y += 0.003;
+                        mesh.position.z = Math.sin(t * 0.0004) * 3.0;
+                    }
+                    program.uniforms.uTime.value = t * 0.001;
+                    renderer.render({ scene, camera });
+                }
+            }
+        </script>
+    </body>
 </html>

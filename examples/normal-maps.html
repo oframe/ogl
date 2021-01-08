@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • Normal Maps</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">Normal Maps</div>
-    <script type="module">
-        import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Orbit} from '../src/index.mjs';
-        
-        const vertex100 = /* glsl */ `
+        <title>OGL • Normal Maps</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">Normal Maps</div>
+        <script type="module">
+            import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Orbit } from '../src/index.mjs';
+
+            const vertex100 = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -40,7 +43,7 @@
             }
         `;
 
-        const fragment100 = /* glsl */ `
+            const fragment100 = /* glsl */ `
             #extension GL_OES_standard_derivatives : enable
 
             precision highp float;
@@ -88,8 +91,8 @@
                 gl_FragColor.a = 1.0;
             }
         `;
-        
-        const vertex300 = /* glsl */ `#version 300 es
+
+            const vertex300 = /* glsl */ `#version 300 es
             precision highp float;
             precision highp int;
 
@@ -115,7 +118,7 @@
             }
         `;
 
-        const fragment300 = /* glsl */ `#version 300 es
+            const fragment300 = /* glsl */ `#version 300 es
             precision highp float;
             precision highp int;
 
@@ -164,74 +167,72 @@
             }
         `;
 
-        {
-            const renderer = new Renderer({dpr: 2});
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            gl.clearColor(1, 1, 1, 1);
+            {
+                const renderer = new Renderer({ dpr: 2 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 45});
-            camera.position.set(1.5, 0, 2);
+                const camera = new Camera(gl, { fov: 45 });
+                camera.position.set(1.5, 0, 2);
 
-            const controls = new Orbit(camera);
+                const controls = new Orbit(camera);
 
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-            const scene = new Transform();
+                const scene = new Transform();
 
-            const textureDiffuse = new Texture(gl);
-            const imgDiffuse = new Image();
-            imgDiffuse.onload = () => textureDiffuse.image = imgDiffuse;
-            imgDiffuse.src = 'assets/granite-diffuse.jpg';
+                const textureDiffuse = new Texture(gl);
+                const imgDiffuse = new Image();
+                imgDiffuse.onload = () => (textureDiffuse.image = imgDiffuse);
+                imgDiffuse.src = 'assets/granite-diffuse.jpg';
 
-            const textureNormal = new Texture(gl);
-            const imgNormal = new Image();
-            imgNormal.onload = () => textureNormal.image = imgNormal;
-            imgNormal.src = 'assets/granite-normal.jpg';
-            
-            const program = new Program(gl, {
-                
-                // Get fallback shader for WebGL1 - needed for OES_standard_derivatives ext
-                vertex: renderer.isWebgl2 ? vertex300 : vertex100,
-                fragment: renderer.isWebgl2 ? fragment300 : fragment100,
-                uniforms: {
-                    tDiffuse: {value: textureDiffuse},
-                    tNormal: {value: textureNormal},
-                    uNormalScale: {value: 2},
-                    uNormalUVScale: {value: 1},
-                    uTime: {value: 0},
-                },
-            });
+                const textureNormal = new Texture(gl);
+                const imgNormal = new Image();
+                imgNormal.onload = () => (textureNormal.image = imgNormal);
+                imgNormal.src = 'assets/granite-normal.jpg';
 
-            loadModel();
-            async function loadModel() {
-                const data = await (await fetch(`assets/rounded-cube.json`)).json();
-
-                const geometry = new Geometry(gl, {
-                    position: {size: 3, data: new Float32Array(data.position)},
-                    uv: {size: 2, data: new Float32Array(data.uv)},
-                    normal: {size: 3, data: new Float32Array(data.normal)},
+                const program = new Program(gl, {
+                    // Get fallback shader for WebGL1 - needed for OES_standard_derivatives ext
+                    vertex: renderer.isWebgl2 ? vertex300 : vertex100,
+                    fragment: renderer.isWebgl2 ? fragment300 : fragment100,
+                    uniforms: {
+                        tDiffuse: { value: textureDiffuse },
+                        tNormal: { value: textureNormal },
+                        uNormalScale: { value: 2 },
+                        uNormalUVScale: { value: 1 },
+                        uTime: { value: 0 },
+                    },
                 });
 
-                const mesh = new Mesh(gl, {geometry, program});
-                mesh.setParent(scene);
-            }
+                loadModel();
+                async function loadModel() {
+                    const data = await (await fetch(`assets/rounded-cube.json`)).json();
 
-            requestAnimationFrame(update);
-            function update(t) {
+                    const geometry = new Geometry(gl, {
+                        position: { size: 3, data: new Float32Array(data.position) },
+                        uv: { size: 2, data: new Float32Array(data.uv) },
+                        normal: { size: 3, data: new Float32Array(data.normal) },
+                    });
+
+                    const mesh = new Mesh(gl, { geometry, program });
+                    mesh.setParent(scene);
+                }
+
                 requestAnimationFrame(update);
-                controls.update();
+                function update(t) {
+                    requestAnimationFrame(update);
+                    controls.update();
 
-                program.uniforms.uTime.value = t * 0.001;
-                renderer.render({scene, camera});
+                    program.uniforms.uTime.value = t * 0.001;
+                    renderer.render({ scene, camera });
+                }
             }
-        }
-
-    </script>
-</body>
+        </script>
+    </body>
 </html>

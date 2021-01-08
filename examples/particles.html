@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • Particles</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">Particles</div>
-    <script type="module">
-        import {Renderer, Camera, Geometry, Program, Mesh} from '../src/index.mjs';
-        
-        const vertex = /* glsl */ `
+        <title>OGL • Particles</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">Particles</div>
+        <script type="module">
+            import { Renderer, Camera, Geometry, Program, Mesh } from '../src/index.mjs';
+
+            const vertex = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -53,7 +56,7 @@
             }
         `;
 
-        const fragment = /* glsl */ `
+            const fragment = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -71,63 +74,62 @@
             }
         `;
 
-        {
-            const renderer = new Renderer({depth: false});
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            gl.clearColor(1, 1, 1, 1);
+            {
+                const renderer = new Renderer({ depth: false });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 15});
-            camera.position.z = 15;
+                const camera = new Camera(gl, { fov: 15 });
+                camera.position.z = 15;
 
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-            const num = 100;
-            const position = new Float32Array(num * 3);
-            const random = new Float32Array(num * 4);
+                const num = 100;
+                const position = new Float32Array(num * 3);
+                const random = new Float32Array(num * 4);
 
-            for (let i = 0; i < num; i++) {
-                position.set([Math.random(), Math.random(), Math.random()], i * 3);
-                random.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4);
-            }
+                for (let i = 0; i < num; i++) {
+                    position.set([Math.random(), Math.random(), Math.random()], i * 3);
+                    random.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4);
+                }
 
-            const geometry = new Geometry(gl, {
-                position: {size: 3, data: position},
-                random: {size: 4, data: random},
-            });
+                const geometry = new Geometry(gl, {
+                    position: { size: 3, data: position },
+                    random: { size: 4, data: random },
+                });
 
-            const program = new Program(gl, {
-                vertex,
-                fragment,
-                uniforms: {
-                    uTime: {value: 0},
-                },
-                transparent: true,
-                depthTest: false,
-            });
+                const program = new Program(gl, {
+                    vertex,
+                    fragment,
+                    uniforms: {
+                        uTime: { value: 0 },
+                    },
+                    transparent: true,
+                    depthTest: false,
+                });
 
-            // Make sure mode is gl.POINTS
-            const particles = new Mesh(gl, {mode: gl.POINTS, geometry, program});
+                // Make sure mode is gl.POINTS
+                const particles = new Mesh(gl, { mode: gl.POINTS, geometry, program });
 
-            requestAnimationFrame(update);
-            function update(t) {
                 requestAnimationFrame(update);
+                function update(t) {
+                    requestAnimationFrame(update);
 
-                // add some slight overall movement to be more interesting
-                particles.rotation.x = Math.sin(t * 0.0002) * 0.1;
-                particles.rotation.y = Math.cos(t * 0.0005) * 0.15;
-                particles.rotation.z += 0.01;
+                    // add some slight overall movement to be more interesting
+                    particles.rotation.x = Math.sin(t * 0.0002) * 0.1;
+                    particles.rotation.y = Math.cos(t * 0.0005) * 0.15;
+                    particles.rotation.z += 0.01;
 
-                program.uniforms.uTime.value = t * 0.001;
-                renderer.render({scene: particles, camera});
+                    program.uniforms.uTime.value = t * 0.001;
+                    renderer.render({ scene: particles, camera });
+                }
             }
-        }
-
-    </script>
-</body>
+        </script>
+    </body>
 </html>

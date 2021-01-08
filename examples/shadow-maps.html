@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • Shadow maps</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">Shadow maps. Model by Google Poly</div>
-    <script type="module">
-        import {Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Orbit, Plane, Shadow} from '../src/index.mjs';
+        <title>OGL • Shadow maps</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">Shadow maps. Model by Google Poly</div>
+        <script type="module">
+            import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Orbit, Plane, Shadow } from '../src/index.mjs';
 
-        const vertexColor = /* glsl */ `
+            const vertexColor = /* glsl */ `
             attribute vec3 position;
             attribute vec2 uv;
 
@@ -45,7 +48,7 @@
             }
         `;
 
-        const fragmentColor = /* glsl */ `
+            const fragmentColor = /* glsl */ `
             precision highp float;
 
             uniform sampler2D tMap;
@@ -76,124 +79,127 @@
             }
         `;
 
-        {
-            const renderer = new Renderer({dpr: 2});
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            gl.clearColor(1, 1, 1, 1);
+            {
+                const renderer = new Renderer({ dpr: 2 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 35});
-            camera.position.set(5, 4, 10);
+                const camera = new Camera(gl, { fov: 35 });
+                camera.position.set(5, 4, 10);
 
-            const controls = new Orbit(camera);
+                const controls = new Orbit(camera);
 
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-            const scene = new Transform();
+                const scene = new Transform();
 
-            // Swap between the 'fov' and 'left/right/etc' lines to switch from an orthographic to perspective camera,
-            // and hence, directional light to spotlight projection.
-            const light = new Camera(gl, {
-                left: -3, right: 3, bottom: -3, top: 3,
-                // fov: 30,
+                // Swap between the 'fov' and 'left/right/etc' lines to switch from an orthographic to perspective camera,
+                // and hence, directional light to spotlight projection.
+                const light = new Camera(gl, {
+                    left: -3,
+                    right: 3,
+                    bottom: -3,
+                    top: 3,
+                    // fov: 30,
 
-                near: 1,
-                far: 20,
-            });
-            light.position.set(3, 10, 3);
-            light.lookAt([0, 0, 0]);
-
-            // Create shadow instance attached to light camera
-            const shadow = new Shadow(gl, {light});
-
-            addAirplane();
-            addGround();
-
-            let airplane;
-            async function addAirplane() {
-                const texture = new Texture(gl);
-                const img = new Image();
-                img.onload = () => texture.image = img;
-                img.src = 'assets/airplane.jpg';
-
-                const program = new Program(gl, {
-                    vertex: vertexColor,
-                    fragment: fragmentColor,
-                    uniforms: {
-                        tMap: {value: texture},
-                    },
-                    cullFace: null,
+                    near: 1,
+                    far: 20,
                 });
+                light.position.set(3, 10, 3);
+                light.lookAt([0, 0, 0]);
 
-                const data = await (await fetch(`assets/airplane.json`)).json();
+                // Create shadow instance attached to light camera
+                const shadow = new Shadow(gl, { light });
 
-                const geometry = new Geometry(gl, {
-                    position: {size: 3, data: new Float32Array(data.position)},
-                    uv: {size: 2, data: new Float32Array(data.uv)},
-                    normal: {size: 3, data: new Float32Array(data.normal)},
-                });
+                addAirplane();
+                addGround();
 
-                const mesh = new Mesh(gl, {geometry, program});
-                mesh.setParent(scene);
-                
-                // Use the 'add' method to attach the mesh to the shadow map
-                shadow.add({mesh});
+                let airplane;
+                async function addAirplane() {
+                    const texture = new Texture(gl);
+                    const img = new Image();
+                    img.onload = () => (texture.image = img);
+                    img.src = 'assets/airplane.jpg';
 
-                airplane = mesh;
-            }
+                    const program = new Program(gl, {
+                        vertex: vertexColor,
+                        fragment: fragmentColor,
+                        uniforms: {
+                            tMap: { value: texture },
+                        },
+                        cullFace: null,
+                    });
 
-            function addGround() {
-                const texture = new Texture(gl);
-                const img = new Image();
-                img.onload = () => texture.image = img;
-                img.src = 'assets/water.jpg';
+                    const data = await (await fetch(`assets/airplane.json`)).json();
 
-                const program = new Program(gl, {
-                    vertex: vertexColor,
-                    fragment: fragmentColor,
-                    uniforms: {
-                        tMap: {value: texture},
-                    },
-                    cullFace: null,
-                });
+                    const geometry = new Geometry(gl, {
+                        position: { size: 3, data: new Float32Array(data.position) },
+                        uv: { size: 2, data: new Float32Array(data.uv) },
+                        normal: { size: 3, data: new Float32Array(data.normal) },
+                    });
 
-                const geometry = new Plane(gl);
+                    const mesh = new Mesh(gl, { geometry, program });
+                    mesh.setParent(scene);
 
-                const mesh = new Mesh(gl, {geometry, program});
-                mesh.setParent(scene);
+                    // Use the 'add' method to attach the mesh to the shadow map
+                    shadow.add({ mesh });
 
-                // Use the 'add' method to attach the mesh to the shadow map
-                shadow.add({mesh});
-
-                mesh.rotation.x = Math.PI / 2;
-                mesh.scale.set(6);
-                mesh.position.y = -3;
-            }
-
-            requestAnimationFrame(update);
-            function update(t) {
-                requestAnimationFrame(update);
-                controls.update();
-
-                // A bit of plane animation
-                if (airplane) {
-                    airplane.position.z = Math.sin(t * 0.001);
-                    airplane.rotation.x = Math.sin(t * 0.001 + 2) * 0.1;
-                    airplane.rotation.y = Math.sin(t * 0.001 - 4) * -0.1;
+                    airplane = mesh;
                 }
 
-                // Render cast meshes to shadow map
-                shadow.render({scene});
-                
-                // Render the scene (with shadows) to the canvas
-                renderer.render({scene, camera});
+                function addGround() {
+                    const texture = new Texture(gl);
+                    const img = new Image();
+                    img.onload = () => (texture.image = img);
+                    img.src = 'assets/water.jpg';
+
+                    const program = new Program(gl, {
+                        vertex: vertexColor,
+                        fragment: fragmentColor,
+                        uniforms: {
+                            tMap: { value: texture },
+                        },
+                        cullFace: null,
+                    });
+
+                    const geometry = new Plane(gl);
+
+                    const mesh = new Mesh(gl, { geometry, program });
+                    mesh.setParent(scene);
+
+                    // Use the 'add' method to attach the mesh to the shadow map
+                    shadow.add({ mesh });
+
+                    mesh.rotation.x = Math.PI / 2;
+                    mesh.scale.set(6);
+                    mesh.position.y = -3;
+                }
+
+                requestAnimationFrame(update);
+                function update(t) {
+                    requestAnimationFrame(update);
+                    controls.update();
+
+                    // A bit of plane animation
+                    if (airplane) {
+                        airplane.position.z = Math.sin(t * 0.001);
+                        airplane.rotation.x = Math.sin(t * 0.001 + 2) * 0.1;
+                        airplane.rotation.y = Math.sin(t * 0.001 - 4) * -0.1;
+                    }
+
+                    // Render cast meshes to shadow map
+                    shadow.render({ scene });
+
+                    // Render the scene (with shadows) to the canvas
+                    renderer.render({ scene, camera });
+                }
             }
-        }
-    </script>
-</body>
+        </script>
+    </body>
 </html>

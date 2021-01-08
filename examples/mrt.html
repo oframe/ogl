@@ -1,20 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • MRT (Multiple Render Targets)</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">MRT (Multiple Render Targets)</div>
-    <script type="module">
-        import {Renderer, Camera, Transform, Geometry, Texture, RenderTarget, Program, Mesh, Vec3, Vec2, Orbit, Triangle} from '../src/index.mjs';
-        
-        const vertex100 = /* glsl */ `
+        <title>OGL • MRT (Multiple Render Targets)</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">MRT (Multiple Render Targets)</div>
+        <script type="module">
+            import {
+                Renderer,
+                Camera,
+                Transform,
+                Geometry,
+                Texture,
+                RenderTarget,
+                Program,
+                Mesh,
+                Vec3,
+                Vec2,
+                Orbit,
+                Triangle,
+            } from '../src/index.mjs';
+
+            const vertex100 = /* glsl */ `
             attribute vec3 position;
             attribute vec3 normal;
             attribute vec2 uv;
@@ -50,7 +66,7 @@
             }
         `;
 
-        const fragment100 = /* glsl */ `
+            const fragment100 = /* glsl */ `
             #extension GL_EXT_draw_buffers : require 
 
             precision highp float;
@@ -67,7 +83,7 @@
             }
         `;
 
-        const vertex300 = /* glsl */ `#version 300 es
+            const vertex300 = /* glsl */ `#version 300 es
             in vec3 position;
             in vec3 normal;
             in vec2 uv;
@@ -103,7 +119,7 @@
             }
         `;
 
-        const fragment300 = /* glsl */ `#version 300 es
+            const fragment300 = /* glsl */ `#version 300 es
             precision highp float;
 
             uniform sampler2D tMap;
@@ -120,7 +136,7 @@
             }
         `;
 
-        const vertexPost = /* glsl */ `
+            const vertexPost = /* glsl */ `
             attribute vec3 position;
             attribute vec2 uv;
 
@@ -132,7 +148,7 @@
             }
         `;
 
-        const fragmentPost = /* glsl */ `
+            const fragmentPost = /* glsl */ `
             precision highp float;
 
             uniform sampler2D tColor;
@@ -183,124 +199,121 @@
             }
         `;
 
-        {
-            const renderer = new Renderer({dpr: 2});
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            // gl.clearColor(1, 1, 1, 1);
-            gl.clearColor(0, 0, 0, 1);
+            {
+                const renderer = new Renderer({ dpr: 2 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                // gl.clearColor(1, 1, 1, 1);
+                gl.clearColor(0, 0, 0, 1);
 
-            const camera = new Camera(gl, {fov: 45});
-            camera.position.set(0, 2, 5);
+                const camera = new Camera(gl, { fov: 45 });
+                camera.position.set(0, 2, 5);
 
-            const controls = new Orbit(camera);
+                const controls = new Orbit(camera);
 
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-            const scene = new Transform();
+                const scene = new Transform();
 
-            // Scene to render to targets
-            initScene();
+                // Scene to render to targets
+                initScene();
 
-            let supportLinearFiltering = gl.renderer.extensions[`OES_texture_${gl.renderer.isWebgl2 ? `` : `half_`}float_linear`];
+                let supportLinearFiltering = gl.renderer.extensions[`OES_texture_${gl.renderer.isWebgl2 ? `` : `half_`}float_linear`];
 
-            const target = new RenderTarget(gl, {
-                color: 2, // Number of render targets
+                const target = new RenderTarget(gl, {
+                    color: 2, // Number of render targets
 
-                // Use half float to get accurate position values
-                type: gl.renderer.isWebgl2 ? gl.HALF_FLOAT : 
-                    gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES,
-                internalFormat: gl.renderer.isWebgl2 ? gl.RGBA16F : gl.RGBA,
-                minFilter: supportLinearFiltering ? gl.LINEAR : gl.NEAREST,
-            });
+                    // Use half float to get accurate position values
+                    type: gl.renderer.isWebgl2 ? gl.HALF_FLOAT : gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES,
+                    internalFormat: gl.renderer.isWebgl2 ? gl.RGBA16F : gl.RGBA,
+                    minFilter: supportLinearFiltering ? gl.LINEAR : gl.NEAREST,
+                });
 
-            // Mesh to render to canvas
-            const post = initPost();
+                // Mesh to render to canvas
+                const post = initPost();
 
-            async function initScene() {
-                const data = await (await fetch(`assets/acorn.json`)).json();
+                async function initScene() {
+                    const data = await (await fetch(`assets/acorn.json`)).json();
 
-                // Instanced buffers
-                const num = 100;
-                let offset = new Float32Array(num * 3);
-                let random = new Float32Array(num * 3);
-                for (let i = 0; i < num; i++) {
-                    offset.set([Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1], i * 3);
-                    random.set([Math.random(), Math.random(), Math.random()], i * 3);
+                    // Instanced buffers
+                    const num = 100;
+                    let offset = new Float32Array(num * 3);
+                    let random = new Float32Array(num * 3);
+                    for (let i = 0; i < num; i++) {
+                        offset.set([Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1], i * 3);
+                        random.set([Math.random(), Math.random(), Math.random()], i * 3);
+                    }
+
+                    const geometry = new Geometry(gl, {
+                        position: { size: 3, data: new Float32Array(data.position) },
+                        uv: { size: 2, data: new Float32Array(data.uv) },
+                        normal: { size: 3, data: new Float32Array(data.normal) },
+                        offset: { instanced: 1, size: 3, data: offset },
+                        random: { instanced: 1, size: 3, data: random },
+                    });
+
+                    const texture = new Texture(gl);
+                    const img = new Image();
+                    img.onload = () => (texture.image = img);
+                    img.src = 'assets/acorn.jpg';
+
+                    const program = new Program(gl, {
+                        vertex: renderer.isWebgl2 ? vertex300 : vertex100,
+                        fragment: renderer.isWebgl2 ? fragment300 : fragment100,
+                        uniforms: {
+                            tMap: { value: texture },
+                        },
+                    });
+
+                    const mesh = new Mesh(gl, { geometry, program });
+                    mesh.setParent(scene);
                 }
 
-                const geometry = new Geometry(gl, {
-                    position: {size: 3, data: new Float32Array(data.position)},
-                    uv: {size: 2, data: new Float32Array(data.uv)},
-                    normal: {size: 3, data: new Float32Array(data.normal)},
-                    offset: {instanced: 1, size: 3, data: offset},
-                    random: {instanced: 1, size: 3, data: random},
-                });
+                function initPost() {
+                    const geometry = new Triangle(gl);
 
-                const texture = new Texture(gl);
-                const img = new Image();
-                img.onload = () => texture.image = img;
-                img.src = 'assets/acorn.jpg';
+                    // Create 10 random lights
+                    const lights = [];
+                    for (let i = 0; i < 10; i++) {
+                        lights.push(new Vec3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1));
+                    }
 
-                const program = new Program(gl, {
-                    vertex: renderer.isWebgl2 ? vertex300 : vertex100,
-                    fragment: renderer.isWebgl2 ? fragment300 : fragment100,
-                    uniforms: {
-                        tMap: {value: texture},
-                    },
-                });
-            
-                const mesh = new Mesh(gl, {geometry, program});
-                mesh.setParent(scene);
-            }
+                    const program = new Program(gl, {
+                        vertex: vertexPost,
+                        fragment: fragmentPost,
+                        uniforms: {
+                            tColor: { value: target.textures[0] },
+                            tPosition: { value: target.textures[1] },
+                            uLights: { value: lights },
+                            uAspect: { value: 1 },
+                            uTime: { value: 0 },
+                        },
+                    });
 
-            function initPost() {
-                const geometry = new Triangle(gl);
-
-                // Create 10 random lights
-                const lights = [];
-                for (let i = 0; i < 10; i++) {
-                    lights.push(new Vec3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1));
+                    return new Mesh(gl, { geometry, program });
                 }
 
-                const program = new Program(gl, {
-                    vertex: vertexPost,
-                    fragment: fragmentPost,
-                    uniforms: {
-                        tColor: {value: target.textures[0]},
-                        tPosition: {value: target.textures[1]},
-                        uLights: {value: lights},
-                        uAspect: {value: 1},
-                        uTime: {value: 0},
-                    },
-                });
-                
-                return new Mesh(gl, {geometry, program});
-            }
-
-
-
-            requestAnimationFrame(update);
-            function update(t) {
                 requestAnimationFrame(update);
-                controls.update();
+                function update(t) {
+                    requestAnimationFrame(update);
+                    controls.update();
 
-                // Render scene to targets
-                renderer.render({scene, camera, target});
+                    // Render scene to targets
+                    renderer.render({ scene, camera, target });
 
-                // Update resolution
-                post.program.uniforms.uAspect.value = renderer.width / renderer.height;
-                post.program.uniforms.uTime.value = t * 0.001;
+                    // Update resolution
+                    post.program.uniforms.uAspect.value = renderer.width / renderer.height;
+                    post.program.uniforms.uTime.value = t * 0.001;
 
-                // Render post to canvas
-                renderer.render({scene: post});
+                    // Render post to canvas
+                    renderer.render({ scene: post });
+                }
             }
-        }
-    </script>
-</body>
+        </script>
+    </body>
 </html>

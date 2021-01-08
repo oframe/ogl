@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • Curves</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">Curves</div>
-    <script type="module">
-        import {Renderer, Camera, Transform, Program, Mesh, Sphere, Polyline, Orbit, Vec3, Color, Curve} from '../src/index.mjs';
-        
-        const vertex = /* glsl */ `
+        <title>OGL • Curves</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">Curves</div>
+        <script type="module">
+            import { Renderer, Camera, Transform, Program, Mesh, Sphere, Polyline, Orbit, Vec3, Color, Curve } from '../src/index.mjs';
+
+            const vertex = /* glsl */ `
           precision highp float;
           precision highp int;
 
@@ -33,7 +36,7 @@
           }
         `;
 
-        const fragment = /* glsl */ `
+            const fragment = /* glsl */ `
           precision highp float;
           precision highp int;
 
@@ -45,99 +48,93 @@
           }
         `;
 
-        {
-          const renderer = new Renderer({dpr: 2});
-          const gl = renderer.gl;
-          document.body.appendChild(gl.canvas);
-          gl.clearColor(1, 1, 1, 1);
+            {
+                const renderer = new Renderer({ dpr: 2 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-          const camera = new Camera(gl, {fov: 35});
-          camera.position.set(0, 0, 5);
+                const camera = new Camera(gl, { fov: 35 });
+                camera.position.set(0, 0, 5);
 
-          // Create controls and pass parameters
-          const controls = new Orbit(camera, {
-              target: new Vec3(0, 0, 0),
-          });
+                // Create controls and pass parameters
+                const controls = new Orbit(camera, {
+                    target: new Vec3(0, 0, 0),
+                });
 
-          function resize() {
-              renderer.setSize(window.innerWidth, window.innerHeight);
-              camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-          }
-          window.addEventListener('resize', resize, false);
-          resize();
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-          const scene = new Transform();
+                const scene = new Transform();
 
-          const sphereGeometry = new Sphere(gl);
+                const sphereGeometry = new Sphere(gl);
 
-          const program = new Program(gl, {
-              vertex,
-              fragment,
+                const program = new Program(gl, {
+                    vertex,
+                    fragment,
 
-              // Don't cull faces so that plane is double sided - default is gl.BACK
-              cullFace: null,
-          });
+                    // Don't cull faces so that plane is double sided - default is gl.BACK
+                    cullFace: null,
+                });
 
-          const sphere = new Mesh(gl, {geometry: sphereGeometry, program});
-          sphere.setParent(scene);
+                const sphere = new Mesh(gl, { geometry: sphereGeometry, program });
+                sphere.setParent(scene);
 
-          const curve = new Curve({
-            points: [
-              new Vec3(0, 0.5, 0),
-              new Vec3(0, 1, 1),
-              new Vec3(0, -1, 1),
-              new Vec3(0, -0.5, 0),
-            ],
-            type: Curve.CUBICBEZIER,
-          });
-          const points = curve.getPoints(20);
+                const curve = new Curve({
+                    points: [new Vec3(0, 0.5, 0), new Vec3(0, 1, 1), new Vec3(0, -1, 1), new Vec3(0, -0.5, 0)],
+                    type: Curve.CUBICBEZIER,
+                });
+                const points = curve.getPoints(20);
 
-          curve.type = Curve.CATMULLROM;
-          const points2 = curve.getPoints(20);
+                curve.type = Curve.CATMULLROM;
+                const points2 = curve.getPoints(20);
 
-          curve.type = Curve.QUADRATICBEZIER;
-          const points3 = curve.getPoints(20);
+                curve.type = Curve.QUADRATICBEZIER;
+                const points3 = curve.getPoints(20);
 
-          const polyline = new Polyline(gl, {
-            points,
-            uniforms: {
-              uColor: {value: new Color('#f00')},
-              uThickness: {value: 3},
+                const polyline = new Polyline(gl, {
+                    points,
+                    uniforms: {
+                        uColor: { value: new Color('#f00') },
+                        uThickness: { value: 3 },
+                    },
+                });
+
+                const polyline2 = new Polyline(gl, {
+                    points: points2,
+                    uniforms: {
+                        uColor: { value: new Color('#00f') },
+                        uThickness: { value: 2 },
+                    },
+                });
+
+                const polyline3 = new Polyline(gl, {
+                    points: points3,
+                    uniforms: {
+                        uColor: { value: new Color('#0f0') },
+                        uThickness: { value: 4 },
+                    },
+                });
+
+                for (let i = 0; i <= 60; i++) {
+                    const p = [polyline, polyline2, polyline3][i % 3];
+                    const mesh = new Mesh(gl, { geometry: p.geometry, program: p.program });
+                    mesh.setParent(sphere);
+                    mesh.rotation.y = (i * Math.PI) / 60;
+                }
+
+                requestAnimationFrame(update);
+                function update() {
+                    requestAnimationFrame(update);
+                    sphere.rotation.y -= 0.01;
+                    controls.update();
+                    renderer.render({ scene, camera });
+                }
             }
-          });
-
-          const polyline2 = new Polyline(gl, {
-            points: points2,
-            uniforms: {
-              uColor: {value: new Color('#00f')},
-              uThickness: {value: 2},
-            }
-          });
-
-          const polyline3 = new Polyline(gl, {
-            points: points3,
-            uniforms: {
-              uColor: {value: new Color('#0f0')},
-              uThickness: {value: 4},
-            }
-          });
-
-          for(let i = 0; i <= 60; i++) {
-            const p = [polyline, polyline2, polyline3][i % 3];
-            const mesh = new Mesh(gl, {geometry: p.geometry, program: p.program});
-            mesh.setParent(sphere);
-            mesh.rotation.y = i * Math.PI / 60;
-          }
-
-          requestAnimationFrame(update);
-          function update() {
-              requestAnimationFrame(update);
-              sphere.rotation.y -= 0.01;
-              controls.update();
-              renderer.render({scene, camera});
-          }
-        }
-
-    </script>
-</body>
+        </script>
+    </body>
 </html>

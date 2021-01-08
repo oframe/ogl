@@ -1,20 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • Skydome</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">Skydome. Image credit <a href="https://www.flickr.com/photos/charlesashaw/6264765128" target="_blank">charlesashaw</a>.</div>
-    <script type="module">
-        import {Renderer, Geometry, Program, Mesh, Camera, Transform, Texture, Sphere, Orbit} from '../src/index.mjs';
-        
-        const vertex = /* glsl */ `
+        <title>OGL • Skydome</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">
+            Skydome. Image credit <a href="https://www.flickr.com/photos/charlesashaw/6264765128" target="_blank">charlesashaw</a>.
+        </div>
+        <script type="module">
+            import { Renderer, Geometry, Program, Mesh, Camera, Transform, Texture, Sphere, Orbit } from '../src/index.mjs';
+
+            const vertex = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -33,7 +38,7 @@
             }
         `;
 
-        const fragment = /* glsl */ `
+            const fragment = /* glsl */ `
             precision highp float;
             precision highp int;
 
@@ -49,67 +54,66 @@
             }
         `;
 
-        {
-            const renderer = new Renderer({dpr: 2});
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            gl.clearColor(1, 1, 1, 1);
+            {
+                const renderer = new Renderer({ dpr: 2 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 45});
-            camera.position.set(0, 0, 8);
+                const camera = new Camera(gl, { fov: 45 });
+                camera.position.set(0, 0, 8);
 
-            const controls = new Orbit(camera, {
-                enablePan: false,
-                enableZoom: false,
-            });
+                const controls = new Orbit(camera, {
+                    enablePan: false,
+                    enableZoom: false,
+                });
 
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-            const scene = new Transform();
+                const scene = new Transform();
 
-            // Texture is equirectangular
-            const texture = new Texture(gl);
-            const img = new Image();
-            img.onload = () => texture.image = img;
-            img.src = 'assets/sky.jpg';
+                // Texture is equirectangular
+                const texture = new Texture(gl);
+                const img = new Image();
+                img.onload = () => (texture.image = img);
+                img.src = 'assets/sky.jpg';
 
-            // Use Sphere geometry to render equirectangular textures
-            const geometry = new Sphere(gl, {radius: 1, widthSegments: 64});
+                // Use Sphere geometry to render equirectangular textures
+                const geometry = new Sphere(gl, { radius: 1, widthSegments: 64 });
 
-            const program = new Program(gl, {
-                vertex,
-                fragment,
-                uniforms: {
-                    tMap: {value: texture},
-                },
+                const program = new Program(gl, {
+                    vertex,
+                    fragment,
+                    uniforms: {
+                        tMap: { value: texture },
+                    },
 
-                // Need inside of sphere to be visible
-                cullFace: null,
-            });
+                    // Need inside of sphere to be visible
+                    cullFace: null,
+                });
 
-            // A smaller sphere in the center just to help illustrate
-            const mesh = new Mesh(gl, {geometry, program});
-            mesh.setParent(scene);
+                // A smaller sphere in the center just to help illustrate
+                const mesh = new Mesh(gl, { geometry, program });
+                mesh.setParent(scene);
 
-            // Camera will dwell inside skybox
-            const skybox = new Mesh(gl, {geometry, program});
-            skybox.scale.set(10);
-            skybox.setParent(scene);
+                // Camera will dwell inside skybox
+                const skybox = new Mesh(gl, { geometry, program });
+                skybox.scale.set(10);
+                skybox.setParent(scene);
 
-            requestAnimationFrame(update);
-            function update() {
                 requestAnimationFrame(update);
+                function update() {
+                    requestAnimationFrame(update);
 
-                controls.update();
-                renderer.render({scene, camera});
+                    controls.update();
+                    renderer.render({ scene, camera });
+                }
             }
-        }
-
-    </script>
-</body>
+        </script>
+    </body>
 </html>

@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-    <title>OGL • Compressed Textures</title>
-    <link href="assets/main.css" rel="stylesheet">
-</head>
-<body>
-    <div class="Info">Compressed Textures.</div>
-    <script type="module">
-        import {Renderer, Camera, Transform, Texture, Program, Mesh, Plane, Orbit, TextureLoader} from '../src/index.mjs';
-        
-        const vertex = /* glsl */ `
+        <title>OGL • Compressed Textures</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">Compressed Textures.</div>
+        <script type="module">
+            import { Renderer, Camera, Transform, Texture, Program, Mesh, Plane, Orbit, TextureLoader } from '../src/index.mjs';
+
+            const vertex = /* glsl */ `
             attribute vec2 uv;
             attribute vec3 position;
 
@@ -29,7 +32,7 @@
             }
         `;
 
-        const fragment = /* glsl */ `
+            const fragment = /* glsl */ `
             precision highp float;
 
             uniform sampler2D tMap;
@@ -41,89 +44,88 @@
             }
         `;
 
-        {
-            const renderer = new Renderer({dpr: 2});
-            const gl = renderer.gl;
-            document.body.appendChild(gl.canvas);
-            gl.clearColor(1, 1, 1, 1);
+            {
+                const renderer = new Renderer({ dpr: 2 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(1, 1, 1, 1);
 
-            const camera = new Camera(gl, {fov: 45});
-            camera.position.set(-1, 0.5, 2);
-            
-            const controls = new Orbit(camera);
+                const camera = new Camera(gl, { fov: 45 });
+                camera.position.set(-1, 0.5, 2);
 
-            function resize() {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.perspective({aspect: gl.canvas.width / gl.canvas.height});
-            }
-            window.addEventListener('resize', resize, false);
-            resize();
+                const controls = new Orbit(camera);
 
-            const scene = new Transform();
+                function resize() {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                }
+                window.addEventListener('resize', resize, false);
+                resize();
 
-            // Compressed textures use the KTXTexture (Khronos Texture) class
-            // For generation, use https://github.com/TimvanScherpenzeel/texture-compressor
+                const scene = new Transform();
 
-            // For a handy method that handles loading for you, use the TextureLoader.load() method.
-            // Either pass a `src` string to load it (regardless of support)
-            // const texture = TextureLoader.load(gl, {
-            //     src: 'assets/compressed/s3tc-m-y.ktx',
-            // });
+                // Compressed textures use the KTXTexture (Khronos Texture) class
+                // For generation, use https://github.com/TimvanScherpenzeel/texture-compressor
 
-            // Or pass in an object of extension:src key-values, and the function will use the first
-            // supported format in the list - so order by preference!
-            const texture = TextureLoader.load(gl, {
-                src: {
-                    s3tc: 'assets/compressed/s3tc-m-y.ktx',
-                    etc: 'assets/compressed/etc-m-y.ktx',
-                    pvrtc: 'assets/compressed/pvrtc-m-y.ktx',
-                    jpg: 'assets/compressed/uv.jpg',
-                },
-                wrapS: gl.REPEAT,
-                wrapT: gl.REPEAT,
-            });
-            // A console warning will show when no supported format was supplied
+                // For a handy method that handles loading for you, use the TextureLoader.load() method.
+                // Either pass a `src` string to load it (regardless of support)
+                // const texture = TextureLoader.load(gl, {
+                //     src: 'assets/compressed/s3tc-m-y.ktx',
+                // });
 
-            // `loaded` property is a promise resolved when the file is loaded and processed
-            // texture.loaded.then(() => console.log('loaded'));
+                // Or pass in an object of extension:src key-values, and the function will use the first
+                // supported format in the list - so order by preference!
+                const texture = TextureLoader.load(gl, {
+                    src: {
+                        s3tc: 'assets/compressed/s3tc-m-y.ktx',
+                        etc: 'assets/compressed/etc-m-y.ktx',
+                        pvrtc: 'assets/compressed/pvrtc-m-y.ktx',
+                        jpg: 'assets/compressed/uv.jpg',
+                    },
+                    wrapS: gl.REPEAT,
+                    wrapT: gl.REPEAT,
+                });
+                // A console warning will show when no supported format was supplied
 
-            // You can check which format was applied using the `ext` property
-            document.body.querySelector('.Info').textContent += ` Supported format chosen: '${texture.ext}'.`;
+                // `loaded` property is a promise resolved when the file is loaded and processed
+                // texture.loaded.then(() => console.log('loaded'));
 
-            // For direct use of the KTXTexture class, you first need to activate the extensions
-            // TextureLoader.getSupportedExtensions();
+                // You can check which format was applied using the `ext` property
+                document.body.querySelector('.Info').textContent += ` Supported format chosen: '${texture.ext}'.`;
 
-            // Then create an empty texture
-            // const texture = new KTXTexture(gl);
+                // For direct use of the KTXTexture class, you first need to activate the extensions
+                // TextureLoader.getSupportedExtensions();
 
-            // Then, when the buffer has loaded, parse it using the parseBuffer method
-            // fetch(src)
-            //     .then(res => res.arrayBuffer())
-            //     .then(buffer => texture.parseBuffer(buffer));
+                // Then create an empty texture
+                // const texture = new KTXTexture(gl);
 
-            const geometry = new Plane(gl);
+                // Then, when the buffer has loaded, parse it using the parseBuffer method
+                // fetch(src)
+                //     .then(res => res.arrayBuffer())
+                //     .then(buffer => texture.parseBuffer(buffer));
 
-            const program = new Program(gl, {
-                vertex,
-                fragment,
-                uniforms: {
-                    tMap: {value: texture},
-                },
-                cullFace: null,
-            });
+                const geometry = new Plane(gl);
 
-            const mesh = new Mesh(gl, {geometry, program});
-            mesh.setParent(scene);
+                const program = new Program(gl, {
+                    vertex,
+                    fragment,
+                    uniforms: {
+                        tMap: { value: texture },
+                    },
+                    cullFace: null,
+                });
 
-            requestAnimationFrame(update);
-            function update(t) {
+                const mesh = new Mesh(gl, { geometry, program });
+                mesh.setParent(scene);
+
                 requestAnimationFrame(update);
+                function update(t) {
+                    requestAnimationFrame(update);
 
-                controls.update();
-                renderer.render({scene, camera});
+                    controls.update();
+                    renderer.render({ scene, camera });
+                }
             }
-        }
-
-    </script>
-</body>
+        </script>
+    </body>
 </html>
