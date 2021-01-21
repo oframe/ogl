@@ -24,7 +24,7 @@ export class Transform {
     }
 
     setParent(parent, notifyParent = true) {
-        if (notifyParent && this.parent && parent !== this.parent) this.parent.removeChild(this, false);
+        if (this.parent && parent !== this.parent) this.parent.removeChild(this, false);
         this.parent = parent;
         if (notifyParent && parent) parent.addChild(this, false);
     }
