@@ -9,8 +9,7 @@
     },
     "scripts": {
         "build": "rollup -c",
-        "prepublish": "npm run build",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "prepublish": "npm run build"
     },
     "repository": {
         "type": "git",
