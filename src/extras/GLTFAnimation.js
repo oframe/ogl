@@ -20,13 +20,16 @@ export class GLTFAnimation {
         // Set to false to not apply modulo to elapsed against duration
         this.loop = true;
 
-        // Get duration from largest final time in all channels
-        this.duration = data.reduce((a, { times }) => Math.max(a, times[times.length - 1]), 0);
+        // Find starting time as exports from blender (perhaps others too) don't always start from 0
+        this.startTime = data.reduce((a, { times }) => Math.min(a, times[0]), Infinity);
+        // Get largest final time in all channels to calculate duration
+        this.endTime = data.reduce((a, { times }) => Math.max(a, times[times.length - 1]), 0);
+        this.duration = this.endTime - this.startTime;
     }
 
     update(totalWeight = 1, isSet) {
         const weight = isSet ? 1 : this.weight / totalWeight;
-        const elapsed = this.loop ? this.elapsed % this.duration : Math.min(this.elapsed, this.duration);
+        const elapsed = (this.loop ? this.elapsed % this.duration : Math.min(this.elapsed, this.duration)) + this.startTime;
 
         this.data.forEach(({ node, transform, interpolation, times, values }) => {
             // Get index of two time values elapsed is between
