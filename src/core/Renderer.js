@@ -45,6 +45,7 @@ export class Renderer {
         if (!this.gl) {
             this.gl = canvas.getContext('webgl', attributes) || canvas.getContext('experimental-webgl', attributes);
         }
+        if (!this.gl) console.error('unable to create webgl context');
 
         // Attach renderer to gl so that all classes have access to internal state functions
         this.gl.renderer = this;
