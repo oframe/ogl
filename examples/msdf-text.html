@@ -17,7 +17,7 @@
         <script type="module">
             import { Renderer, Camera, Transform, Geometry, Texture, Program, Mesh, Orbit, Text } from '../src/index.mjs';
 
-            const vertex100 = /* glsl */ `
+            const vertex = /* glsl */ `
                 attribute vec2 uv;
                 attribute vec3 position;
 
@@ -33,17 +33,12 @@
                 }
             `;
 
-            const fragment100 = /* glsl */ `
-                #extension GL_OES_standard_derivatives : enable
-
-                precision highp float;
-
+            const fragment = /* glsl */ `
                 uniform sampler2D tMap;
 
                 varying vec2 vUv;
 
                 void main() {
-
                     vec3 tex = texture2D(tMap, vUv).rgb;
                     float signedDist = max(min(tex.r, tex.g), min(max(tex.r, tex.g), tex.b)) - 0.5;
                     float d = fwidth(signedDist);
@@ -56,44 +51,29 @@
                 }
             `;
 
-            const vertex300 = /* glsl */ `#version 300 es
-                in vec2 uv;
-                in vec3 position;
+            const vertex100 =
+                /* glsl */ `
+            ` + vertex;
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-
-                out vec2 vUv;
-
-                void main() {
-                    vUv = uv;
-                    
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `;
-
-            const fragment300 = /* glsl */ `#version 300 es
+            const fragment100 =
+                /* glsl */ `#extension GL_OES_standard_derivatives : enable
                 precision highp float;
+            ` + fragment;
 
-                uniform sampler2D tMap;
+            const vertex300 =
+                /* glsl */ `#version 300 es
+                #define attribute in
+                #define varying out
+            ` + vertex;
 
-                in vec2 vUv;
-
-                out vec4 color;
-
-                void main() {
-
-                    vec3 tex = texture(tMap, vUv).rgb;
-                    float signedDist = max(min(tex.r, tex.g), min(max(tex.r, tex.g), tex.b)) - 0.5;
-                    float d = fwidth(signedDist);
-                    float alpha = smoothstep(-d, d, signedDist);
-
-                    if (alpha < 0.01) discard;
-
-                    color.rgb = vec3(0.0);
-                    color.a = alpha;
-                }
-            `;
+            const fragment300 =
+                /* glsl */ `#version 300 es
+                precision highp float;
+                #define varying in
+                #define texture2D texture
+                #define gl_FragColor FragColor
+                out vec4 FragColor;
+            ` + fragment;
 
             {
                 const renderer = new Renderer({ dpr: 2 });
