@@ -70,4 +70,11 @@ export class Euler extends Array {
         tmpMat4.fromQuaternion(q);
         return this.fromRotationMatrix(tmpMat4, order);
     }
+
+    toArray(a = [], o = 0) {
+        a[o] = this[0];
+        a[o + 1] = this[1];
+        a[o + 2] = this[2];
+        return a;
+    }
 }
