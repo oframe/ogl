@@ -29,7 +29,7 @@ export class GLTFAnimation {
 
     update(totalWeight = 1, isSet) {
         const weight = isSet ? 1 : this.weight / totalWeight;
-        const elapsed = (this.loop ? this.elapsed % this.duration : Math.min(this.elapsed, this.duration)) + this.startTime;
+        const elapsed = (this.loop ? this.elapsed % this.duration : Math.min(this.elapsed, this.duration - 0.001)) + this.startTime;
 
         this.data.forEach(({ node, transform, interpolation, times, values }) => {
             // Get index of two time values elapsed is between
