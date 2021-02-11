@@ -76,10 +76,7 @@ Else if using a bundler with node modules, then import directly from the install
 ```js
 import { ... } from 'ogl';
 ```
-By default, the ES source modules are loaded (`src/index.mjs`). If your bundler doesn't support ES modules (eg Browserify, Vue SSR), the simplest solution is to just target the UMD bundle instead. 
-```js
-import { ... } from 'ogl/dist/ogl.umd.js';
-```
+By default, the ES source modules are loaded (`src/index.mjs`).
 
 As another alternative, you could load from a CDN, using either the jsdelivr or unpkg services.
 ```js
