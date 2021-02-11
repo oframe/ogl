@@ -3,20 +3,15 @@
     "version": "0.0.64",
     "description": "WebGL Library",
     "main": "src/index.mjs",
-    "sideEffects": false,
     "directories": {
         "example": "examples"
-    },
-    "scripts": {
-        "build": "rollup -c",
-        "prepublish": "npm run build"
     },
     "repository": {
         "type": "git",
         "url": "git+https://gordonnl@github.com/oframe/ogl.git"
     },
     "keywords": [
-        "webgl"
+        "webgl", "ogl"
     ],
     "author": {
         "name": "Nathan Gordon",
@@ -26,9 +21,6 @@
     "license": "MIT",
     "bugs": {
         "url": "https://github.com/oframe/ogl/issues"
-    },
-    "devDependencies": {
-        "rollup": "^1.27.13"
     },
     "homepage": "https://github.com/oframe/ogl#readme",
     "prettier": {
