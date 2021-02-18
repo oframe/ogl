@@ -1,6 +1,6 @@
 {
     "name": "ogl",
-    "version": "0.0.64",
+    "version": "0.0.65",
     "description": "WebGL Library",
     "main": "src/index.mjs",
     "directories": {
@@ -11,7 +11,8 @@
         "url": "git+https://gordonnl@github.com/oframe/ogl.git"
     },
     "keywords": [
-        "webgl", "ogl"
+        "webgl",
+        "ogl"
     ],
     "author": {
         "name": "Nathan Gordon",
