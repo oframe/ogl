@@ -64,6 +64,8 @@ export class Skin extends Mesh {
             generateMipmaps: false,
             type: this.gl.FLOAT,
             internalFormat: this.gl.renderer.isWebgl2 ? this.gl.RGBA32F : this.gl.RGBA,
+            minFilter: this.gl.NEAREST,
+            magFilter: this.gl.NEAREST,
             flipY: false,
             width: size,
         });
