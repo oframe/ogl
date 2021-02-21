@@ -3,6 +3,7 @@
     "version": "0.0.65",
     "description": "WebGL Library",
     "main": "src/index.mjs",
+    "sideEffects": false,
     "directories": {
         "example": "examples"
     },
