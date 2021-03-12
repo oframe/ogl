@@ -36,7 +36,7 @@ In its design, the library does the minimum abstraction necessary, so devs shoul
 Keeping the level of abstraction low helps to make the library easier to understand, extend, and also makes it more practical as a WebGL learning resource.
 
 ## Install
-https://registry.npmjs.org/ogl/-/ogl-0.0.65.tgz
+
 [Download](https://github.com/oframe/ogl/archive/master.zip) 
 
 **or**
