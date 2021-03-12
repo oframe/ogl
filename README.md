@@ -27,7 +27,7 @@
 
 [See the Examples!](https://oframe.github.io/ogl/examples)
 
-OGL is a small, effective WebGL library aimed at developers who like minimal layers of abstraction, and are comfortable creating their own shaders.
+OGL is a small, effective WebGL library aimed at developers who like minimal layers of abstraction, and are interested in creating their own shaders.
 
 Written in es6 modules with zero dependencies, the API shares many similarities with ThreeJS, however it is tightly coupled with WebGL and comes with much fewer features.
 
@@ -36,13 +36,19 @@ In its design, the library does the minimum abstraction necessary, so devs shoul
 Keeping the level of abstraction low helps to make the library easier to understand, extend, and also makes it more practical as a WebGL learning resource.
 
 ## Install
-
-[Download](https://github.com/oframe/ogl/archive/master.zip) and [load directly in the browser](https://developers.google.com/web/fundamentals/primers/modules) using es6 modules - **no dev-stack required**.
+https://registry.npmjs.org/ogl/-/ogl-0.0.65.tgz
+[Download](https://github.com/oframe/ogl/archive/master.zip) 
 
 **or**
 
 ```
 npm i ogl
+```
+
+**or**
+
+```
+yarn add ogl
 ```
 
 ## Examples
@@ -59,8 +65,8 @@ Component | Size (minzipped)
 ------------ | -------------:
 Core | 8kb
 Math | 6kb
-Extras | 10kb
-Total | 24kb
+Extras | 15kb
+Total | 29kb
 
 With tree-shaking applied in a build step, one can expect the final size to be much lighter than the values above.
 
@@ -72,7 +78,7 @@ If installed amongst your project files, importing can be done from one single e
 import { ... } from './path/to/src/index.mjs';
 ```
 
-Else if using a bundler with node modules, then import directly from the installed node module.
+Else if using a bundler or import maps with node modules, then import directly from the installed node module.
 ```js
 import { ... } from 'ogl';
 ```
@@ -212,7 +218,7 @@ import {Renderer, Geometry, Program, Mesh} from 'ogl';
 
 In an attempt to keep things light and modular, the library is split up into three components: **Math**, **Core**, and **Extras**.
 
-The **Math** component is an extension of [gl-matrix](http://glmatrix.net/), providing instancable classes that extend Array for each of the module types. 7kb when gzipped, it has no dependencies and can be used separately.
+The **Math** component is an extension of [gl-matrix](http://glmatrix.net/), providing instancable classes that extend Array for each of the module types. 8kb when gzipped, it has no dependencies and can be used separately.
 
 The **Core** is made up of the following:
  - Geometry.js
@@ -224,27 +230,30 @@ The **Core** is made up of the following:
  - Texture.js
  - RenderTarget.js
 
-Any additional layers of abstraction will be included as **Extras**, and not part of the core as to reduce bloat.
+Any additional layers of abstraction will be included as **Extras**, and not part of the core as to reduce bloat. These provide a wide breadth of functionality, ranging from simple to fairly advanced.
 
 Below is an **Extras** wish-list, and is still a work-in-progress as examples are developed.
- - [x] Plane.js
- - [x] Box.js
- - [x] Sphere.js
- - [x] Cylinder.js
- - [x] Triangle.js
- - [x] Orbit.js
- - [x] Raycast.js
- - [ ] Curve.js
- - [x] Post.js
- - [x] Skin.js
  - [x] Animation.js
- - [x] Text.js
- - [x] NormalProgram.js
+ - [x] Box.js
+ - [x] Curve.js
+ - [x] Cylinder.js
  - [x] Flowmap.js
+ - [x] GLTFLoader.js
+ - [x] GLTFAnimation.js
+ - [x] GLTFSkin.js
  - [x] GPGPU.js
- - [x] Polyline.js
- - [x] Shadow.js
  - [x] KTXTexture.js
+ - [x] NormalProgram.js
+ - [x] Orbit.js
+ - [x] Plane.js
+ - [x] Polyline.js
+ - [x] Post.js
+ - [x] Raycast.js
+ - [x] Shadow.js
+ - [x] Skin.js
+ - [x] Sphere.js
+ - [x] Text.js
  - [x] TextureLoader.js
- - [ ] GLTFLoader.js
+ - [x] Torus.js
+ - [x] Triangle.js
  - [ ] OBJLoader.js

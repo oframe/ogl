@@ -11,10 +11,6 @@
         "type": "git",
         "url": "git+https://gordonnl@github.com/oframe/ogl.git"
     },
-    "keywords": [
-        "webgl",
-        "ogl"
-    ],
     "author": {
         "name": "Nathan Gordon",
         "email": "gordonnl@gmail.com",
