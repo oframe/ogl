@@ -150,6 +150,8 @@ export function Text({
             }
 
             cursor++;
+            // Reset infinite loop catch
+            count = 0;
         }
 
         // Remove last line if empty
