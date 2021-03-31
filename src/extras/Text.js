@@ -150,6 +150,8 @@ export function Text({
             }
 
             cursor++;
+            // Reset infinite loop catch
+            count = 0;
         }
 
         // Remove last line if empty
@@ -209,6 +211,7 @@ export function Text({
         _this.buffers = buffers;
         _this.numLines = lines.length;
         _this.height = _this.numLines * size * lineHeight;
+        _this.width = Math.max(...lines.map((line) => line.width));
     }
 
     function getKernPairOffset(id1, id2) {
