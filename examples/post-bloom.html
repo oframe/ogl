@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta
+            name="viewport"
+            content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+        />
+        <link rel="icon" type="image/png" href="assets/favicon.png" />
+
+        <title>OGL • Post Bloom Effect</title>
+        <link href="assets/main.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div class="Info">Post Bloom Effect</div>
+        <script type="module">
+            import { Renderer, Camera, Program, Mesh, Vec2, Post, Box, Triangle, Transform, RenderTarget } from '../src/index.mjs';
+
+            const brightPassFragment = /* glsl */ `
+              precision highp float;
+              uniform sampler2D tMap;
+              uniform float uThreshold;
+
+              varying vec2 vUv;
+
+              void main() {
+                vec4 bright = max(vec4(0.0), (texture2D(tMap, vUv) - uThreshold));
+                gl_FragColor = bright;
+              }
+            `;
+
+            const blurFragment = /* glsl */ `
+              precision highp float;
+
+              // https://github.com/Jam3/glsl-fast-gaussian-blur/blob/master/9.glsl 
+              vec4 blur9(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
+                vec4 color = vec4(0.0);
+                vec2 off1 = vec2(1.3846153846) * direction;
+                vec2 off2 = vec2(3.2307692308) * direction;
+                color += texture2D(image, uv) * 0.2270270270;
+                color += texture2D(image, uv + (off1 / resolution)) * 0.3162162162;
+                color += texture2D(image, uv - (off1 / resolution)) * 0.3162162162;
+                color += texture2D(image, uv + (off2 / resolution)) * 0.0702702703;
+                color += texture2D(image, uv - (off2 / resolution)) * 0.0702702703;
+                return color;
+              }
+
+              precision highp float;
+              uniform sampler2D tMap;
+              uniform vec2 uDirection;
+              uniform vec2 uResolution;
+
+              varying vec2 vUv;
+
+              void main() {
+
+                gl_FragColor = blur9(tMap, vUv, uResolution, uDirection);
+              }
+            `
+
+            const defaultPassVertex = /* glsl */ `
+              attribute vec2 uv;
+              attribute vec2 position;
+              varying vec2 vUv;
+              void main() {
+                  vUv = uv;
+                  gl_Position = vec4(position, 0, 1.);
+              }
+            `
+
+            const finalFragment = /* glsl */ `
+              precision highp float;
+
+              uniform sampler2D tMap;
+              uniform sampler2D tBloom;
+              uniform vec2 uResolution;
+              uniform float uBloomStrength;
+
+              varying vec2 vUv;
+
+              void main() {
+                gl_FragColor = texture2D(tMap, vUv) + texture2D(tBloom, vUv) * uBloomStrength;
+              }
+            `
+
+            const createDummyTex = (gl) => {
+              const tex = gl.createTexture();
+              gl.bindTexture(gl.TEXTURE_2D, tex);
+              gl.texImage2D(
+                gl.TEXTURE_2D,
+                0,
+                gl.RGBA,
+                1,
+                1,
+                0,
+                gl.RGBA,
+                gl.UNSIGNED_BYTE,
+                new Uint8Array([255, 0, 0, 255])
+              );
+
+              return tex;
+            };
+
+            {
+                const renderer = new Renderer({ dpr: 1 });
+                const gl = renderer.gl;
+                document.body.appendChild(gl.canvas);
+                gl.clearColor(.5, .5, .5, 1.);
+
+                const camera = new Camera(gl, { fov: 35, far: 100 });
+                camera.position.set(0, 1, 5);
+                camera.lookAt([0, 0, 0]);
+
+                const scene = new Transform(gl)
+
+                // Create uniform for pass
+                const resolution = { value: new Vec2() };
+                const fboResolution = { value: new Vec2() };
+
+                // Initialize scene objects and FBOs
+                const dummyTex = createDummyTex(gl);
+
+                const geometry = new Box(gl);
+                const program = new Program(gl, {
+                  vertex: `
+                    attribute vec3 position;
+                    uniform mat4 modelViewMatrix;
+                    uniform mat4 projectionMatrix;
+
+                    void main() {
+                      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);
+                    }
+                  `,
+                  fragment: `
+                    precision highp float;
+
+                    void main() {
+                      gl_FragColor = vec4(1., 0., 0., 1.);
+                    }
+                  `
+
+                })
+                const mesh = new Mesh(gl, { geometry, program });
+                mesh.setParent(scene);
+
+                let renderTargets;
+
+                const triangleGeometry = new Triangle(gl);
+                const bright = new Mesh(gl, {
+                  geometry: triangleGeometry,
+                  program: new Program(gl, {
+                    vertex: defaultPassVertex,
+                    fragment: brightPassFragment,
+                    uniforms: {
+                      tMap: { value: dummyTex },
+                      uThreshold: { value: .2 }
+                  
+                    }
+                  })
+                })
+
+                const horizontalBlur = new Mesh(gl, {
+                  geometry: triangleGeometry,
+                  program: new Program(gl, {
+                    vertex: defaultPassVertex,
+                    fragment: blurFragment,
+                    uniforms: {
+                      tMap: { value: dummyTex },
+                      uDirection: { value: new Vec2(1, 0) },
+                      uResolution: fboResolution
+                    }
+                  })
+                })
+
+                const verticalBlur = new Mesh(gl, {
+                  geometry: triangleGeometry,
+                  program: new Program(gl, {
+                    vertex: defaultPassVertex,
+                    fragment: blurFragment,
+                    uniforms: {
+                      tMap: { value: dummyTex },
+                      uDirection: { value: new Vec2(0, 1) },
+                      uResolution: fboResolution
+                    }
+                  })
+                })
+
+                const final = new Mesh(gl, {
+                  geometry: triangleGeometry,
+                  program: new Program(gl, {
+                    vertex: defaultPassVertex,
+                    fragment: finalFragment,
+                    uniforms: {
+                      uResolution: resolution,
+                      tMap: { value: dummyTex },
+                      tBloom: { value: dummyTex },
+                      uBloomStrength: { value: 1. }
+                    }
+                  })
+                })
+
+                function resize() {
+                  const { innerWidth: width, innerHeight: height } = window;
+                  renderer.setSize(width, height);
+                  camera.perspective({ aspect: width / height });
+
+                  
+                  resolution.value.set(width, height);
+                  fboResolution.value.set(width / 4, height / 4)
+
+                  // Create RenderTargets in place of using Post object
+                  // 1st one is for the base texture (scene), the other 2 are for ping ponging the bloom effect
+                  renderTargets = [
+                    new RenderTarget(gl, { width: resolution.value.x, height: resolution.value.y }),
+                    new RenderTarget(gl, { width: fboResolution.value.x, height: fboResolution.value.y }),
+                    new RenderTarget(gl, { width: fboResolution.value.x, height: fboResolution.value.y }),
+                  ]
+
+                  bright.program.uniforms.tMap.value = renderTargets[0].texture;
+                  horizontalBlur.program.uniforms.tMap.value = renderTargets[1].texture;
+                  verticalBlur.program.uniforms.tMap.value = renderTargets[2].texture;
+                  final.program.uniforms.tMap.value = renderTargets[0].texture;
+                  final.program.uniforms.tBloom.value = renderTargets[1].texture;
+              }
+
+                window.addEventListener('resize', resize, false);
+                resize();
+
+
+
+            
+
+                requestAnimationFrame(update);
+                function update() {
+                    requestAnimationFrame(update);
+
+                    mesh.rotation.y -= 0.005;
+                    mesh.rotation.x -= 0.01;
+
+                    renderer.render({ scene, camera, target: renderTargets[0] });
+
+                    renderer.render({
+                      scene: bright,
+                      target: renderTargets[1]
+                    })
+
+                    for (var i = 0; i < 3; i++) {
+                      renderer.render({
+                        scene: horizontalBlur,
+                        target: renderTargets[2]
+                      });
+
+                      renderer.render({
+                        scene: verticalBlur,
+                        target: renderTargets[1]
+                      });
+                    }
+
+                    renderer.render({
+                      scene: final
+                    });
+                }
+            }
+        </script>
+    </body>
+</html>
