@@ -70,8 +70,8 @@ export class Post {
         }
 
         dpr = this.dpr || this.gl.renderer.dpr;
-        width = (this.width || this.gl.renderer.width) * dpr;
-        height = (this.height || this.gl.renderer.height) * dpr;
+        width = Math.floor((this.width || this.gl.renderer.width) * dpr);
+        height = Math.floor((this.height || this.gl.renderer.height) * dpr);
 
         this.options.width = width;
         this.options.height = height;
@@ -80,22 +80,24 @@ export class Post {
         this.fbo.write = new RenderTarget(this.gl, this.options);
     }
 
-    // Uses same arguments as renderer.render
-    render({ scene, camera, target = null, update = true, sort = true, frustumCull = true }) {
+    // Uses same arguments as renderer.render, with addition of optional texture passed in to avoid scene render
+    render({ scene, camera, texture, target = null, update = true, sort = true, frustumCull = true }) {
         const enabledPasses = this.passes.filter((pass) => pass.enabled);
 
-        this.gl.renderer.render({
-            scene,
-            camera,
-            target: enabledPasses.length || (!target && this.targetOnly) ? this.fbo.write : target,
-            update,
-            sort,
-            frustumCull,
-        });
-        this.fbo.swap();
+        if (!texture) {
+            this.gl.renderer.render({
+                scene,
+                camera,
+                target: enabledPasses.length || (!target && this.targetOnly) ? this.fbo.write : target,
+                update,
+                sort,
+                frustumCull,
+            });
+            this.fbo.swap();
+        }
 
         enabledPasses.forEach((pass, i) => {
-            pass.mesh.program.uniforms[pass.textureUniform].value = this.fbo.read.texture;
+            pass.mesh.program.uniforms[pass.textureUniform].value = !i && texture ? texture : this.fbo.read.texture;
             this.gl.renderer.render({
                 scene: pass.mesh,
                 target: i === enabledPasses.length - 1 && (target || !this.targetOnly) ? target : this.fbo.write,
