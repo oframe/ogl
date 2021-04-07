@@ -197,18 +197,21 @@ export class Geometry {
         }
     }
 
-    getPositionArray() {
+    getPosition() {
         // Use position buffer, or min/max if available
         const attr = this.attributes.position;
         // if (attr.min) return [...attr.min, ...attr.max];
-        if (attr.data) return attr.data;
+        if (attr.data) return attr;
         if (isBoundsWarned) return;
         console.warn('No position buffer data found to compute bounds');
         return (isBoundsWarned = true);
     }
 
-    computeBoundingBox(array) {
-        if (!array) array = this.getPositionArray();
+    computeBoundingBox(attr) {
+        if (!attr) attr = this.getPosition();
+        const array = attr.data;
+        const offset = attr.offset || 0;
+        const stride = attr.stride || attr.size;
 
         if (!this.bounds) {
             this.bounds = {
@@ -228,9 +231,8 @@ export class Geometry {
         min.set(+Infinity);
         max.set(-Infinity);
 
-        // TODO: use offset/stride if exists
         // TODO: check size of position (eg triangle with Vec2)
-        for (let i = 0, l = array.length; i < l; i += 3) {
+        for (let i = offset, l = array.length; i < l; i += stride) {
             const x = array[i];
             const y = array[i + 1];
             const z = array[i + 2];
@@ -248,12 +250,16 @@ export class Geometry {
         center.add(min, max).divide(2);
     }
 
-    computeBoundingSphere(array) {
-        if (!array) array = this.getPositionArray();
-        if (!this.bounds) this.computeBoundingBox(array);
+    computeBoundingSphere(attr) {
+        if (!attr) attr = this.getPosition();
+        const array = attr.data;
+        const offset = attr.offset || 0;
+        const stride = attr.stride || attr.size;
+
+        if (!this.bounds) this.computeBoundingBox(attr);
 
         let maxRadiusSq = 0;
-        for (let i = 0, l = array.length; i < l; i += 3) {
+        for (let i = offset, l = array.length; i < l; i += stride) {
             tempVec3.fromArray(array, i);
             maxRadiusSq = Math.max(maxRadiusSq, this.bounds.center.squaredDistance(tempVec3));
         }
