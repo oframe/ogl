@@ -436,7 +436,9 @@
                 function addGLTF(gltf) {
                     scene.children.forEach((child) => child.setParent(null));
                     console.log(gltf);
-                    gltf.scene.forEach((root) => {
+
+                    const s = gltf.scene || gltf.scenes[0];
+                    s.forEach((root) => {
                         root.setParent(scene);
                         root.traverse((node) => {
                             if (node.program) {
