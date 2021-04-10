@@ -84,10 +84,11 @@ import { ... } from 'ogl';
 ```
 By default, the ES source modules are loaded (`src/index.mjs`).
 
-As another alternative, you could load from a CDN, using either the jsdelivr or unpkg services.
+As another alternative, you could load from a CDN, using either the jsdelivr, unpkg or skypack services.
 ```js
-import {...} from 'https://cdn.jsdelivr.net/npm/ogl';
-import {...} from 'https://unpkg.com/ogl';
+import { ... } from 'https://cdn.jsdelivr.net/npm/ogl';
+import { ... } from 'https://unpkg.com/ogl';
+import { ... } from 'https://cdn.skypack.dev/ogl';
 ```
 If you take this route, I would highly recommend defining a specific version (append `@x.x.x`) to avoid code breaking, rather than fetching the latest version, as per the above links.
 

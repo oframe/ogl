@@ -216,15 +216,16 @@
                     postComposite.render({ scene, camera });
 
                     // This render the bloom effect's bright and blur passes to postBloom.fbo.read
-                    // Using `texture` avoids the post rendering the scene
+                    // Passing in a `texture` argument avoids the post initially rendering the scene
                     postBloom.render({ texture: postComposite.uniform.value, targetOnly: true });
 
                     // Re-enable composite pass
                     compositePass.enabled = true;
-                    // Now reset so post can render to canvas upon its last pass
+                    // Allow post to render to canvas upon its last pass
                     postComposite.targetOnly = false;
 
-                    // This renders to canvas - pass back in its previous render of the scene
+                    // This renders to canvas, compositing the bloom pass on top
+                    // pass back in its previous render of the scene to avoid re-rendering
                     postComposite.render({ texture: postComposite.uniform.value });
                 }
             }
