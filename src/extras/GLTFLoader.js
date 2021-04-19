@@ -133,7 +133,7 @@ export class GLTFLoader {
     }
 
     static async parseDesc(src) {
-        if (!src.match(/\.glb$/)) {
+        if (!src.match(/\.glb/)) {
             return await fetch(src).then((res) => res.json());
         } else {
             return await fetch(src)
