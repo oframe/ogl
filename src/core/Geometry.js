@@ -268,7 +268,15 @@ export class Geometry {
     }
 
     remove() {
-        if (this.vao) this.gl.renderer.deleteVertexArray(this.vao);
+        if (this.VAOs) {
+            for (let key in this.VAOs) {
+                const vao = this.VAOs[key];
+                if (vao) {
+                    this.gl.renderer.deleteVertexArray(vao);
+                }
+                delete this.VAOs[key];
+            }
+        }
         for (let key in this.attributes) {
             this.gl.deleteBuffer(this.attributes[key].buffer);
             delete this.attributes[key];
