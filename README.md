@@ -260,7 +260,7 @@ Below is an **Extras** wish-list, and is still a work-in-progress as examples ar
  - [ ] OBJLoader.js
 
 
-## License
+## Unlicense
 
 This is free and unencumbered software released into the public domain.
 
