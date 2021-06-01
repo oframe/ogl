@@ -195,9 +195,9 @@ function decodeImage(src) {
         // Only chrome's implementation of createImageBitmap is fully supported
         const isChrome = navigator.userAgent.toLowerCase().includes('chrome');
         if (!!window.createImageBitmap && isChrome) {
-            fetch(src)
+            fetch(src, { mode: 'cors' })
                 .then(r => r.blob())
-                .then(b => createImageBitmap(img, { imageOrientation: 'flipY', premultiplyAlpha: 'none' }))
+                .then(b => createImageBitmap(b, { imageOrientation: 'flipY', premultiplyAlpha: 'none' }))
                 .then(resolve);
         } else {
             const img = new Image();
