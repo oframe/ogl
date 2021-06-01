@@ -192,22 +192,19 @@ function powerOfTwo(value) {
 
 function decodeImage(src) {
     return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = '';
-        img.src = src;
-
         // Only chrome's implementation of createImageBitmap is fully supported
         const isChrome = navigator.userAgent.toLowerCase().includes('chrome');
         if (!!window.createImageBitmap && isChrome) {
-            img.onload = () => {
-                createImageBitmap(img, {
-                    imageOrientation: 'flipY',
-                    premultiplyAlpha: 'none',
-                }).then((imgBmp) => {
-                    resolve(imgBmp);
-                });
+            fetch(src)
+                .then(r => r.blob())
+                .then(b => createImageBitmap(img, { imageOrientation: 'flipY', premultiplyAlpha: 'none' }))
+                .then(resolve);
             };
         } else {
+            const img = new Image();
+
+            img.crossOrigin = '';
+            img.src = src;
             img.onload = () => resolve(img);
         }
     });
