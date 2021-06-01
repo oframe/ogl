@@ -199,7 +199,6 @@ function decodeImage(src) {
                 .then(r => r.blob())
                 .then(b => createImageBitmap(img, { imageOrientation: 'flipY', premultiplyAlpha: 'none' }))
                 .then(resolve);
-            };
         } else {
             const img = new Image();
 
