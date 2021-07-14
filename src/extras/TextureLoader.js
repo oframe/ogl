@@ -130,19 +130,17 @@ export class TextureLoader {
 
         const extensions = {
             pvrtc: gl.renderer.getExtension('WEBGL_compressed_texture_pvrtc') || gl.renderer.getExtension('WEBKIT_WEBGL_compressed_texture_pvrtc'),
-            s3tc:
-                gl.renderer.getExtension('WEBGL_compressed_texture_s3tc') ||
-                gl.renderer.getExtension('MOZ_WEBGL_compressed_texture_s3tc') ||
-                gl.renderer.getExtension('WEBKIT_WEBGL_compressed_texture_s3tc'),
-            etc: gl.renderer.getExtension('WEBGL_compressed_texture_etc'),
+            s3tc: gl.renderer.getExtension('WEBGL_compressed_texture_s3tc'),
+            // etc: gl.renderer.getExtension('WEBGL_compressed_texture_etc'),
             etc1: gl.renderer.getExtension('WEBGL_compressed_texture_etc1'),
             astc: gl.renderer.getExtension('WEBGL_compressed_texture_astc'),
+            bc7: gl.renderer.getExtension('EXT_texture_compression_bptc'),
         };
 
         for (const ext in extensions) if (extensions[ext]) supportedExtensions.push(ext);
 
         // Check for WebP support
-        if (detectWebP) supportedExtensions.push('webp');
+        if (detectWebP()) supportedExtensions.push('webp');
 
         // Formats supported by all
         supportedExtensions.push('png', 'jpg');
@@ -187,6 +185,7 @@ function detectWebP() {
 }
 
 function powerOfTwo(value) {
+    // (width & (width - 1)) !== 0
     return Math.log2(value) % 1 === 0;
 }
 
