@@ -121,6 +121,7 @@ export class Vec2 extends Array {
 
     lerp(v, a) {
         Vec2Func.lerp(this, this, v, a);
+        return this;
     }
 
     clone() {
