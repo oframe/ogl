@@ -25,6 +25,7 @@ export function Orbit(
         autoRotateSpeed = 1.0,
         enableZoom = true,
         zoomSpeed = 1,
+        zoomStyle = 'dolly',
         enablePan = true,
         panSpeed = 0.1,
         minPolarAngle = 0,
@@ -37,6 +38,7 @@ export function Orbit(
 ) {
     this.enabled = enabled;
     this.target = target;
+    this.zoomStyle = zoomStyle;
 
     // Catch attempts to disable - set to 1 so has no effect
     ease = ease || 1;
@@ -146,9 +148,14 @@ export function Orbit(
         panUp((2 * deltaY * targetDistance) / el.clientHeight, object.matrix);
     };
 
-    function dolly(dollyScale) {
-        sphericalDelta.radius /= dollyScale;
-    }
+    const dolly = (dollyScale) => {
+        if (this.zoomStyle === 'dolly') sphericalDelta.radius /= dollyScale;
+        else {
+            object.fov /= dollyScale;
+            if (object.type === 'orthographic') object.orthographic();
+            else object.perspective();
+        }
+    };
 
     function handleAutoRotate() {
         const angle = ((2 * Math.PI) / 60 / 60) * autoRotateSpeed;

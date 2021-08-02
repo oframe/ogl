@@ -174,3 +174,7 @@ canvas {
     top: 0;
     left: 0;
 }
+
+#dropdown {
+    margin: 1em 0em;
+}

@@ -13,7 +13,17 @@
         <link href="assets/main.css" rel="stylesheet" />
     </head>
     <body>
-        <div class="Info">Orbit Controls. Model by Google Poly.</div>
+        <div class="Info">
+            Orbit Controls. Model by Google Poly.
+            <div id="dropdown">
+                <label for="zoom-style">Zoom Style:</label>
+                <select name="zoom-style" id="zoom-style">
+                    <option value="dolly">Dolly</option>
+                    <option value="fov">FOV</option>
+                </select>
+            </div>
+        </div>
+
         <script type="module">
             import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Vec3, Orbit } from '../src/index.mjs';
 
@@ -71,6 +81,10 @@
                     target: new Vec3(0, 0.7, 0),
                 });
 
+                document.querySelector('#dropdown').addEventListener('change', ({ target: { value } }) => {
+                    controls.zoomStyle = value;
+                });
+
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
                     camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
@@ -94,6 +108,7 @@
                     cullFace: null,
                 });
 
+                let mesh;
                 loadModel();
                 async function loadModel() {
                     const data = await (await fetch(`assets/macaw.json`)).json();
@@ -109,7 +124,7 @@
                 }
 
                 requestAnimationFrame(update);
-                function update() {
+                function update(t) {
                     requestAnimationFrame(update);
 
                     // Need to update controls every frame
