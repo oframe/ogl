@@ -13,7 +13,16 @@
         <link href="assets/main.css" rel="stylesheet" />
     </head>
     <body>
-        <div class="Info">Cube Map. Texture by <a href="http://www.humus.name" target="_blank">Humus</a></div>
+        <div class="Info">
+            Cube Map. Texture by <a href="http://www.humus.name" target="_blank">Humus</a>
+            <div id="dropdown">
+                <label for="zoom-style">Zoom Style:</label>
+                <select name="zoom-style" id="zoom-style">
+                    <option value="dolly">Dolly</option>
+                    <option value="fov">FOV</option>
+                </select>
+            </div>
+        </div>
         <script type="module">
             import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Box, Orbit } from '../src/index.mjs';
 
@@ -60,6 +69,10 @@
                 camera.position.set(-2, 1, -3);
 
                 const controls = new Orbit(camera);
+
+                document.querySelector('#dropdown').addEventListener('change', ({ target: { value } }) => {
+                    controls.zoomStyle = value;
+                });
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
