@@ -20,6 +20,7 @@ import { NormalProgram } from './NormalProgram.js';
 // [ ] Cameras
 // [ ] Extensions
 // [x] GLB support
+// [x] Basis/ktx2 support
 
 // TODO: Sparse accessor packing? For morph targets basically
 // TODO: init accessor missing bufferView with 0s
@@ -66,6 +67,10 @@ const TRANSFORMS = {
 };
 
 export class GLTFLoader {
+    static setBasisManager(manager) {
+        this.basisManager = manager;
+    }
+
     static async load(gl, src) {
         const dir = src.split('/').slice(0, -1).join('/') + '/';
 
@@ -78,6 +83,9 @@ export class GLTFLoader {
     static async parse(gl, desc, dir) {
         if (desc.asset === undefined || desc.asset.version[0] < 2) console.warn('Only GLTF >=2.0 supported. Attempting to parse.');
 
+        if (desc.extensionsRequired.includes('KHR_texture_basisu') && !this.basisManager)
+            console.warn('KHR_texture_basisu extension required but no manager supplied. Use .setBasisManager()');
+
         // Load buffers async
         const buffers = await this.loadBuffers(desc, dir);
 
@@ -88,7 +96,7 @@ export class GLTFLoader {
         const bufferViews = this.parseBufferViews(gl, desc, buffers);
 
         // Create images from either bufferViews or separate image files
-        const images = this.parseImages(gl, desc, dir, bufferViews);
+        const images = await this.parseImages(gl, desc, dir, bufferViews);
 
         const textures = this.parseTextures(gl, desc, images);
 
@@ -263,6 +271,12 @@ export class GLTFLoader {
                 },
                 i
             ) => {
+                // For basis, just slice buffer
+                if (mimeType === 'image/ktx2') {
+                    bufferViews[i].data = buffers[bufferIndex].slice(byteOffset, byteOffset + byteLength);
+                    return;
+                }
+
                 const TypeArray = TYPE_ARRAY[componentType || mimeType];
                 const elementBytes = TypeArray.BYTES_PER_ELEMENT;
 
@@ -283,28 +297,42 @@ export class GLTFLoader {
         return bufferViews;
     }
 
-    static parseImages(gl, desc, dir, bufferViews) {
+    static async parseImages(gl, desc, dir, bufferViews) {
         if (!desc.images) return null;
-        return desc.images.map(({ uri, bufferView: bufferViewIndex, mimeType, name }) => {
-            const image = new Image();
-            image.name = name;
-            if (uri) {
-                image.src = this.resolveURI(uri, dir);
-            } else if (bufferViewIndex !== undefined) {
-                const { data } = bufferViews[bufferViewIndex];
-                const blob = new Blob([data], { type: mimeType });
-                image.src = URL.createObjectURL(blob);
-            }
-            image.ready = new Promise((res) => {
-                image.onload = () => res();
-            });
-            return image;
-        });
+        return await Promise.all(
+            desc.images.map(async ({ uri, bufferView: bufferViewIndex, mimeType, name }) => {
+                if (mimeType === 'image/ktx2') {
+                    const { data } = bufferViews[bufferViewIndex];
+                    const image = await this.basisManager.parseTexture(data);
+                    return image;
+                }
+
+                // jpg / png
+                const image = new Image();
+                image.name = name;
+                if (uri) {
+                    image.src = this.resolveURI(uri, dir);
+                } else if (bufferViewIndex !== undefined) {
+                    const { data } = bufferViews[bufferViewIndex];
+                    const blob = new Blob([data], { type: mimeType });
+                    image.src = URL.createObjectURL(blob);
+                }
+                image.ready = new Promise((res) => {
+                    image.onload = () => res();
+                });
+                return image;
+            })
+        );
     }
 
     static parseTextures(gl, desc, images) {
         if (!desc.textures) return null;
         return desc.textures.map(({ sampler: samplerIndex, source: sourceIndex, name, extensions, extras }) => {
+            if (sourceIndex === undefined && !!extensions) {
+                // Basis extension source index
+                if (extensions.KHR_texture_basisu) sourceIndex = extensions.KHR_texture_basisu.source;
+            }
+
             const options = {
                 flipY: false,
                 wrapS: gl.REPEAT, // Repeat by default, opposed to OGL's clamp by default
@@ -316,10 +344,27 @@ export class GLTFLoader {
                     if (sampler[prop]) options[prop] = sampler[prop];
                 });
             }
+
+            const image = images[sourceIndex];
+
+            // For compressed textures
+            if (image.isBasis) {
+                options.image = image;
+                options.internalFormat = image.internalFormat;
+                if (image.isCompressedTexture) {
+                    options.generateMipmaps = false;
+                    if (image.length > 1) this.minFilter = gl.NEAREST_MIPMAP_LINEAR;
+                }
+                const texture = new Texture(gl, options);
+                texture.name = name;
+                return texture;
+            }
+
             const texture = new Texture(gl, options);
             texture.name = name;
-            const image = images[sourceIndex];
-            image.ready.then(() => (texture.image = image));
+            image.ready.then(() => {
+                texture.image = image;
+            });
 
             return texture;
         });
