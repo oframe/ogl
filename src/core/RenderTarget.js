@@ -106,4 +106,45 @@ export class RenderTarget {
 
         this.gl.bindFramebuffer(this.target, null);
     }
+
+    setSize(width, height) {
+        if (this.width === width && this.height === height) return;
+
+        this.width = width;
+        this.height = height;
+        this.gl.bindFramebuffer(this.target, this.buffer);
+
+        for (let i = 0; i < this.textures.length; i++) {
+            this.textures[i].width = width;
+            this.textures[i].height = height;
+            this.textures[i].needsUpdate = true;
+            this.textures[i].update();
+            this.gl.framebufferTexture2D(this.target, this.gl.COLOR_ATTACHMENT0 + i, this.gl.TEXTURE_2D, this.textures[i].texture, 0 /* level */);
+        }
+
+        if (this.depthTexture) {
+            this.depthTexture.width = width;
+            this.depthTexture.height = height;
+            this.depthTexture.needsUpdate = true;
+            this.depthTexture.update();
+            this.gl.framebufferTexture2D(this.target, this.gl.DEPTH_ATTACHMENT, this.gl.TEXTURE_2D, this.depthTexture.texture, 0 /* level */);
+        } else {
+            if (this.depthBuffer) {
+                this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.depthBuffer);
+                this.gl.renderbufferStorage(this.gl.RENDERBUFFER, this.gl.DEPTH_COMPONENT16, width, height);
+            }
+
+            if (this.stencilBuffer) {
+                this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.stencilBuffer);
+                this.gl.renderbufferStorage(this.gl.RENDERBUFFER, this.gl.STENCIL_INDEX8, width, height);
+            }
+
+            if (this.depthStencilBuffer) {
+                this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.depthStencilBuffer);
+                this.gl.renderbufferStorage(this.gl.RENDERBUFFER, this.gl.DEPTH_STENCIL, width, height);
+            }
+        }
+
+        this.gl.bindFramebuffer(this.target, null);
+    }
 }
