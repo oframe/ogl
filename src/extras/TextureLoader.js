@@ -113,7 +113,7 @@ export class TextureLoader {
                     unpackAlignment,
                     flipY,
                 });
-                texture.loaded = this.loadImage(gl, src, texture);
+                texture.loaded = this.loadImage(gl, src, texture, flipY);
                 break;
             default:
                 console.warn('No supported format supplied');
@@ -154,8 +154,8 @@ export class TextureLoader {
             .then((buffer) => texture.parseBuffer(buffer));
     }
 
-    static loadImage(gl, src, texture) {
-        return decodeImage(src).then((imgBmp) => {
+    static loadImage(gl, src, texture, flipY) {
+        return decodeImage(src, flipY).then((imgBmp) => {
             // Catch non POT textures and update params to avoid errors
             if (!powerOfTwo(imgBmp.width) || !powerOfTwo(imgBmp.height)) {
                 if (texture.generateMipmaps) texture.generateMipmaps = false;
@@ -189,14 +189,14 @@ function powerOfTwo(value) {
     return Math.log2(value) % 1 === 0;
 }
 
-function decodeImage(src) {
+function decodeImage(src, flipY) {
     return new Promise((resolve) => {
         // Only chrome's implementation of createImageBitmap is fully supported
         const isChrome = navigator.userAgent.toLowerCase().includes('chrome');
         if (!!window.createImageBitmap && isChrome) {
             fetch(src, { mode: 'cors' })
                 .then(r => r.blob())
-                .then(b => createImageBitmap(b, { imageOrientation: 'flipY', premultiplyAlpha: 'none' }))
+                .then(b => createImageBitmap(b, { imageOrientation: flipY ? 'flipY' : 'none', premultiplyAlpha: 'none' }))
                 .then(resolve);
         } else {
             const img = new Image();
