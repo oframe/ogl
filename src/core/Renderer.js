@@ -63,7 +63,7 @@ export class Renderer {
         this.state.flipY = false;
         this.state.unpackAlignment = 4;
         this.state.framebuffer = null;
-        this.state.viewport = { width: null, height: null };
+        this.state.viewport = { x: 0, y: 0, width: null, height: null };
         this.state.textureUnits = [];
         this.state.activeTextureUnit = 0;
         this.state.boundBuffer = null;
@@ -122,6 +122,8 @@ export class Renderer {
         if (this.state.viewport.width === width && this.state.viewport.height === height) return;
         this.state.viewport.width = width;
         this.state.viewport.height = height;
+        this.state.viewport.x = x;
+        this.state.viewport.y = y;
         this.gl.viewport(x, y, width, height);
     }
 
