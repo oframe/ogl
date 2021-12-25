@@ -118,11 +118,11 @@ export class Renderer {
         });
     }
 
-    setViewport(width, height) {
+    setViewport(width, height, x = 0, y = 0) {
         if (this.state.viewport.width === width && this.state.viewport.height === height) return;
         this.state.viewport.width = width;
         this.state.viewport.height = height;
-        this.gl.viewport(0, 0, width, height);
+        this.gl.viewport(x, y, width, height);
     }
 
     enable(id) {
