@@ -132,7 +132,7 @@
 
                 // Highlight and update others
                 exampleLinks.forEach((link) => {
-                    if (link === e) link.classList.add('active');
+                    if (link === e.target) link.classList.add('active');
                     else link.classList.remove('active');
                 });
 
