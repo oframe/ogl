@@ -130,6 +130,12 @@
                 iFrame.src = e.target.href;
                 sourceLink.href = sourcePath + src;
 
+                // Highlight and update others
+                exampleLinks.forEach((link) => {
+                    if (link === e) link.classList.add('active');
+                    else link.classList.remove('active');
+                });
+
                 // Update search query
                 history.pushState(null, null, `${location.origin}${location.pathname}?src=${src}`);
                 e.preventDefault && e.preventDefault();
