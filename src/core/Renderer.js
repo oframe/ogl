@@ -126,7 +126,6 @@ export class Renderer {
     }
 
     setScissor(width, height, x = 0, y = 0) {
-        this.enable(this.gl.SCISSOR_TEST);
         this.gl.scissor(x, y, width, height);
     }
 
