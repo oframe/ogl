@@ -125,6 +125,10 @@ export class Renderer {
         this.gl.viewport(0, 0, width, height);
     }
 
+    setScissor(width, height, x = 0, y = 0) {
+        this.gl.scissor(x, y, width, height);
+    }
+
     enable(id) {
         if (this.state[id] === true) return;
         this.gl.enable(id);
