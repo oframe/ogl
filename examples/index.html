@@ -108,6 +108,7 @@
             if (loadQuery[1]) {
                 iFrame.src = loadQuery[1];
                 sourceLink.href = sourcePath + loadQuery[1];
+                highlight(loadQuery[1]);
             } else {
                 // choose random example to show if none linked
                 let target = exampleLinks[Math.floor(Math.random() * exampleLinks.length)];
@@ -129,10 +130,20 @@
 
                 iFrame.src = e.target.href;
                 sourceLink.href = sourcePath + src;
+                highlight(src);
 
                 // Update search query
                 history.pushState(null, null, `${location.origin}${location.pathname}?src=${src}`);
                 e.preventDefault && e.preventDefault();
+            }
+
+            // Highlight and update others
+            function highlight(src) {
+                exampleLinks.forEach((link) => {
+                    let linkSrc = link.href.split('examples/')[1];
+                    if (src === linkSrc) link.classList.add('active');
+                    else link.classList.remove('active');
+                });
             }
         </script>
     </body>

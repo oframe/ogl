@@ -108,6 +108,13 @@ body {
     padding-left: 30px;
     display: block;
 }
+.Example.active {
+    background-color: #3dd6ff;
+    margin: 0px -40px 0px -20px;
+    padding: 5px 0px 5px 50px;
+    font-weight: bold;
+    color: white;
+}
 div.Example {
     opacity: 0.2;
 }
