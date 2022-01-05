@@ -108,6 +108,23 @@ export class Post {
 
         this.uniform.value = this.fbo.read.texture;
     }
+
+    dispose() {
+        this.geometry.dispose();
+        delete this.geometry;
+
+        this.passes.forEach((pass) => {
+            pass.program.dispose();
+            Object.values(pass.uniforms).forEach((uniform) => {
+                if (typeof uniform.dispose === 'function') uniform.dispose();
+            });
+        });
+        this.passes = [];
+
+        this.fbo.read.dispose();
+        this.fbo.write.dispose();
+        delete this.fbo;
+    }
 }
 
 const defaultVertex = /* glsl */ `

@@ -114,6 +114,27 @@ export class GPGPU {
             this.fbo.swap();
         });
     }
+
+    dispose() {
+        this.geometry.dispose();
+        delete this.geometry;
+
+        this.passes.forEach((pass) => {
+            pass.program.dispose();
+
+            Object.values(pass.uniforms).forEach((uniform) => {
+                if (typeof uniform.dispose === 'function') uniform.dispose();
+            });
+        });
+        delete this.passes;
+
+        this.uniform.value.dispose();
+        delete this.uniform;
+
+        this.fbo.read.dispose();
+        this.fbo.write.dispose();
+        delete this.fbo;
+    }
 }
 
 const defaultVertex = /* glsl */ `

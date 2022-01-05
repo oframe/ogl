@@ -105,6 +105,16 @@ export class Flowmap {
         });
         this.mask.swap();
     }
+
+    dispose() {
+        this.mask.read.dispose();
+        this.mask.write.dispose();
+        delete this.mask;
+
+        this.mesh.program.dispose();
+        this.mesh.geometry.dispose();
+        delete this.mesh;
+    }
 }
 
 const vertex = /* glsl */ `

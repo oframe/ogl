@@ -78,4 +78,11 @@ export class GLTFSkin extends Mesh {
         // Switch back to leave identity untouched
         this.worldMatrix = _worldMatrix;
     }
+
+    dispose() {
+        if (this.boneTexture) {
+            this.boneTexture.dispose();
+            delete this.boneTexture;
+        }
+    }
 }
