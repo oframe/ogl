@@ -205,8 +205,20 @@ export class Program {
         if (flipFaces) this.gl.renderer.setFrontFace(this.frontFace === this.gl.CCW ? this.gl.CW : this.gl.CCW);
     }
 
-    remove() {
+    dispose() {
         this.gl.deleteProgram(this.program);
+        delete this.program;
+
+        this.attributeLocations.forEach((location, key) => {
+            this.gl.disableVertexAttribArray(location);
+            this.attributeLocations.delete(key);
+        });
+
+        Object.entries(uniforms).forEach(([key, uniform]) => {
+            // Dispose of textures
+            if (typeof uniform.dispose === 'function') uniform.dispose();
+            delete this.uniforms[key];
+        });
     }
 }
 

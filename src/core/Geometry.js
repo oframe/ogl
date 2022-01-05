@@ -267,7 +267,7 @@ export class Geometry {
         this.bounds.radius = Math.sqrt(maxRadiusSq);
     }
 
-    remove() {
+    dispose() {
         for (let key in this.VAOs) {
             this.gl.renderer.deleteVertexArray(this.VAOs[key]);
             delete this.VAOs[key];

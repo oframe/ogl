@@ -144,4 +144,17 @@ export class RenderTarget {
 
         this.gl.bindFramebuffer(this.target, null);
     }
+
+    dispose() {
+        this.deleteFrameBuffer(this.buffer);
+
+        if (this.depthBuffer) this.deleteFrameBuffer(this.buffer);
+        if (this.stencilBuffer) this.deleteFrameBuffer(this.stencilBuffer);
+        if (this.depthStencilBuffer) this.deleteFrameBuffer(this.depthStencilBuffer);
+
+        if (this.depthTexture) this.depthTexture.dispose();
+
+        this.textures.forEach((texture) => texture.dispose());
+        this.textures = [];
+    }
 }

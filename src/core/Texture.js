@@ -214,4 +214,9 @@ export class Texture {
         }
         this.store.image = this.image;
     }
+
+    dispose() {
+        gl.deleteTexture(this.texture);
+        delete this.texture;
+    }
 }
