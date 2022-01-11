@@ -115,11 +115,11 @@ export class Post {
 
         this.passes.forEach((pass) => {
             pass.program.dispose();
-            Object.values(pass.uniforms).forEach((uniform) => {
-                if (typeof uniform.dispose === 'function') uniform.dispose();
-            });
+
+            // Dispose of textuers
+            Object.values(pass.uniforms).forEach((uniform) => uniform.dispose?.());
         });
-        this.passes = [];
+        delete this.passes;
 
         this.fbo.read.dispose();
         this.fbo.write.dispose();

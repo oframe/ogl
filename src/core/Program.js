@@ -214,11 +214,9 @@ export class Program {
             this.attributeLocations.delete(key);
         });
 
-        Object.entries(uniforms).forEach(([key, uniform]) => {
-            // Dispose of textures
-            if (typeof uniform.dispose === 'function') uniform.dispose();
-            delete this.uniforms[key];
-        });
+        // Dispose of textures
+        Object.values(uniforms).forEach((uniform) => uniform.dispose?.());
+        delete this.uniforms;
     }
 }
 

@@ -122,9 +122,8 @@ export class GPGPU {
         this.passes.forEach((pass) => {
             pass.program.dispose();
 
-            Object.values(pass.uniforms).forEach((uniform) => {
-                if (typeof uniform.dispose === 'function') uniform.dispose();
-            });
+            // Dispose of textures
+            Object.values(pass.uniforms).forEach((uniform) => uniform.dispose?.());
         });
         delete this.passes;
 
