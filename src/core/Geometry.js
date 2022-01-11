@@ -6,7 +6,7 @@
 //     type - gl enum default gl.UNSIGNED_SHORT for 'index', gl.FLOAT for others
 //     normalized - boolean default false
 
-//     buffer - gl buffer, if buffer exists, don't need to provide data
+//     buffer - gl buffer, if buffer exists, don't need to provide data - although needs position data for bounds calculation
 //     stride - default 0 - for when passing in buffer
 //     offset - default 0 - for when passing in buffer
 //     count - default null - for when passing in buffer
@@ -15,8 +15,6 @@
 // }
 
 // TODO: fit in transform feedback
-// TODO: when would I disableVertexAttribArray ?
-// TODO: use offset/stride if exists
 
 import { Vec3 } from '../math/Vec3.js';
 
@@ -210,7 +208,6 @@ export class Geometry {
     computeBoundingBox(attr) {
         if (!attr) attr = this.getPosition();
         const array = attr.data;
-        const offset = attr.offset || 0;
         const stride = attr.stride || attr.size;
 
         if (!this.bounds) {
@@ -232,7 +229,7 @@ export class Geometry {
         max.set(-Infinity);
 
         // TODO: check size of position (eg triangle with Vec2)
-        for (let i = offset, l = array.length; i < l; i += stride) {
+        for (let i = 0, l = array.length; i < l; i += stride) {
             const x = array[i];
             const y = array[i + 1];
             const z = array[i + 2];
@@ -253,13 +250,12 @@ export class Geometry {
     computeBoundingSphere(attr) {
         if (!attr) attr = this.getPosition();
         const array = attr.data;
-        const offset = attr.offset || 0;
         const stride = attr.stride || attr.size;
 
         if (!this.bounds) this.computeBoundingBox(attr);
 
         let maxRadiusSq = 0;
-        for (let i = offset, l = array.length; i < l; i += stride) {
+        for (let i = 0, l = array.length; i < l; i += stride) {
             tempVec3.fromArray(array, i);
             maxRadiusSq = Math.max(maxRadiusSq, this.bounds.center.squaredDistance(tempVec3));
         }
