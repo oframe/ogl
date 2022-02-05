@@ -429,6 +429,7 @@ export class GLTFLoader {
 
                 return {
                     name,
+                    extensions,
                     extras,
                     baseColorFactor,
                     baseColorTexture,
