@@ -111,9 +111,6 @@ export class GLTFLoader {
         // Create transforms, meshes and hierarchy
         const nodes = this.parseNodes(gl, desc, meshes, skins, images);
 
-        // Create uniforms for scene lights (TODO: light linking?)
-        const lights = this.parseLights(gl, desc);
-
         // Place nodes in skeletons
         this.populateSkins(skins, nodes);
 
@@ -123,6 +120,9 @@ export class GLTFLoader {
         // Get top level nodes for each scene
         const scenes = this.parseScenes(desc, nodes);
         const scene = scenes[desc.scene];
+
+        // Create uniforms for scene lights (TODO: light linking?)
+        const lights = this.parseLights(gl, desc, nodes, scenes);
 
         // Remove null nodes (instanced transforms)
         for (let i = nodes.length; i >= 0; i--) if (!nodes[i]) nodes.splice(i, 1);
@@ -657,6 +657,7 @@ export class GLTFLoader {
                 const node = new Transform();
                 if (name) node.name = name;
                 node.extras = extras;
+                node.extensions = extensions;
 
                 // Need to attach to node as may have same material but different lightmap
                 if (extras && extras.lightmapTexture !== undefined) {
@@ -744,47 +745,6 @@ export class GLTFLoader {
         return nodes;
     }
 
-    static parseLights(gl, desc) {
-        const lights = {
-            directional: [],
-            point: [],
-            spot: [],
-        };
-        // uses KHR_lights_punctual extension
-        const lightsDescArray = desc.extensions?.KHR_lights_punctual?.lights || [];
-        // Need nodes for transforms
-        desc.nodes.forEach((node) => {
-            if (!node.extensions?.KHR_lights_punctual) return;
-            const lightIndex = node.extensions.KHR_lights_punctual.light;
-            const lightDesc = lightsDescArray[lightIndex];
-            const light = {
-                name: lightDesc.name || '',
-                color: { value: new Vec3().set(lightDesc.color || 1) },
-            };
-            // Apply intensity directly to color
-            if (lightDesc.intensity !== undefined) light.color.value.multiply(lightDesc.intensity);
-
-            switch (lightDesc.type) {
-                case 'directional':
-                    light.direction = { value: new Vec3(0, 0, 1).applyQuaternion(node.rotation) };
-                    break;
-                case 'point':
-                    light.position = { value: new Vec3().set(node.translation) };
-                    light.distance = { value: lightDesc.range };
-                    light.decay = { value: 2 };
-                    break;
-                case 'spot':
-                    // TODO: support spot uniforms
-                    Object.assign(light, lightDesc);
-                    break;
-            }
-
-            lights[lightDesc.type].push(light);
-        });
-
-        return lights;
-    }
-
     static populateSkins(skins, nodes) {
         if (!skins) return;
         skins.forEach((skin) => {
@@ -870,5 +830,51 @@ export class GLTFLoader {
                 return scene;
             }
         );
+    }
+
+    static parseLights(gl, desc, nodes, scenes) {
+        const lights = {
+            directional: [],
+            point: [],
+            spot: [],
+        };
+
+        // Update matrices on root nodes
+        scenes.forEach((scene) => scene.forEach((node) => node.updateMatrixWorld()));
+
+        // uses KHR_lights_punctual extension
+        const lightsDescArray = desc.extensions?.KHR_lights_punctual?.lights || [];
+
+        // Need nodes for transforms
+        nodes.forEach((node) => {
+            if (!node.extensions?.KHR_lights_punctual) return;
+            const lightIndex = node.extensions.KHR_lights_punctual.light;
+            const lightDesc = lightsDescArray[lightIndex];
+            const light = {
+                name: lightDesc.name || '',
+                color: { value: new Vec3().set(lightDesc.color || 1) },
+            };
+            // Apply intensity directly to color
+            if (lightDesc.intensity !== undefined) light.color.value.multiply(lightDesc.intensity);
+
+            switch (lightDesc.type) {
+                case 'directional':
+                    light.direction = { value: new Vec3(0, 0, 1).transformDirection(node.worldMatrix) };
+                    break;
+                case 'point':
+                    light.position = { value: new Vec3().applyMatrix4(node.worldMatrix) };
+                    light.distance = { value: lightDesc.range };
+                    light.decay = { value: 2 };
+                    break;
+                case 'spot':
+                    // TODO: support spot uniforms
+                    Object.assign(light, lightDesc);
+                    break;
+            }
+
+            lights[lightDesc.type].push(light);
+        });
+
+        return lights;
     }
 }
