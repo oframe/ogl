@@ -847,7 +847,7 @@ export class GLTFLoader {
 
         // Need nodes for transforms
         nodes.forEach((node) => {
-            if (!node.extensions?.KHR_lights_punctual) return;
+            if (!node?.extensions?.KHR_lights_punctual) return;
             const lightIndex = node.extensions.KHR_lights_punctual.light;
             const lightDesc = lightsDescArray[lightIndex];
             const light = {
