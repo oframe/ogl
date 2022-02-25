@@ -152,7 +152,7 @@ https://codesandbox.io/s/ogl-5i69p
 For a simpler use, such as a full-screen shader, more of the core can be omitted as a scene graph (Transform) and projection matrices (Camera) are not necessary. We'll also show how to easily create custom geometry.
 
 ```js
-import {Renderer, Geometry, Program, Mesh} from 'ogl';
+import { Renderer, Geometry, Program, Mesh } from 'ogl';
 
 {
     const renderer = new Renderer({
@@ -164,13 +164,13 @@ import {Renderer, Geometry, Program, Mesh} from 'ogl';
 
     // Triangle that covers viewport, with UVs that still span 0 > 1 across viewport
     const geometry = new Geometry(gl, {
-        position: {size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3])},
-        uv: {size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2])},
+        position: { size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3]) },
+        uv: { size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2]) },
     });
     // Alternatively, you could use the Triangle class.
 
     const program = new Program(gl, {
-        vertex: `
+        vertex: /* glsl */ `
             attribute vec2 uv;
             attribute vec2 position;
 
@@ -181,7 +181,7 @@ import {Renderer, Geometry, Program, Mesh} from 'ogl';
                 gl_Position = vec4(position, 0, 1);
             }
         `,
-        fragment: `
+        fragment: /* glsl */ `
             precision highp float;
 
             uniform float uTime;
@@ -194,11 +194,11 @@ import {Renderer, Geometry, Program, Mesh} from 'ogl';
             }
         `,
         uniforms: {
-            uTime: {value: 0},
+            uTime: { value: 0 },
         },
     });
 
-    const mesh = new Mesh(gl, {geometry, program});
+    const mesh = new Mesh(gl, { geometry, program });
 
     requestAnimationFrame(update);
     function update(t) {
@@ -207,7 +207,7 @@ import {Renderer, Geometry, Program, Mesh} from 'ogl';
         program.uniforms.uTime.value = t * 0.001;
 
         // Don't need a camera if camera uniforms aren't required
-        renderer.render({scene: mesh});
+        renderer.render({ scene: mesh });
     }
 }
 ```
