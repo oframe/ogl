@@ -1,6 +1,6 @@
 {
     "name": "ogl",
-    "version": "0.0.73",
+    "version": "0.0.87",
     "description": "WebGL Library",
     "main": "src/index.mjs",
     "sideEffects": false,

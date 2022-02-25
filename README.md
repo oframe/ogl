@@ -11,9 +11,6 @@
     <a href="https://github.com/oframe/ogl/blob/master/LICENSE">
         <img src="https://img.shields.io/npm/l/ogl.svg" alt="license" />
     </a>
-    <a href="https://david-dm.org/oframe/ogl">
-        <img src="https://img.shields.io/david/oframe/ogl.svg" alt="dependencies" />
-    </a>
     <a href="https://bundlephobia.com/result?p=ogl">
         <img src="https://badgen.net/bundlephobia/minzip/ogl" alt="size" />
     </a>

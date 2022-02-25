@@ -63,7 +63,7 @@ export class Renderer {
         this.state.flipY = false;
         this.state.unpackAlignment = 4;
         this.state.framebuffer = null;
-        this.state.viewport = { width: null, height: null };
+        this.state.viewport = { x: 0, y: 0, width: null, height: null };
         this.state.textureUnits = [];
         this.state.activeTextureUnit = 0;
         this.state.boundBuffer = null;
@@ -87,6 +87,12 @@ export class Renderer {
             this.getExtension('WEBGL_depth_texture');
             this.getExtension('WEBGL_draw_buffers');
         }
+        this.getExtension('WEBGL_compressed_texture_astc');
+        this.getExtension('EXT_texture_compression_bptc');
+        this.getExtension('WEBGL_compressed_texture_s3tc');
+        this.getExtension('WEBGL_compressed_texture_etc1');
+        this.getExtension('WEBGL_compressed_texture_pvrtc');
+        this.getExtension('WEBKIT_WEBGL_compressed_texture_pvrtc');
 
         // Create method aliases using extension (WebGL1) or native if available (WebGL2)
         this.vertexAttribDivisor = this.getExtension('ANGLE_instanced_arrays', 'vertexAttribDivisor', 'vertexAttribDivisorANGLE');
@@ -118,11 +124,17 @@ export class Renderer {
         });
     }
 
-    setViewport(width, height) {
+    setViewport(width, height, x = 0, y = 0) {
         if (this.state.viewport.width === width && this.state.viewport.height === height) return;
         this.state.viewport.width = width;
         this.state.viewport.height = height;
-        this.gl.viewport(0, 0, width, height);
+        this.state.viewport.x = x;
+        this.state.viewport.y = y;
+        this.gl.viewport(x, y, width, height);
+    }
+
+    setScissor(width, height, x = 0, y = 0) {
+        this.gl.scissor(x, y, width, height);
     }
 
     enable(id) {

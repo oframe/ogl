@@ -29,9 +29,24 @@ export class GLTFAnimation {
 
     update(totalWeight = 1, isSet) {
         const weight = isSet ? 1 : this.weight / totalWeight;
-        const elapsed = (this.loop ? this.elapsed % this.duration : Math.min(this.elapsed, this.duration - 0.001)) + this.startTime;
+        const elapsed = !this.duration
+            ? 0
+            : (this.loop ? this.elapsed % this.duration : Math.min(this.elapsed, this.duration - 0.001)) + this.startTime;
 
         this.data.forEach(({ node, transform, interpolation, times, values }) => {
+            if (!this.duration) {
+                let val = tmpVec3A;
+                let size = 3;
+                if (transform === 'quaternion') {
+                    val = tmpQuatA;
+                    size = 4;
+                }
+                val.fromArray(values, 0);
+                if (size === 4) node[transform].slerp(val, weight);
+                else node[transform].lerp(val, weight);
+                return;
+            }
+
             // Get index of two time values elapsed is between
             const prevIndex =
                 Math.max(
