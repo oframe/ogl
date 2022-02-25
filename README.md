@@ -92,9 +92,9 @@ If you take this route, I would highly recommend defining a specific version (ap
 As a basic API example, below renders a spinning white cube.
 
 ```js
-{
-    import {Renderer, Camera, Transform, Box, Program, Mesh } from 'ogl';
+import { Renderer, Camera, Transform, Box, Program, Mesh } from 'ogl';
 
+{
     const renderer = new Renderer();
     const gl = renderer.gl;
     document.body.appendChild(gl.canvas);
@@ -116,7 +116,7 @@ As a basic API example, below renders a spinning white cube.
     const geometry = new Box(gl);
 
     const program = new Program(gl, {
-        vertex: `
+        vertex: /* glsl */ `
             attribute vec3 position;
 
             uniform mat4 modelViewMatrix;
@@ -125,15 +125,15 @@ As a basic API example, below renders a spinning white cube.
             void main() {
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
-            `,
-        fragment: `
+        `,
+        fragment: /* glsl */ `
             void main() {
                 gl_FragColor = vec4(1.0);
             }
         `,
     });
 
-    const mesh = new Mesh(gl, {geometry, program});
+    const mesh = new Mesh(gl, { geometry, program });
     mesh.setParent(scene);
 
     requestAnimationFrame(update);
@@ -142,7 +142,7 @@ As a basic API example, below renders a spinning white cube.
 
         mesh.rotation.y -= 0.04;
         mesh.rotation.x += 0.03;
-        renderer.render({scene, camera});
+        renderer.render({ scene, camera });
     }
 }
 ```
