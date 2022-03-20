@@ -54,6 +54,15 @@ export class Vec4 extends Array {
         return this;
     }
 
+    multiply(v) {
+        Vec4Func.scale(this, this, v);
+        return this;
+    }
+
+    dot(v) {
+        return Vec4Func.dot(this, v);
+    }
+
     fromArray(a, o = 0) {
         this[0] = a[o];
         this[1] = a[o + 1];
