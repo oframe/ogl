@@ -274,25 +274,14 @@ export class GLTFLoader {
                 },
                 i
             ) => {
-                // For basis, just slice buffer
-                if (mimeType === 'image/ktx2') {
-                    bufferViews[i].data = buffers[bufferIndex].slice(byteOffset, byteOffset + byteLength);
-                    return;
-                }
-
-                const TypeArray = TYPE_ARRAY[componentType || mimeType];
-                const elementBytes = TypeArray.BYTES_PER_ELEMENT;
-
-                const data = new TypeArray(buffers[bufferIndex], byteOffset, byteLength / elementBytes);
-                bufferViews[i].data = data;
-                bufferViews[i].originalBuffer = buffers[bufferIndex];
+                bufferViews[i].data = buffers[bufferIndex].slice(byteOffset, byteOffset + byteLength);
 
                 if (!isAttribute) return;
                 // Create gl buffers for the bufferView, pushing it to the GPU
                 const buffer = gl.createBuffer();
                 gl.bindBuffer(target, buffer);
                 gl.renderer.state.boundBuffer = buffer;
-                gl.bufferData(target, data, gl.STATIC_DRAW);
+                gl.bufferData(target, bufferViews[i].data, gl.STATIC_DRAW);
                 bufferViews[i].buffer = buffer;
             }
         );
@@ -599,7 +588,6 @@ export class GLTFLoader {
 
         const {
             data, // attached in parseBufferViews
-            originalBuffer, // attached in parseBufferViews
             buffer, // replaced to be the actual GL buffer
             byteOffset: bufferByteOffset = 0,
             // byteLength, // applied in parseBufferViews
@@ -615,12 +603,12 @@ export class GLTFLoader {
         // Parse data from joined buffers
         const TypeArray = TYPE_ARRAY[componentType];
         const elementBytes = data.BYTES_PER_ELEMENT;
-        const componentOffset = byteOffset / elementBytes;
         const componentStride = byteStride / elementBytes;
         const isInterleaved = !!byteStride && componentStride !== size;
 
         // TODO: interleaved
-        const newData = isInterleaved ? data : new TypeArray(originalBuffer, byteOffset + bufferByteOffset, count * size);
+        // Convert data to typed array for various uses (bounding boxes, animation etc)
+        const newData = isInterleaved ? new TypeArray(data) : new TypeArray(data, byteOffset, count * size);
 
         // Return attribute data
         return {
