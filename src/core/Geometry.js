@@ -72,10 +72,9 @@ export class Geometry {
         attr.count = attr.count || (attr.stride ? attr.data.byteLength / attr.stride : attr.data.length / attr.size);
         attr.divisor = attr.instanced || 0;
         attr.needsUpdate = false;
+        attr.usage = attr.usage || this.gl.STATIC_DRAW;
 
         if (!attr.buffer) {
-            attr.buffer = this.gl.createBuffer();
-
             // Push data to buffer
             this.updateAttribute(attr);
         }
@@ -96,11 +95,17 @@ export class Geometry {
     }
 
     updateAttribute(attr) {
+        const isNewBuffer = !attr.buffer;
+        if (isNewBuffer) attr.buffer = this.gl.createBuffer();
         if (this.glState.boundBuffer !== attr.buffer) {
             this.gl.bindBuffer(attr.target, attr.buffer);
             this.glState.boundBuffer = attr.buffer;
         }
-        this.gl.bufferData(attr.target, attr.data, this.gl.STATIC_DRAW);
+        if (isNewBuffer) {
+            this.gl.bufferData(attr.target, attr.data, attr.usage);
+        } else {
+            this.gl.bufferSubData(attr.target, 0, attr.data);
+        }
         attr.needsUpdate = false;
     }
 
