@@ -47,7 +47,7 @@ export function Text({
 
         // Set values for buffers that don't require calculation
         for (let i = 0; i < numChars; i++) {
-            buffers.id[i] = i;
+            buffers.id.set([i, i, i, i], i * 4);
             buffers.index.set([i * 4, i * 4 + 2, i * 4 + 1, i * 4 + 1, i * 4 + 2, i * 4 + 3], i * 6);
         }
 
