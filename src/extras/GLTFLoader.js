@@ -548,14 +548,15 @@ export class GLTFLoader {
                         size: 16,
                         data: new Float32Array(numInstances * 16),
                     });
+                }
 
-                    if (isLightmap) {
-                        geometry.addAttribute('lightmapScaleOffset', {
-                            instanced: 1,
-                            size: 4,
-                            data: new Float32Array(numInstances * 4),
-                        });
-                    }
+                // Always supply lightmapScaleOffset as an instanced attribute
+                if (isLightmap) {
+                    geometry.addAttribute('lightmapScaleOffset', {
+                        instanced: 1,
+                        size: 4,
+                        data: new Float32Array(numInstances * 4),
+                    });
                 }
 
                 return {
@@ -666,12 +667,14 @@ export class GLTFLoader {
                 // Flags for avoiding duplicate transforms and removing unused instance nodes
                 let isInstanced = false;
                 let isFirstInstance = true;
+                let isInstancedMatrix = false;
 
                 // add mesh if included
                 if (meshIndex !== undefined) {
                     meshes[meshIndex].primitives.forEach((mesh) => {
                         mesh.extras = extras;
 
+                        // instanced mesh might only have 1
                         if (mesh.geometry.isInstanced) {
                             isInstanced = true;
                             if (!mesh.instanceCount) {
@@ -679,7 +682,10 @@ export class GLTFLoader {
                             } else {
                                 isFirstInstance = false;
                             }
-                            node.matrix.toArray(mesh.geometry.attributes.instanceMatrix.data, mesh.instanceCount * 16);
+                            if (mesh.geometry.attributes.instanceMatrix) {
+                                isInstancedMatrix = true;
+                                node.matrix.toArray(mesh.geometry.attributes.instanceMatrix.data, mesh.instanceCount * 16);
+                            }
 
                             if (mesh.geometry.attributes.lightmapScaleOffset && extras && extras.lightmap_scale_offset) {
                                 mesh.geometry.attributes.lightmapScaleOffset.data.set(extras.lightmap_scale_offset, mesh.instanceCount * 4);
@@ -692,8 +698,9 @@ export class GLTFLoader {
                                 delete mesh.numInstances;
                                 delete mesh.instanceCount;
                                 // Flag attribute as dirty
-                                mesh.geometry.attributes.instanceMatrix.needsUpdate = true;
-
+                                if (mesh.geometry.attributes.instanceMatrix) {
+                                    mesh.geometry.attributes.instanceMatrix.needsUpdate = true;
+                                }
                                 if (mesh.geometry.attributes.lightmapScaleOffset) {
                                     mesh.geometry.attributes.lightmapScaleOffset.needsUpdate = true;
                                 }
@@ -710,7 +717,7 @@ export class GLTFLoader {
                 }
 
                 // Reset node if instanced to not duplicate transforms
-                if (isInstanced) {
+                if (isInstancedMatrix) {
                     // Remove unused nodes just providing an instance transform
                     if (!isFirstInstance) return null;
                     // Avoid duplicate transform for node containing the instanced mesh
