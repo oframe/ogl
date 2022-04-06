@@ -473,35 +473,51 @@ export class GLTFLoader {
                 // TODO: weights stuff ?
                 // Parse through nodes to see how many instances there are
                 // and if there is a skin attached
+                // If multiple instances of a skin, need to create each
                 let numInstances = 0;
-                let skinIndex = false;
+                let skinIndices = [];
                 let isLightmap = false;
                 desc.nodes &&
                     desc.nodes.forEach(({ mesh, skin, extras }) => {
                         if (mesh === meshIndex) {
                             numInstances++;
-                            if (skin !== undefined) skinIndex = skin;
+                            if (skin !== undefined) skinIndices.push(skin);
                             if (extras && extras.lightmap_scale_offset) isLightmap = true;
                         }
                     });
+                let isSkin = !!skinIndices.length;
 
-                primitives = this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap).map(
-                    ({ geometry, program, mode }) => {
-                        // Create either skinned mesh or regular mesh
-                        const mesh =
-                            typeof skinIndex === 'number'
-                                ? new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode })
-                                : new Mesh(gl, { geometry, program, mode });
-                        mesh.name = name;
-                        if (mesh.geometry.isInstanced) {
-                            // Tag mesh so that nodes can add their transforms to the instance attribute
-                            mesh.numInstances = numInstances;
-                            // Avoid incorrect culling for instances
-                            mesh.frustumCulled = false;
+                // For skins, return array of skin meshes to account for multiple instances
+                if (isSkin) {
+                    primitives = skinIndices.map((skinIndex) => {
+                        return this.parsePrimitives(gl, primitives, desc, bufferViews, materials, 1, isLightmap).map(
+                            ({ geometry, program, mode }) => {
+                                const mesh = new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode });
+                                mesh.name = name;
+                                // TODO: support skin frustum culling
+                                mesh.frustumCulled = false;
+                                return mesh;
+                            }
+                        );
+                    });
+                    // For retrieval to add to node
+                    primitives.instanceCount = 0;
+                    primitives.numInstances = numInstances;
+                } else {
+                    primitives = this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap).map(
+                        ({ geometry, program, mode }) => {
+                            const mesh = new Mesh(gl, { geometry, program, mode });
+                            mesh.name = name;
+                            if (mesh.geometry.attributes.instanceMatrix) {
+                                // Tag mesh so that nodes can add their transforms to the instance attribute
+                                mesh.numInstances = numInstances;
+                                // Avoid incorrect culling for instances
+                                mesh.frustumCulled = false;
+                            }
+                            return mesh;
                         }
-                        return mesh;
-                    }
-                );
+                    );
+                }
 
                 return {
                     primitives,
@@ -542,6 +558,7 @@ export class GLTFLoader {
                 }
 
                 // Add instanced transform attribute if multiple instances
+                // Ignore if skin as we don't support instanced skins out of the box
                 if (numInstances > 1) {
                     geometry.addAttribute('instanceMatrix', {
                         instanced: 1,
@@ -551,6 +568,7 @@ export class GLTFLoader {
                 }
 
                 // Always supply lightmapScaleOffset as an instanced attribute
+                // Instanced skin lightmaps not supported
                 if (isLightmap) {
                     geometry.addAttribute('lightmapScaleOffset', {
                         instanced: 1,
@@ -668,52 +686,66 @@ export class GLTFLoader {
                 let isInstanced = false;
                 let isFirstInstance = true;
                 let isInstancedMatrix = false;
+                let isSkin = skinIndex !== undefined;
 
                 // add mesh if included
                 if (meshIndex !== undefined) {
-                    meshes[meshIndex].primitives.forEach((mesh) => {
-                        mesh.extras = extras;
-
-                        // instanced mesh might only have 1
-                        if (mesh.geometry.isInstanced) {
-                            isInstanced = true;
-                            if (!mesh.instanceCount) {
-                                mesh.instanceCount = 0;
-                            } else {
-                                isFirstInstance = false;
-                            }
-                            if (mesh.geometry.attributes.instanceMatrix) {
-                                isInstancedMatrix = true;
-                                node.matrix.toArray(mesh.geometry.attributes.instanceMatrix.data, mesh.instanceCount * 16);
-                            }
-
-                            if (mesh.geometry.attributes.lightmapScaleOffset && extras && extras.lightmap_scale_offset) {
-                                mesh.geometry.attributes.lightmapScaleOffset.data.set(extras.lightmap_scale_offset, mesh.instanceCount * 4);
-                            }
-
-                            mesh.instanceCount++;
-
-                            if (mesh.instanceCount === mesh.numInstances) {
-                                // Remove properties once all instances added
-                                delete mesh.numInstances;
-                                delete mesh.instanceCount;
-                                // Flag attribute as dirty
-                                if (mesh.geometry.attributes.instanceMatrix) {
-                                    mesh.geometry.attributes.instanceMatrix.needsUpdate = true;
-                                }
-                                if (mesh.geometry.attributes.lightmapScaleOffset) {
-                                    mesh.geometry.attributes.lightmapScaleOffset.needsUpdate = true;
-                                }
-                            }
-                        }
-
-                        // For instances, only the first node will actually have the mesh
-                        if (isInstanced) {
-                            if (isFirstInstance) mesh.setParent(node);
-                        } else {
+                    if (isSkin) {
+                        meshes[meshIndex].primitives[meshes[meshIndex].primitives.instanceCount].forEach((mesh) => {
+                            mesh.extras = extras;
                             mesh.setParent(node);
+                        });
+                        meshes[meshIndex].primitives.instanceCount++;
+                        // Remove properties once all instances added
+                        if (meshes[meshIndex].primitives.instanceCount === meshes[meshIndex].primitives.numInstances) {
+                            delete meshes[meshIndex].primitives.numInstances;
+                            delete meshes[meshIndex].primitives.instanceCount;
                         }
-                    });
+                    } else {
+                        meshes[meshIndex].primitives.forEach((mesh) => {
+                            mesh.extras = extras;
+
+                            // instanced mesh might only have 1
+                            if (mesh.geometry.isInstanced) {
+                                isInstanced = true;
+                                if (!mesh.instanceCount) {
+                                    mesh.instanceCount = 0;
+                                } else {
+                                    isFirstInstance = false;
+                                }
+                                if (mesh.geometry.attributes.instanceMatrix) {
+                                    isInstancedMatrix = true;
+                                    node.matrix.toArray(mesh.geometry.attributes.instanceMatrix.data, mesh.instanceCount * 16);
+                                }
+
+                                if (mesh.geometry.attributes.lightmapScaleOffset) {
+                                    mesh.geometry.attributes.lightmapScaleOffset.data.set(extras.lightmap_scale_offset, mesh.instanceCount * 4);
+                                }
+
+                                mesh.instanceCount++;
+
+                                if (mesh.instanceCount === mesh.numInstances) {
+                                    // Remove properties once all instances added
+                                    delete mesh.numInstances;
+                                    delete mesh.instanceCount;
+                                    // Flag attribute as dirty
+                                    if (mesh.geometry.attributes.instanceMatrix) {
+                                        mesh.geometry.attributes.instanceMatrix.needsUpdate = true;
+                                    }
+                                    if (mesh.geometry.attributes.lightmapScaleOffset) {
+                                        mesh.geometry.attributes.lightmapScaleOffset.needsUpdate = true;
+                                    }
+                                }
+                            }
+
+                            // For instances, only the first node will actually have the mesh
+                            if (isInstanced) {
+                                if (isFirstInstance) mesh.setParent(node);
+                            } else {
+                                mesh.setParent(node);
+                            }
+                        });
+                    }
                 }
 
                 // Reset node if instanced to not duplicate transforms
