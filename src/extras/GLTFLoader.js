@@ -508,9 +508,9 @@ export class GLTFLoader {
                         ({ geometry, program, mode }) => {
                             const mesh = new Mesh(gl, { geometry, program, mode });
                             mesh.name = name;
+                            // Tag mesh so that nodes can add their transforms to the instance attribute
+                            mesh.numInstances = numInstances;
                             if (mesh.geometry.attributes.instanceMatrix) {
-                                // Tag mesh so that nodes can add their transforms to the instance attribute
-                                mesh.numInstances = numInstances;
                                 // Avoid incorrect culling for instances
                                 mesh.frustumCulled = false;
                             }
