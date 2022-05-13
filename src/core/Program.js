@@ -87,15 +87,7 @@ export class Program {
             const split = uniform.name.match(/(\w+)/g);
 
             uniform.uniformName = split[0];
-
-            if (split.length === 3) {
-                uniform.isStructArray = true;
-                uniform.structIndex = Number(split[1]);
-                uniform.structProperty = split[2];
-            } else if (split.length === 2 && isNaN(Number(split[1]))) {
-                uniform.isStruct = true;
-                uniform.structProperty = split[1];
-            }
+            uniform.nameComponents = split.slice(1);
         }
 
         // Get active attribute locations
@@ -155,27 +147,23 @@ export class Program {
 
         // Set only the active uniforms found in the shader
         this.uniformLocations.forEach((location, activeUniform) => {
-            let name = activeUniform.uniformName;
+            let uniform = this.uniforms[activeUniform.uniformName];
 
-            // get supplied uniform
-            let uniform = this.uniforms[name];
-
-            // For structs, get the specific property instead of the entire object
-            if (activeUniform.isStruct) {
-                uniform = uniform[activeUniform.structProperty];
-                name += `.${activeUniform.structProperty}`;
-            }
-            if (activeUniform.isStructArray) {
-                uniform = uniform[activeUniform.structIndex][activeUniform.structProperty];
-                name += `[${activeUniform.structIndex}].${activeUniform.structProperty}`;
+            for (const component of activeUniform.nameComponents) {
+                if (uniform && component in uniform) {
+                    uniform = uniform[component];
+                } else {
+                    uniform = undefined;
+                    break;
+                }
             }
 
             if (!uniform) {
-                return warn(`Active uniform ${name} has not been supplied`);
+                return warn(`Active uniform ${activeUniform.name} has not been supplied`);
             }
 
             if (uniform && uniform.value === undefined) {
-                return warn(`${name} uniform is missing a value parameter`);
+                return warn(`${activeUniform.name} uniform is missing a value parameter`);
             }
 
             if (uniform.value.texture) {
