@@ -68,6 +68,7 @@ export class Renderer {
         this.state.activeTextureUnit = 0;
         this.state.boundBuffer = null;
         this.state.uniformLocations = new Map();
+        this.state.currentProgram = null;
 
         // store requested extensions
         this.extensions = {};
