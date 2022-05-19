@@ -32,6 +32,8 @@ In its design, the library does the minimum abstraction necessary, so devs shoul
 
 Keeping the level of abstraction low helps to make the library easier to understand, extend, and also makes it more practical as a WebGL learning resource.
 
+⚠️ *Note: Typescript users may be interested in using a [TS fork of the library](https://github.com/nshen/ogl-typescript), kindly maintained by [nshen](https://github.com/nshen).*
+
 ## Install
 
 [Download](https://github.com/oframe/ogl/archive/master.zip) 
@@ -228,34 +230,7 @@ The **Core** is made up of the following:
  - Texture.js
  - RenderTarget.js
 
-Any additional layers of abstraction will be included as **Extras**, and not part of the core as to reduce bloat. These provide a wide breadth of functionality, ranging from simple to fairly advanced.
-
-Below is an **Extras** wish-list, and is still a work-in-progress as examples are developed.
- - [x] Animation.js
- - [x] Box.js
- - [x] Curve.js
- - [x] Cylinder.js
- - [x] Flowmap.js
- - [x] GLTFLoader.js
- - [x] GLTFAnimation.js
- - [x] GLTFSkin.js
- - [x] GPGPU.js
- - [x] KTXTexture.js
- - [x] NormalProgram.js
- - [x] Orbit.js
- - [x] Plane.js
- - [x] Polyline.js
- - [x] Post.js
- - [x] Raycast.js
- - [x] Shadow.js
- - [x] Skin.js
- - [x] Sphere.js
- - [x] Text.js
- - [x] TextureLoader.js
- - [x] Torus.js
- - [x] Triangle.js
- - [ ] OBJLoader.js
-
+Any additional layers of abstraction will be included as **Extras**, and not part of the core as to reduce bloat. These provide a wide breadth of functionality, ranging from simple to advanced.
 
 ## Unlicense
 
