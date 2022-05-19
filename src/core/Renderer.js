@@ -68,6 +68,7 @@ export class Renderer {
         this.state.activeTextureUnit = 0;
         this.state.boundBuffer = null;
         this.state.uniformLocations = new Map();
+        this.state.colorWrite = true;
 
         // store requested extensions
         this.extensions = {};
@@ -196,6 +197,12 @@ export class Renderer {
         if (this.state.depthFunc === value) return;
         this.state.depthFunc = value;
         this.gl.depthFunc(value);
+    }
+    
+    setColorWrite(value) {
+        if (this.state.colorWrite === value) return;
+        this.state.colorWrite = value;
+        this.gl.colorMask(value, value, value, value);
     }
 
     activeTexture(value) {

@@ -20,6 +20,7 @@ export class Program {
             frontFace = gl.CCW,
             depthTest = true,
             depthWrite = true,
+            colorWrite = true,
             depthFunc = gl.LESS,
         } = {}
     ) {
@@ -38,6 +39,8 @@ export class Program {
         this.depthTest = depthTest;
         this.depthWrite = depthWrite;
         this.depthFunc = depthFunc;
+        this.colorWrite = colorWrite;
+
         this.blendFunc = {};
         this.blendEquation = {};
 
@@ -141,6 +144,7 @@ export class Program {
         if (this.blendFunc.src)
             this.gl.renderer.setBlendFunc(this.blendFunc.src, this.blendFunc.dst, this.blendFunc.srcAlpha, this.blendFunc.dstAlpha);
         this.gl.renderer.setBlendEquation(this.blendEquation.modeRGB, this.blendEquation.modeAlpha);
+        this.gl.renderer.setColorWrite(this.colorWrite);
     }
 
     use({ flipFaces = false } = {}) {
