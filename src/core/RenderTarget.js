@@ -29,7 +29,7 @@ export class RenderTarget {
         this.depth = depth;
         this.buffer = this.gl.createFramebuffer();
         this.target = target;
-        this.gl.bindFramebuffer(this.target, this.buffer);
+        this.gl.renderer.bindFramebuffer(this);
 
         this.textures = [];
         const drawBuffers = [];
@@ -101,7 +101,7 @@ export class RenderTarget {
             }
         }
 
-        this.gl.bindFramebuffer(this.target, null);
+        this.gl.renderer.bindFramebuffer({ target: this.target });
     }
 
     setSize(width, height) {
@@ -109,7 +109,7 @@ export class RenderTarget {
 
         this.width = width;
         this.height = height;
-        this.gl.bindFramebuffer(this.target, this.buffer);
+        this.gl.renderer.bindFramebuffer(this);
 
         for (let i = 0; i < this.textures.length; i++) {
             this.textures[i].width = width;
@@ -142,6 +142,6 @@ export class RenderTarget {
             }
         }
 
-        this.gl.bindFramebuffer(this.target, null);
+        this.gl.renderer.bindFramebuffer({ target: this.target });
     }
 }
