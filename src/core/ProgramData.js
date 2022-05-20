@@ -19,14 +19,11 @@ export class ProgramData {
      * @returns 
      */
     static create (gl, { vertex, fragment }) {
-        const key = vertex + fragment;
-        const program = this.CACHE.get(key) || new ProgramData(gl, { vertex, fragment });
+        const program = this.CACHE.get(vertex + fragment) || new ProgramData(gl, { vertex, fragment });
 
         program.usage ++;
 
-        this.CACHE.set(key, program);
-
-        return program.compile();
+        return program;
     }
 
     constructor(
@@ -72,6 +69,10 @@ export class ProgramData {
         this.attributeOrder = '';
 
         this.id = (1 << 8) + ID++;
+
+        ProgramData.CACHE.set(this.vertex + this.fragment, program);
+
+        this.compile();
     }
 
     compile () {
