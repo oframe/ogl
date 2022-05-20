@@ -42,11 +42,13 @@
                 precision highp float;
     
                 varying vec3 vNormal;
+
+                uniform vec3 uColor;
     
                 void main() {
                     vec3 normal = normalize(vNormal);
                     float lighting = dot(normal, normalize(vec3(-0.3, 0.8, 0.6)));
-                    gl_FragColor.rgb = vec3(0.2, 0.8, 1.0) + lighting * 0.1;
+                    gl_FragColor.rgb = uColor + lighting * 0.1;
                     gl_FragColor.a = 1.0;
                 }
             `;
@@ -71,14 +73,25 @@
                 // Create base geometry
                 const cubeGeometry = new Box(gl);
     
-                // Using the shader from the base primitive example
-                const program = new Program(gl, {
-                    vertex,
-                    fragment,
-                });
-    
                 // mesh container
                 let meshes = [];
+
+                const colorPrograms = {};
+                const getColorProgram = () => {
+                    const color = [
+                        ((Math.random() * 10) | 0) / 10,
+                        ((Math.random() * 10) | 0) / 10,
+                        ((Math.random() * 10) | 0) / 10,
+                    ];
+
+                    const key = color.join(',');
+
+                    return colorPrograms[key] || (colorPrograms[key] = new Program(gl, {
+                        vertex,
+                        fragment,
+                        uniforms: { uColor: { value: color } } 
+                    }));
+                };
     
                 window.setMeshCount = function setMeshCount(count) {
     
@@ -91,7 +104,7 @@
     
                     // create our meshes according to input
                     for (let i = 0; i < count; ++i){
-                        let mesh = new Mesh(gl, {geometry: cubeGeometry, program});
+                        let mesh = new Mesh(gl, {geometry: cubeGeometry, program: getColorProgram()});
     
                         // position meshes in a random position between -100 / +100 in each dimension
                         mesh.position.set(
