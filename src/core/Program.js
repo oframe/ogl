@@ -2,6 +2,8 @@
 // TODO: upload identity matrix if null ?
 // TODO: sampler Cube
 
+import { ProgramData } from "./ProgramData.js";
+
 let ID = 1;
 
 // cache of typed arrays used to flatten uniform arrays
@@ -47,68 +49,34 @@ export class Program {
             else this.setBlendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
         }
 
-        // compile vertex shader and log errors
-        const vertexShader = gl.createShader(gl.VERTEX_SHADER);
-        gl.shaderSource(vertexShader, vertex);
-        gl.compileShader(vertexShader);
-        if (gl.getShaderInfoLog(vertexShader) !== '') {
-            console.warn(`${gl.getShaderInfoLog(vertexShader)}\nVertex Shader\n${addLineNumbers(vertex)}`);
-        }
+        this.programData = ProgramData.create(gl, vertex, fragment);
+    }
 
-        // compile fragment shader and log errors
-        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-        gl.shaderSource(fragmentShader, fragment);
-        gl.compileShader(fragmentShader);
-        if (gl.getShaderInfoLog(fragmentShader) !== '') {
-            console.warn(`${gl.getShaderInfoLog(fragmentShader)}\nFragment Shader\n${addLineNumbers(fragment)}`);
-        }
+    /**
+     * Only for backward compatibility
+     * Internally we not should use this
+     */
+    get uniformLocations() {
+        return this.programData.uniformLocations;
+    }
 
-        // compile program and log errors
-        this.program = gl.createProgram();
-        gl.attachShader(this.program, vertexShader);
-        gl.attachShader(this.program, fragmentShader);
-        gl.linkProgram(this.program);
-        if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
-            return console.warn(gl.getProgramInfoLog(this.program));
-        }
+    get attributeLocations() {
+        // we need this because Geometry use it
+        return this.programData.attributeLocations;
+    }
 
-        // Remove shader once linked
-        gl.deleteShader(vertexShader);
-        gl.deleteShader(fragmentShader);
+    get attributeOrder() {
+        // we need this because a Geometry use it
+        return this.programData.attributeOrder;
+    }
 
-        // Get active uniform locations
-        this.uniformLocations = new Map();
-        let numUniforms = gl.getProgramParameter(this.program, gl.ACTIVE_UNIFORMS);
-        for (let uIndex = 0; uIndex < numUniforms; uIndex++) {
-            let uniform = gl.getActiveUniform(this.program, uIndex);
-            this.uniformLocations.set(uniform, gl.getUniformLocation(this.program, uniform.name));
-
-            // split uniforms' names to separate array and struct declarations
-            const split = uniform.name.match(/(\w+)/g);
-
-            uniform.uniformName = split[0];
-
-            if (split.length === 3) {
-                uniform.isStructArray = true;
-                uniform.structIndex = Number(split[1]);
-                uniform.structProperty = split[2];
-            } else if (split.length === 2 && isNaN(Number(split[1]))) {
-                uniform.isStruct = true;
-                uniform.structProperty = split[1];
-            }
-        }
-
-        // Get active attribute locations
-        this.attributeLocations = new Map();
-        const locations = [];
-        const numAttribs = gl.getProgramParameter(this.program, gl.ACTIVE_ATTRIBUTES);
-        for (let aIndex = 0; aIndex < numAttribs; aIndex++) {
-            const attribute = gl.getActiveAttrib(this.program, aIndex);
-            const location = gl.getAttribLocation(this.program, attribute.name);
-            locations[location] = attribute.name;
-            this.attributeLocations.set(attribute, location);
-        }
-        this.attributeOrder = locations.join('');
+    /**
+     * WebGLProgram instance, can be shared
+     * Only for backward compatibility
+     * Internally we not should use this
+     */
+    get program() {
+        return this.programData.program;
     }
 
     setBlendFunc(src, dst, srcAlpha, dstAlpha) {
@@ -145,20 +113,25 @@ export class Program {
 
     use({ flipFaces = false } = {}) {
         let textureUnit = -1;
-        const programActive = this.gl.renderer.state.currentProgram === this.id;
+
+        const gl = this.gl;
+        const uniforms = this.uniforms;
+        const program = this.programData.program;
+        const uniformLocations = this.programData.uniformLocations;
+        const programActive = gl.renderer.state.currentProgram === program.id;
 
         // Avoid gl call if program already in use
         if (!programActive) {
-            this.gl.useProgram(this.program);
-            this.gl.renderer.state.currentProgram = this.id;
+            gl.useProgram(program.program);
+            gl.renderer.state.currentProgram = program.id;
         }
 
         // Set only the active uniforms found in the shader
-        this.uniformLocations.forEach((location, activeUniform) => {
+        uniformLocations.forEach((location, activeUniform) => {
             let name = activeUniform.uniformName;
 
             // get supplied uniform
-            let uniform = this.uniforms[name];
+            let uniform = uniforms[name];
 
             // For structs, get the specific property instead of the entire object
             if (activeUniform.isStruct) {
@@ -183,7 +156,7 @@ export class Program {
 
                 // Check if texture needs to be updated
                 uniform.value.update(textureUnit);
-                return setUniform(this.gl, activeUniform.type, location, textureUnit);
+                return setUniform(gl, activeUniform.type, location, textureUnit);
             }
 
             // For texture arrays, set uniform as an array of texture units instead of just one
@@ -195,18 +168,19 @@ export class Program {
                     textureUnits.push(textureUnit);
                 });
 
-                return setUniform(this.gl, activeUniform.type, location, textureUnits);
+                return setUniform(gl, activeUniform.type, location, textureUnits);
             }
 
-            setUniform(this.gl, activeUniform.type, location, uniform.value);
+            setUniform(gl, activeUniform.type, location, uniform.value);
         });
 
         this.applyState();
-        if (flipFaces) this.gl.renderer.setFrontFace(this.frontFace === this.gl.CCW ? this.gl.CW : this.gl.CCW);
+        if (flipFaces) gl.renderer.setFrontFace(this.frontFace === gl.CCW ? gl.CW : gl.CCW);
     }
 
     remove() {
-        this.gl.deleteProgram(this.program);
+        this.programData && this.programData.remove();
+        this.programData = null;
     }
 }
 
