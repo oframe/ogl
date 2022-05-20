@@ -11,15 +11,16 @@ export class ProgramData {
      */
     static CACHE = new Map();
 
+
     /**
      * Create or return already existed program data for current shaders source
-     * @param {WebGLRenderingContext | WebGL2RenderingContext} gl 
-     * @param {string} vertex 
-     * @param {string} fragment 
+     * @param { WebGLRenderingContext | WebGL2RenderingContext } gl 
+     * @param {{ vertex: string, fragment: string}} param1 
+     * @returns 
      */
-    static create (gl, vertex, fragment) {
+    static create (gl, { vertex, fragment }) {
         const key = vertex + fragment;
-        const program = this.CACHE.get(key) || new ProgramData(gl, vertex + fragment);
+        const program = this.CACHE.get(key) || new ProgramData(gl, { vertex, fragment });
 
         program.usage ++;
 
@@ -28,14 +29,12 @@ export class ProgramData {
         return program.compile();
     }
 
-    static remove ()
-
     constructor(
         gl,
         {
             vertex,
             fragment,
-        } = {}
+        }
     ) {
         /**
          * @type {WebGLRenderingContext | WebGL2RenderingContext}
@@ -166,4 +165,12 @@ export class ProgramData {
         this.attributeOrder = '';
         this.uniformLocations.clear();
     }
+}
+
+function addLineNumbers(string) {
+    let lines = string.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+        lines[i] = i + 1 + ': ' + lines[i];
+    }
+    return lines.join('\n');
 }

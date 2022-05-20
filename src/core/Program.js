@@ -49,7 +49,7 @@ export class Program {
             else this.setBlendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
         }
 
-        this.programData = ProgramData.create(gl, vertex, fragment);
+        this.programData = ProgramData.create(gl, { vertex, fragment });
     }
 
     /**
@@ -116,14 +116,14 @@ export class Program {
 
         const gl = this.gl;
         const uniforms = this.uniforms;
-        const program = this.programData.program;
+        const programData = this.programData;
         const uniformLocations = this.programData.uniformLocations;
-        const programActive = gl.renderer.state.currentProgram === program.id;
+        const programActive = gl.renderer.state.currentProgram === programData.id;
 
         // Avoid gl call if program already in use
         if (!programActive) {
-            gl.useProgram(program.program);
-            gl.renderer.state.currentProgram = program.id;
+            gl.useProgram(programData.program);
+            gl.renderer.state.currentProgram = programData.id;
         }
 
         // Set only the active uniforms found in the shader
@@ -235,14 +235,6 @@ function setUniform(gl, type, location, value) {
         case 35676:
             return gl.uniformMatrix4fv(location, false, value); // FLOAT_MAT4
     }
-}
-
-function addLineNumbers(string) {
-    let lines = string.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-        lines[i] = i + 1 + ': ' + lines[i];
-    }
-    return lines.join('\n');
 }
 
 function flatten(a) {
