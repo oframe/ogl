@@ -11,7 +11,6 @@ export class ProgramData {
      */
     static CACHE = new Map();
 
-
     /**
      * Create or return already existed program data for current shaders source
      * @param { WebGLRenderingContext | WebGL2RenderingContext } gl 
@@ -70,7 +69,7 @@ export class ProgramData {
 
         this.id = (1 << 8) + ID++;
 
-        ProgramData.CACHE.set(this.vertex + this.fragment, program);
+        ProgramData.CACHE.set(this.vertex + this.fragment, this);
 
         this.compile();
     }
