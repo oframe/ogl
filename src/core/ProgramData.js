@@ -155,7 +155,7 @@ export class ProgramData {
         if (this.usage <= 0 && this.program) {
             this.gl.deleteProgram(this.program);
 
-            ProgramData.CACHE.remove(this.vertex + this.fragment);
+            ProgramData.CACHE.delete(this.vertex + this.fragment);
         }
 
         this.id = -1;
