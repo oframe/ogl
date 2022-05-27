@@ -39,9 +39,8 @@ export class Geometry {
         this.drawRange = { start: 0, count: 0 };
         this.instancedCount = 0;
 
-        // Unbind current VAO so that new buffers don't get added to active mesh
+        // Unbind current VAO so that new buffers don't get added to active mesh 
         this.gl.renderer.bindVertexArray(null);
-        this.gl.renderer.currentGeometry = null;
 
         // Alias for state store to avoid redundant calls for global state
         this.glState = this.gl.renderer.state;
@@ -167,11 +166,8 @@ export class Geometry {
     }
 
     draw({ program, mode = this.gl.TRIANGLES }) {
-        if (this.gl.renderer.currentGeometry !== `${this.id}_${program.attributeOrder}`) {
-            if (!this.VAOs[program.attributeOrder]) this.createVAO(program);
-            this.gl.renderer.bindVertexArray(this.VAOs[program.attributeOrder]);
-            this.gl.renderer.currentGeometry = `${this.id}_${program.attributeOrder}`;
-        }
+        if (!this.VAOs[program.attributeOrder]) this.createVAO(program);
+        else this.gl.renderer.bindVertexArray(this.VAOs[program.attributeOrder]);
 
         // Check if any attributes need updating
         program.attributeLocations.forEach((location, { name }) => {

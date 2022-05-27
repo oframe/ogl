@@ -69,6 +69,7 @@ export class Renderer {
         this.state.boundBuffer = null;
         this.state.uniformLocations = new Map();
         this.state.currentProgram = null;
+        this.state.currentGeometry = null;
 
         // store requested extensions
         this.extensions = {};
@@ -100,10 +101,12 @@ export class Renderer {
         this.drawArraysInstanced = this.getExtension('ANGLE_instanced_arrays', 'drawArraysInstanced', 'drawArraysInstancedANGLE');
         this.drawElementsInstanced = this.getExtension('ANGLE_instanced_arrays', 'drawElementsInstanced', 'drawElementsInstancedANGLE');
         this.createVertexArray = this.getExtension('OES_vertex_array_object', 'createVertexArray', 'createVertexArrayOES');
-        this.bindVertexArray = this.getExtension('OES_vertex_array_object', 'bindVertexArray', 'bindVertexArrayOES');
-        this.deleteVertexArray = this.getExtension('OES_vertex_array_object', 'deleteVertexArray', 'deleteVertexArrayOES');
         this.drawBuffers = this.getExtension('WEBGL_draw_buffers', 'drawBuffers', 'drawBuffersWEBGL');
 
+        // this methods will be guard
+        this._bindVertexArray = this.getExtension('OES_vertex_array_object', 'bindVertexArray', 'bindVertexArrayOES');
+        this._deleteVertexArray = this.getExtension('OES_vertex_array_object', 'deleteVertexArray', 'deleteVertexArrayOES');
+      
         // Store device parameters
         this.parameters = {};
         this.parameters.maxTextureUnits = this.gl.getParameter(this.gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
@@ -197,6 +200,20 @@ export class Renderer {
         if (this.state.depthFunc === value) return;
         this.state.depthFunc = value;
         this.gl.depthFunc(value);
+    }
+
+    bindVertexArray(value) {
+        if (this.state.currentGeometry !== value) null;
+        this.state.currentGeometry = value;
+        this._bindVertexArray(value);
+    }
+
+    deleteVertexArray(value) {
+        if (!value) return;
+        // when vao is active we should unbind it
+        // there was bugs on some devices with active vao in deleted state 
+        if (this.state.currentGeometry === value) this.bindVertexArray(null);
+        this._deleteVertexArray(value);
     }
 
     activeTexture(value) {
