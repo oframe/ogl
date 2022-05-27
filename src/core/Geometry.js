@@ -96,10 +96,8 @@ export class Geometry {
     updateAttribute(attr) {
         const isNewBuffer = !attr.buffer;
         if (isNewBuffer) attr.buffer = this.gl.createBuffer();
-        if (this.glState.boundBuffer !== attr.buffer) {
-            this.gl.bindBuffer(attr.target, attr.buffer);
-            this.glState.boundBuffer = attr.buffer;
-        }
+        this.gl.renderer.bindBuffer(attr.target, attr.buffer);
+
         if (isNewBuffer) {
             this.gl.bufferData(attr.target, attr.data, attr.usage);
         } else {
@@ -138,8 +136,7 @@ export class Geometry {
 
             const attr = this.attributes[name];
 
-            this.gl.bindBuffer(attr.target, attr.buffer);
-            this.glState.boundBuffer = attr.buffer;
+            this.gl.renderer.bindBuffer(attr.target, attr.buffer);
 
             // For matrix attributes, buffer needs to be defined per column
             let numLoc = 1;
@@ -161,6 +158,7 @@ export class Geometry {
             }
         });
 
+        // NOTE: Index Buffer binding stored in VAO, this is why we not store it in global state
         // Bind indices if geometry indexed
         if (this.attributes.index) this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.attributes.index.buffer);
     }
@@ -270,7 +268,7 @@ export class Geometry {
             delete this.VAOs[key];
         }
         for (let key in this.attributes) {
-            this.gl.deleteBuffer(this.attributes[key].buffer);
+            this.gl.renderer.deleteBuffer(this.attributes[key].buffer);
             delete this.attributes[key];
         }
     }

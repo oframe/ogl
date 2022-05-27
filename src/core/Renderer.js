@@ -203,6 +203,9 @@ export class Renderer {
     }
 
     bindVertexArray(value) {
+        // when we bind a VAO we should allow rebound buffers to it
+        // reset binding cache
+        if (value) this.state.boundBuffer = null;
         if (this.state.currentGeometry !== value) null;
         this.state.currentGeometry = value;
         this._bindVertexArray(value);
@@ -214,6 +217,17 @@ export class Renderer {
         // there was bugs on some devices with active vao in deleted state 
         if (this.state.currentGeometry === value) this.bindVertexArray(null);
         this._deleteVertexArray(value);
+    }
+
+    bindBuffer(target, buffer = null) {
+        if (this.state.boundBuffer === buffer) return;
+        this.state.boundBuffer = buffer;
+        this.gl.bindBuffer(target, buffer)
+    }
+
+    deleteBuffer(buffer) {
+        if (this.state.boundBuffer === buffer) this.state.boundBuffer = null; 
+        this.gl.deleteBuffer(buffer);
     }
 
     activeTexture(value) {
