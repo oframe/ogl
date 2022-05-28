@@ -2,7 +2,7 @@
     "name": "ogl",
     "version": "0.0.93",
     "description": "WebGL Library",
-    "main": "src/index.mjs",
+    "module": "src/index.mjs",
     "sideEffects": false,
     "directories": {
         "example": "examples"
