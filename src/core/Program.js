@@ -27,6 +27,7 @@ export class Program {
         this.gl = gl;
         this.uniforms = uniforms;
         this.id = ID++;
+        this.refCount = { value: 1 }; // shared reference count of program clones
 
         // Store program state
         this.transparent = transparent;
@@ -49,6 +50,7 @@ export class Program {
         this.uniformLocations = compiled.uniformLocations;
         this.attributeLocations = compiled.attributeLocations;
         this.attributeOrder = compiled.attributeOrder;
+        this.isDefaultProgram = compiled.isDefaultProgram;
     }
 
     setBlendFunc(src, dst, srcAlpha, dstAlpha) {
@@ -146,7 +148,11 @@ export class Program {
     }
 
     remove() {
-        this.gl.deleteProgram(this.program);
+        this.refCount.value--;
+
+        if (this.refCount.value <= 0 && !this.isDefaultProgram) {
+            this.gl.deleteProgram(this.program);
+        }
     }
 
     copy(source) {
@@ -172,6 +178,9 @@ export class Program {
         this.attributeOrder = source.attributeOrder;
 
         this.uniforms = copyUniforms(source.uniforms);
+
+        this.refCount = source.refCount;
+        this.refCount.value++;
     }
 
     clone() {
@@ -320,6 +329,7 @@ function compileProgram(gl, vertex, fragment, debug = true) {
 
         if (!programData) {
             programData = compileProgram(gl, defaultVertexSource, defaultFragmentSource, false);
+            programData.isDefaultProgram = true;
             defaulProgramsCache.set(gl, programData);
         }
 
@@ -399,5 +409,5 @@ function compileProgram(gl, vertex, fragment, debug = true) {
 
     const attributeOrder = locations.join('');
 
-    return { program, uniformLocations, attributeLocations, attributeOrder };
+    return { program, uniformLocations, attributeLocations, attributeOrder, isDefaultProgram: false };
 }
