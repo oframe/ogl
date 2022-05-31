@@ -148,6 +148,51 @@ export class Program {
     remove() {
         this.gl.deleteProgram(this.program);
     }
+
+    copy(source) {
+        if (this.gl !== source.gl) {
+            throw new Error('Failed to clone programs that don`t belong to the same WebGLRenderingContext');
+        }
+
+        this.id = ID++;
+
+        // Copy program state
+        this.transparent = source.transparent;
+        this.cullFace = source.cullFace;
+        this.frontFace = source.frontFace;
+        this.depthTest = source.depthTest;
+        this.depthWrite = source.depthWrite;
+        this.depthFunc = source.depthFunc;
+        this.blendFunc = { ...source.blendFunc };
+        this.blendEquation = { ...source.blendEquation };
+
+        this.program = source.program;
+        this.uniformLocations = source.uniformLocations;
+        this.attributeLocations = source.attributeLocations;
+        this.attributeOrder = source.attributeOrder;
+
+        this.uniforms = copyUniforms(source.uniforms);
+    }
+
+    clone() {
+        const clone = new Program(this.gl);
+        clone.copy(this);
+        return clone;
+    }
+}
+
+
+function copyUniforms(src) {
+    const srcEntries = Object.entries(src);
+    const dstEntries = srcEntries.map(([prop, obj]) => {
+        const cloned = obj.value?.clone ? 
+            { ...obj, value: obj.value.clone() } :
+            { ...obj  };
+
+        return [prop, cloned];
+    });
+
+    return Object.fromEntries(dstEntries);
 }
 
 function setUniform(gl, type, location, value) {
