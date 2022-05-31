@@ -49,6 +49,10 @@ export class Vec4 extends Array {
         return this;
     }
 
+    clone() {
+        return new Vec4(this[0], this[1], this[2], this[3]);
+    }
+
     normalize() {
         Vec4Func.normalize(this, this);
         return this;
