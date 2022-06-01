@@ -7,7 +7,7 @@ let ID = 0;
 
 export class ProgramData {
     /**
-     * @type {Map<string, ProgramData>}
+     * @type {WeakMap<WebGLRenderingContext | WebGL2RenderingContext, Map<string, ProgramData>>}
      */
     static CACHE = new Map();
 
@@ -15,14 +15,58 @@ export class ProgramData {
      * Create or return already existed program data for current shaders source
      * @param { WebGLRenderingContext | WebGL2RenderingContext } gl 
      * @param {{ vertex: string, fragment: string}} param1 
-     * @returns 
+     * @returns {ProgramData}
      */
     static create (gl, { vertex, fragment }) {
-        const program = this.CACHE.get(vertex + fragment) || new ProgramData(gl, { vertex, fragment });
+        const store = ProgramData.CACHE.get(gl);
+
+        if (!store) return new ProgramData(gl, { vertex, fragment });
+
+        const program = store.get(vertex + fragment);
+        
+        if (!program) return new ProgramData(gl, { vertex, fragment });
 
         program.usage ++;
 
         return program;
+    }
+
+    /**
+     * Store program data to cache
+     * @param { WebGLRenderingContext | WebGL2RenderingContext } gl
+     * @param { ProgramData } programData
+     * @returns { ProgramData }
+     */
+    static set (gl, programData) {
+        const store = this.CACHE.get(gl) || new Map();
+
+        ProgramData.CACHE.set(gl, store);
+
+        if (store.has(programData.vertex + programData.fragment)) {
+            console.warn(
+                '[ProgramData cache] Already have valid program data for this source:',
+                programData.vertex,
+                programData.fragment
+            );
+        }
+
+        store.set(programData.key, programData);
+
+        return programData;
+    }
+
+    /**
+     * @param { WebGLRenderingContext | WebGL2RenderingContext } gl
+     * @param { ProgramData } programData
+     */
+    static delete (gl, programData) {
+        if (!programData || !programData.key) return false;
+
+        const store = ProgramData.CACHE.get(gl);
+
+        if (!store) return false;
+
+        return store.delete(programData.key);
     }
 
     constructor(
@@ -69,19 +113,30 @@ export class ProgramData {
 
         this.id = (1 << 8) + ID++;
 
-        ProgramData.CACHE.set(this.vertex + this.fragment, this);
-
         this.compile();
     }
 
-    compile () {
-        if (this.program) {
-            return this;
-        }
+    get key() {
+        return this.vertex + this.fragment;
+    }
 
+    /**
+     * Compile or validate exist program
+     * @returns { boolean }
+     */
+    compile () {        
         const gl = this.gl;
         const vertex = this.vertex;
         const fragment = this.fragment;
+
+        // check that compiled program still alive
+        if (this.program && gl.isProgram(this.program)) {
+            return true;
+        }
+
+        // delete exist program for this context
+        // it can be invalid
+        ProgramData.delete(gl, this);
 
         // compile vertex shader and log errors
         const vertexShader = gl.createShader(gl.VERTEX_SHADER);
@@ -100,18 +155,20 @@ export class ProgramData {
         }
 
         // compile program and log errors
-        this.program = gl.createProgram();
-        gl.attachShader(this.program, vertexShader);
-        gl.attachShader(this.program, fragmentShader);
-        gl.linkProgram(this.program);
-        if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
-            console.warn(gl.getProgramInfoLog(this.program));
-            return this;
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.warn(gl.getProgramInfoLog(program));
+            return false;
         }
 
         // Remove shader once linked
         gl.deleteShader(vertexShader);
         gl.deleteShader(fragmentShader);
+
+        this.program = program;
 
         // Get active uniform locations
         let numUniforms = gl.getProgramParameter(this.program, gl.ACTIVE_UNIFORMS);
@@ -146,7 +203,10 @@ export class ProgramData {
 
         this.attributeOrder = locations.join('');
 
-        return this;
+        // storing only valid programs
+        ProgramData.set(gl, this);
+
+        return true;
     }
 
     remove() {
@@ -155,7 +215,7 @@ export class ProgramData {
         if (this.usage <= 0 && this.program) {
             this.gl.deleteProgram(this.program);
 
-            ProgramData.CACHE.delete(this.vertex + this.fragment);
+            ProgramData.delete(this.gl, this);
         }
 
         this.id = -1;
