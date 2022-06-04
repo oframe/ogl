@@ -150,8 +150,12 @@ export class Program {
             let uniform = this.uniforms[activeUniform.uniformName];
 
             for (const component of activeUniform.nameComponents) {
-                if (uniform && component in uniform) {
+                if (!uniform) break;
+
+                if (component in uniform) {
                     uniform = uniform[component];
+                } else if (Array.isArray(uniform.value)) {
+                    break;
                 } else {
                     uniform = undefined;
                     break;
