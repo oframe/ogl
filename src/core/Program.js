@@ -114,6 +114,9 @@ export class Program {
     use({ flipFaces = false } = {}) {
         let textureUnit = -1;
 
+        /**
+         * @type {WebGL2RenderingContext}
+         */
         const gl = this.gl;
         const uniforms = this.uniforms;
         const programData = this.programData;

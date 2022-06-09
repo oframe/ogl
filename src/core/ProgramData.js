@@ -113,6 +113,8 @@ export class ProgramData {
 
         this.id = (1 << 8) + ID++;
 
+        this.usage = 0;
+
         this.compile();
     }
 
@@ -169,6 +171,9 @@ export class ProgramData {
         gl.deleteShader(fragmentShader);
 
         this.program = program;
+        // can be recompiled after loose
+        this.uniformLocations.clear();
+        this.attributeLocations.clear();
 
         // Get active uniform locations
         let numUniforms = gl.getProgramParameter(this.program, gl.ACTIVE_UNIFORMS);
