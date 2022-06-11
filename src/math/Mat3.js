@@ -46,12 +46,6 @@ export class Mat3 extends Array {
         return this;
     }
 
-    clone() {
-        const clone = new Mat3();
-        clone.copy(this);
-        return clone;
-    }
-
     fromMatrix4(m) {
         Mat3Func.fromMat4(this, m);
         return this;

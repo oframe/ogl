@@ -95,12 +95,6 @@ export class Mat4 extends Array {
         return this;
     }
 
-    clone() {
-        const clone = new Mat4();
-        clone.copy(this);
-        return clone;
-    }
-
     fromPerspective({ fov, aspect, near, far } = {}) {
         Mat4Func.perspective(this, fov, aspect, near, far);
         return this;
