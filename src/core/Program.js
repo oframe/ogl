@@ -27,9 +27,7 @@ export class Program {
         this.gl = gl;
         this.uniforms = uniforms;
         this.id = ID++;
-
-        if (!vertex) console.warn('vertex shader not supplied');
-        if (!fragment) console.warn('fragment shader not supplied');
+        this.refCount = { value: 1 }; // shared reference count of program clones
 
         // Store program state
         this.transparent = transparent;
@@ -47,68 +45,12 @@ export class Program {
             else this.setBlendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
         }
 
-        // compile vertex shader and log errors
-        const vertexShader = gl.createShader(gl.VERTEX_SHADER);
-        gl.shaderSource(vertexShader, vertex);
-        gl.compileShader(vertexShader);
-        if (gl.getShaderInfoLog(vertexShader) !== '') {
-            console.warn(`${gl.getShaderInfoLog(vertexShader)}\nVertex Shader\n${addLineNumbers(vertex)}`);
-        }
-
-        // compile fragment shader and log errors
-        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-        gl.shaderSource(fragmentShader, fragment);
-        gl.compileShader(fragmentShader);
-        if (gl.getShaderInfoLog(fragmentShader) !== '') {
-            console.warn(`${gl.getShaderInfoLog(fragmentShader)}\nFragment Shader\n${addLineNumbers(fragment)}`);
-        }
-
-        // compile program and log errors
-        this.program = gl.createProgram();
-        gl.attachShader(this.program, vertexShader);
-        gl.attachShader(this.program, fragmentShader);
-        gl.linkProgram(this.program);
-        if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
-            return console.warn(gl.getProgramInfoLog(this.program));
-        }
-
-        // Remove shader once linked
-        gl.deleteShader(vertexShader);
-        gl.deleteShader(fragmentShader);
-
-        // Get active uniform locations
-        this.uniformLocations = new Map();
-        let numUniforms = gl.getProgramParameter(this.program, gl.ACTIVE_UNIFORMS);
-        for (let uIndex = 0; uIndex < numUniforms; uIndex++) {
-            let uniform = gl.getActiveUniform(this.program, uIndex);
-            this.uniformLocations.set(uniform, gl.getUniformLocation(this.program, uniform.name));
-
-            // split uniforms' names to separate array and struct declarations
-            const split = uniform.name.match(/(\w+)/g);
-
-            uniform.uniformName = split[0];
-
-            if (split.length === 3) {
-                uniform.isStructArray = true;
-                uniform.structIndex = Number(split[1]);
-                uniform.structProperty = split[2];
-            } else if (split.length === 2 && isNaN(Number(split[1]))) {
-                uniform.isStruct = true;
-                uniform.structProperty = split[1];
-            }
-        }
-
-        // Get active attribute locations
-        this.attributeLocations = new Map();
-        const locations = [];
-        const numAttribs = gl.getProgramParameter(this.program, gl.ACTIVE_ATTRIBUTES);
-        for (let aIndex = 0; aIndex < numAttribs; aIndex++) {
-            const attribute = gl.getActiveAttrib(this.program, aIndex);
-            const location = gl.getAttribLocation(this.program, attribute.name);
-            locations[location] = attribute.name;
-            this.attributeLocations.set(attribute, location);
-        }
-        this.attributeOrder = locations.join('');
+        const compiled = compileProgram(gl, vertex, fragment);
+        this.program = compiled.program;
+        this.uniformLocations = compiled.uniformLocations;
+        this.attributeLocations = compiled.attributeLocations;
+        this.attributeOrder = compiled.attributeOrder;
+        this.isDefaultProgram = compiled.isDefaultProgram;
     }
 
     setBlendFunc(src, dst, srcAlpha, dstAlpha) {
@@ -206,8 +148,60 @@ export class Program {
     }
 
     remove() {
-        this.gl.deleteProgram(this.program);
+        this.refCount.value--;
+
+        if (this.refCount.value <= 0 && !this.isDefaultProgram) {
+            this.gl.deleteProgram(this.program);
+        }
     }
+
+    copy(source) {
+        if (this.gl !== source.gl) {
+            throw new Error('Failed to clone programs that don`t belong to the same WebGLRenderingContext');
+        }
+
+        this.id = ID++;
+
+        // Copy program state
+        this.transparent = source.transparent;
+        this.cullFace = source.cullFace;
+        this.frontFace = source.frontFace;
+        this.depthTest = source.depthTest;
+        this.depthWrite = source.depthWrite;
+        this.depthFunc = source.depthFunc;
+        this.blendFunc = { ...source.blendFunc };
+        this.blendEquation = { ...source.blendEquation };
+
+        this.program = source.program;
+        this.uniformLocations = source.uniformLocations;
+        this.attributeLocations = source.attributeLocations;
+        this.attributeOrder = source.attributeOrder;
+
+        this.uniforms = copyUniforms(source.uniforms);
+
+        this.refCount = source.refCount;
+        this.refCount.value++;
+    }
+
+    clone() {
+        const clone = new Program(this.gl);
+        clone.copy(this);
+        return clone;
+    }
+}
+
+
+function copyUniforms(src) {
+    const srcEntries = Object.entries(src);
+    const dstEntries = srcEntries.map(([prop, obj]) => {
+        const cloned = obj.value?.clone ? 
+            { ...obj, value: obj.value.clone() } :
+            { ...obj  };
+
+        return [prop, cloned];
+    });
+
+    return Object.fromEntries(dstEntries);
 }
 
 function setUniform(gl, type, location, value) {
@@ -302,4 +296,118 @@ function warn(message) {
     console.warn(message);
     warnCount++;
     if (warnCount > 100) console.warn('More than 100 program warnings - stopping logs.');
+}
+
+const defaultVertexSource = /* glsl */ `
+attribute vec3 position;
+attribute vec2 uv;
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+varying vec2 vUv;
+
+void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`;
+
+const defaultFragmentSource = /* glsl */ `
+precision mediump float;
+varying vec2 vUv;
+
+void main() {
+    gl_FragColor = vec4(vUv, 0.0, 1.0);
+}`;
+
+
+// Program with only default vertex and fragment shader are cached to avoid take time on recompilation
+// Cached programs also using for cheap cloning method
+const defaulProgramsCache = new WeakMap();
+
+function compileProgram(gl, vertex, fragment, debug = true) {
+    if (!vertex && !fragment) {
+        let programData = defaulProgramsCache.get(gl);
+
+        if (!programData) {
+            programData = compileProgram(gl, defaultVertexSource, defaultFragmentSource, false);
+            programData.isDefaultProgram = true;
+            defaulProgramsCache.set(gl, programData);
+        }
+
+        return programData;
+    }
+
+    vertex = vertex || defaultVertexSource;
+    fragment = fragment || defaultFragmentSource;
+
+    // compile vertex shader and log errors
+    const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vertexShader, vertex);
+    gl.compileShader(vertexShader);
+
+    if (debug && gl.getShaderInfoLog(vertexShader) !== '') {
+        console.warn(`${gl.getShaderInfoLog(vertexShader)}\nVertex Shader\n${addLineNumbers(vertex)}`);
+    }
+
+    // compile fragment shader and log errors
+    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fragmentShader, fragment);
+    gl.compileShader(fragmentShader);
+
+    if (debug && gl.getShaderInfoLog(fragmentShader) !== '') {
+        console.warn(`${gl.getShaderInfoLog(fragmentShader)}\nFragment Shader\n${addLineNumbers(fragment)}`);
+    }
+
+    // compile program and log errors
+    const program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+
+    if (debug && !gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        return console.warn(gl.getProgramInfoLog(program));
+    }
+
+    // Remove shader once linked
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+
+    // Get active uniform locations
+    const uniformLocations = new Map();
+    const numUniforms = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+
+    for (let uIndex = 0; uIndex < numUniforms; uIndex++) {
+        const uniform = gl.getActiveUniform(program, uIndex);
+        uniformLocations.set(uniform, gl.getUniformLocation(program, uniform.name));
+
+        // split uniforms' names to separate array and struct declarations
+        const split = uniform.name.match(/(\w+)/g);
+
+        uniform.uniformName = split[0];
+
+        if (split.length === 3) {
+            uniform.isStructArray = true;
+            uniform.structIndex = Number(split[1]);
+            uniform.structProperty = split[2];
+        } else if (split.length === 2 && isNaN(Number(split[1]))) {
+            uniform.isStruct = true;
+            uniform.structProperty = split[1];
+        }
+    }
+
+    // Get active attribute locations
+    const attributeLocations = new Map();
+    const locations = [];
+    const numAttribs = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
+
+    for (let aIndex = 0; aIndex < numAttribs; aIndex++) {
+        const attribute = gl.getActiveAttrib(program, aIndex);
+        const location = gl.getAttribLocation(program, attribute.name);
+
+        locations[location] = attribute.name;
+        attributeLocations.set(attribute, location);
+    }
+
+    const attributeOrder = locations.join('');
+
+    return { program, uniformLocations, attributeLocations, attributeOrder, isDefaultProgram: false };
 }
