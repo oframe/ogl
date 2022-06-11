@@ -51,4 +51,8 @@ export class Color extends Array {
         this[2] = v[2];
         return this;
     }
+
+    clone() {
+        return new Color(this);
+    }
 }
