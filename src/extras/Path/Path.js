@@ -3,7 +3,7 @@ import { Mat4 } from '../../math/Mat4.js';
 import CubicBezierSegment from './CubicBezierSegment.js';
 import QuadraticBezierSegment from './QuadraticBezierSegment.js';
 import LineSegment from './LineSegment.js';
-import { clamp, toDegrees, toRadian, mat4fromRotationSinCos, rotateNormalBinormal } from "./utils.js";
+import { clamp, toDegrees, toRadian, mat4fromRotationSinCos, rotateNormalBinormal } from './utils.js';
 
 const tempVec3 = new Vec3();
 const tempMat4 = new Mat4();
@@ -21,7 +21,7 @@ export class Path {
         this._lastTilt = 0;
 
         this._assertLastPoint = throwIfNullProperty.bind(this, '_lastPoint', 'Can`t get previous point of curve. Did you forget moveTo command?');
-        
+
         this.tiltFunction = null;
     }
 
@@ -84,7 +84,7 @@ export class Path {
 
         return this._totalLength;
     }
-    
+
     /**
      * Finding a path segment at a given absolute length distance
      * @param {number} len absolute length distance
@@ -190,23 +190,16 @@ export class Path {
             tilts[i] = tiltFunction(segment.getTiltAt(st), i / divisions, this);
         }
 
-        let min = Number.MAX_VALUE;
         const tx = Math.abs(tangents[0].x);
         const ty = Math.abs(tangents[0].y);
         const tz = Math.abs(tangents[0].z);
 
         const normal = new Vec3();
-        if (tx <= min) {
-            min = tx;
+        if (tx < ty && tx < tz) {
             normal.set(1, 0, 0);
-        }
-
-        if (ty <= min) {
-            min = ty;
+        } else if (ty < tx && ty < tz) {
             normal.set(0, 1, 0);
-        }
-
-        if (tz <= min) {
+        } else {
             normal.set(0, 0, 1);
         }
 
