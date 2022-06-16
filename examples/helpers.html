@@ -15,7 +15,7 @@
 <body>
     <div class="Info">Helpers</div>
     <script type="module">
-        import { Renderer, Camera, Transform, Program, Mesh, Sphere, Box, Orbit, AxesHelper, VertexNormalsHelper, FacesNormalsHelper, GridHelper } from '../src/index.mjs';
+        import { Renderer, Camera, Transform, Program, Mesh, Sphere, Box, Orbit, AxesHelper, VertexNormalsHelper, FaceNormalsHelper, GridHelper } from '../src/index.mjs';
 
         const vertex = /* glsl */ `
                 attribute vec3 position;
@@ -78,7 +78,7 @@
             const sphereVertNorms = new VertexNormalsHelper(sphere);
             sphereVertNorms.setParent(scene);
 
-            const sphereFaceNorms = new FacesNormalsHelper(sphere);
+            const sphereFaceNorms = new FaceNormalsHelper(sphere);
             sphereFaceNorms.setParent(scene);
 
             const cube = new Mesh(gl, { geometry: cubeGeometry, program });
@@ -88,7 +88,7 @@
             const cubeVertNorms = new VertexNormalsHelper(cube);
             cubeVertNorms.setParent(scene);
 
-            const cubeFaceNorms = new FacesNormalsHelper(cube);
+            const cubeFaceNorms = new FaceNormalsHelper(cube);
             cubeFaceNorms.setParent(scene);
 
             const grid = new GridHelper(gl, { size: 10, divisions: 10 });
