@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport"
+        content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+    <link rel="icon" type="image/png" href="assets/favicon.png" />
+
+    <title>OGL • Paths</title>
+    <link href="assets/main.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="Info">Paths</div>
+    <script type="module">
+        import { Renderer, Camera, Transform, Program, Mesh, Sphere, Polyline, Vec3, Color, Path } from '../src/index.mjs';
+
+        const vertex = /* glsl */ `
+            attribute vec3 position;
+            attribute vec3 normal;
+
+            uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+            uniform mat3 normalMatrix;
+
+            varying vec3 vNormal;
+
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }`;
+
+        const fragmentColor1 = /* glsl */ `
+            precision highp float;
+            varying vec3 vNormal;
+
+            void main() {
+                vec3 normal = normalize(vNormal);
+                float lighting = dot(normal, normalize(vec3(-0.3, 0.8, 0.6)));
+                gl_FragColor.rgb = vec3(0.24, 0.84, 1.0) + lighting * 0.1;
+                gl_FragColor.a = 1.0;
+            }`;
+
+        const fragmentColor2 = /* glsl */ `
+            precision highp float;
+            varying vec3 vNormal;
+
+            void main() {
+                vec3 normal = normalize(vNormal);
+                float lighting = dot(normal, normalize(vec3(-0.3, 0.8, 0.6)));
+                gl_FragColor.rgb = vec3(0.93, 0.25, 0.41) + lighting * 0.1;
+                gl_FragColor.a = 1.0;
+            }`;
+
+        {
+            const renderer = new Renderer({ dpr: 2 });
+            const gl = renderer.gl;
+            document.body.appendChild(gl.canvas);
+            gl.clearColor(1, 1, 1, 1);
+
+            const camera = new Camera(gl, { fov: 35 });
+
+            function resize() {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+            }
+            window.addEventListener('resize', resize, false);
+            resize();
+
+            const scene = new Transform();
+
+            const sphereGeom = new Sphere(gl);
+            const sphereProg1 = new Program(gl, { vertex, fragment: fragmentColor1 });
+            const sphereProg2 = new Program(gl, { vertex, fragment: fragmentColor2 });
+
+            // First three is for moveTo command, rest for bezierCurveTo command
+            const pathCoords = [-1.0, 0.0, 0.0, -0.9368709325790405, 0.1762027144432068, 0.04529910162091255, -0.7061498761177063, 0.089231938123703, 0.19381383061408997, -0.6332840919494629, 0.2674865424633026, 0.1930660903453827, -0.5615311861038208, 0.4430185854434967, 0.1923297792673111, -0.7734173536300659, 0.5522762537002563, 0.08718681335449219, -0.7070468664169312, 0.7070468664169312, 0.0, -0.6498651504516602, 0.8403899073600769, -0.07511603832244873, -0.5399253368377686, 0.8584117889404297, -0.16668838262557983, -0.38917776942253113, 0.921392560005188, -0.1677459478378296, -0.23391252756118774, 0.9862607717514038, -0.16883520781993866, -0.14611071348190308, 1.0727460384368896, -0.04093937203288078, 0.0, 1.0, 0.0, 0.1674281358718872, 0.9166403412818909, 0.046912387013435364, 0.07777689397335052, 0.6478093862533569, -0.06732462346553802, 0.2400655597448349, 0.5683639645576477, 0.0, 0.4298238456249237, 0.4754713177680969, 0.07872024923563004, 0.49316900968551636, 0.7766210436820984, 0.32597726583480835, 0.7070468664169312, 0.7070468664169312, 0.3101717531681061, 0.8896822333335876, 0.647635817527771, 0.29667505621910095, 0.8556811809539795, 0.5579423308372498, 0.06533028930425644, 0.921392560005188, 0.38917776942253113, 0.0, 0.9742976427078247, 0.2533031702041626, -0.05259828269481659, 1.0508142709732056, 0.14183028042316437, -0.036462459713220596, 1.0, 0.0, 0.0, 0.9368709325790405, -0.1762027144432068, 0.04529910162091255, 0.7061498761177063, -0.089231938123703, 0.19381383061408997, 0.6332840919494629, -0.2674865424633026, 0.1930660903453827, 0.5615311861038208, -0.4430185854434967, 0.1923297792673111, 0.7734173536300659, -0.5522762537002563, 0.08718681335449219, 0.7070468664169312, -0.7070468664169312, 0.0, 0.6498651504516602, -0.8403899073600769, -0.07511603832244873, 0.5399253368377686, -0.8584117889404297, -0.16668838262557983, 0.38917776942253113, -0.921392560005188, -0.1677459478378296, 0.23391252756118774, -0.9862607717514038, -0.16883520781993866, 0.14611071348190308, -1.0727460384368896, -0.04093937203288078, 0.0, -1.0, 0.0, -0.1674281358718872, -0.9166403412818909, 0.046912387013435364, -0.07777689397335052, -0.6478093862533569, -0.06732462346553802, -0.2400655597448349, -0.5683639645576477, 0.0, -0.4298238456249237, -0.4754713177680969, 0.07872024923563004, -0.49316900968551636, -0.7766210436820984, 0.32597726583480835, -0.7070468664169312, -0.7070468664169312, 0.3101717531681061, -0.8896822333335876, -0.647635817527771, 0.29667505621910095, -0.8556811809539795, -0.5579423308372498, 0.06533028930425644, -0.921392560005188, -0.38917776942253113, 0.0, -0.9742976427078247, -0.2533031702041626, -0.05259828269481659, -1.0508142709732056, -0.14183028042316437, -0.036462459713220596, -1.0, 0.0, 0.0];
+
+            // Constructing path from cubic Bezier segments.
+            // Also available `quadraticCurveTo` and `lineTo` commands
+            const path = new Path();
+            path.moveTo(new Vec3(pathCoords[0], pathCoords[1], pathCoords[2]));
+            for (let i = 3; i < pathCoords.length; i += 9) {
+                const cp1 = new Vec3(pathCoords[i + 0], pathCoords[i + 1], pathCoords[i + 2]);
+                const cp2 = new Vec3(pathCoords[i + 3], pathCoords[i + 4], pathCoords[i + 5]);
+                const p = new Vec3(pathCoords[i + 6], pathCoords[i + 7], pathCoords[i + 8]);
+                path.bezierCurveTo(cp1, cp2, p);
+            }
+
+            // Tilt function receive an angle, relative path length offset in range [0..1] and path object instance.
+            // Should return new tilt angle
+            path.tiltFunction = (angle, t, path) => 8 * 360 * t;
+
+            const pathSubdivisions = 256;
+            const points = path.getPoints(pathSubdivisions);
+
+            // create polyline from points
+            // see example: https://oframe.github.io/ogl/examples/?src=polylines.html
+            const polyline = new Polyline(gl, {
+                points,
+                uniforms: {
+                    uColor: { value: new Color('#ddd') },
+                    uThickness: { value: 3 },
+                },
+            });
+
+            const mesh = new Mesh(gl, { geometry: polyline.geometry, program: polyline.program });
+            mesh.setParent(scene);
+
+            // Generates the Frenet Frames.
+            // See http://www.cs.indiana.edu/pub/techreports/TR425.pdf
+            const frenetFrames = path.computeFrenetFrames(pathSubdivisions, true);
+            // if the path is closed,                                       ^
+            // then the paths ends will be aligned with each other ----------
+
+            for (let i = 0; i < points.length - 1; i++) {
+                const point = points[i];
+                const tangent = frenetFrames.tangents[i];
+                const normal = frenetFrames.normals[i];
+                const binormal = frenetFrames.binormals[i];
+
+                const leftSphere = new Mesh(gl, { geometry: sphereGeom, program: sphereProg1 });
+                leftSphere.scale.set(0.04);
+                leftSphere.position.add(point, binormal.clone().scale(0.12));
+                leftSphere.setParent(scene);
+
+                const rightSphere = new Mesh(gl, { geometry: sphereGeom, program: sphereProg2 });
+                rightSphere.scale.set(0.04);
+                rightSphere.position.add(point, binormal.clone().scale(-0.12));
+                rightSphere.setParent(scene);
+            }
+
+            const tangentVec = new Vec3();
+            const normalVec = new Vec3();
+            const positionVec = new Vec3();
+
+            function update(now) {
+                const progress = (now * 0.00001) % 1;
+
+                // take current Frenet frame
+                const frameIndex = Math.floor(progress * pathSubdivisions);
+                const frameProgress = progress * pathSubdivisions % 1;
+
+                // interpolate normal from current and next frame
+                const normal1 = frenetFrames.normals[frameIndex];
+                const normal2 = frenetFrames.normals[(frameIndex + 1) % pathSubdivisions];
+                normalVec.copy(normal1).lerp(normal2, frameProgress).normalize();
+
+                // get point and tangent on path
+                path.getPointAt(progress, positionVec);
+                path.getTangentAt(progress, tangentVec);
+
+                // make the camera follow a point on the path
+                camera.up.copy(normalVec);
+                camera.position
+                    .copy(positionVec)
+                    .sub(tangentVec)
+                    .add(normalVec);
+
+                camera.lookAt(positionVec);
+
+                renderer.render({ scene, camera });
+                requestAnimationFrame(update);
+            }
+
+            requestAnimationFrame(update);
+        }
+    </script>
+</body>
+
+</html>
