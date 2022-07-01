@@ -105,6 +105,8 @@ export class Program {
         for (let aIndex = 0; aIndex < numAttribs; aIndex++) {
             const attribute = gl.getActiveAttrib(this.program, aIndex);
             const location = gl.getAttribLocation(this.program, attribute.name);
+            if (location === -1) continue;
+
             locations[location] = attribute.name;
             this.attributeLocations.set(attribute, location);
         }

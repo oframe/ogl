@@ -119,6 +119,7 @@ export class Geometry {
     }
 
     setInstancedCount(value) {
+        this.isInstanced = value > 0;
         this.instancedCount = value;
     }
 
