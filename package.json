@@ -1,9 +1,10 @@
 {
     "name": "ogl",
-    "version": "0.0.96",
+    "version": "0.0.97",
     "description": "WebGL Library",
     "exports": "./src/index.mjs",
     "type": "module",
+    "sideEffects": false,
     "directories": {
         "example": "examples"
     },
