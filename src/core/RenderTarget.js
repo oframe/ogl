@@ -147,14 +147,29 @@ export class RenderTarget {
 
     dispose() {
         this.deleteFrameBuffer(this.buffer);
+        delete this.buffer;
 
-        if (this.depthBuffer) this.deleteFrameBuffer(this.buffer);
-        if (this.stencilBuffer) this.deleteFrameBuffer(this.stencilBuffer);
-        if (this.depthStencilBuffer) this.deleteFrameBuffer(this.depthStencilBuffer);
+        if (this.depthBuffer) {
+            this.deleteRenderbuffer(this.depthBuffer);
+            delete this.depthBuffer;
+        }
+        if (this.stencilBuffer) {
+            this.deleteRenderbuffer(this.stencilBuffer);
+            delete this.stencilBuffer;
+        }
+        if (this.depthStencilBuffer) {
+            this.deleteRenderbuffer(this.depthStencilBuffer);
+            delete this.depthStencilBuffer;
+        }
 
-        if (this.depthTexture) this.depthTexture.dispose();
+        if (this.depthTexture) {
+            this.depthTexture.dispose();
+            delete this.depthTexture;
+        }
 
-        this.textures.forEach((texture) => texture.dispose());
+        for (const texture of this.textures) {
+            texture.dispose();
+        }
         this.textures = [];
     }
 }
