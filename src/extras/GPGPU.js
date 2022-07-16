@@ -119,20 +119,20 @@ export class GPGPU {
         this.geometry.dispose();
         delete this.geometry;
 
-        this.passes.forEach((pass) => {
+        for (const pass of this.passes) {
             pass.program.dispose();
 
             // Dispose of textures
-            Object.values(pass.uniforms).forEach((uniform) => uniform.dispose?.());
-        });
-        delete this.passes;
-
-        this.uniform.value.dispose();
-        delete this.uniform;
+            for (const uniform of pass.uniforms) {
+                uniform.dispose?.();
+            }
+        }
+        this.passes = [];
 
         this.fbo.read.dispose();
         this.fbo.write.dispose();
-        delete this.fbo;
+        this.fbo.read = null;
+        this.fbo.write = null;
     }
 }
 

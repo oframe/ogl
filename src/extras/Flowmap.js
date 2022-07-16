@@ -109,7 +109,8 @@ export class Flowmap {
     dispose() {
         this.mask.read.dispose();
         this.mask.write.dispose();
-        delete this.mask;
+        this.mask.read = null;
+        this.mask.write = null;
 
         this.mesh.program.dispose();
         this.mesh.geometry.dispose();

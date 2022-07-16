@@ -211,14 +211,12 @@ export class Program {
         this.gl.deleteProgram(this.program);
         delete this.program;
 
-        this.attributeLocations.forEach((location, key) => {
-            this.gl.disableVertexAttribArray(location);
-            this.attributeLocations.delete(key);
-        });
+        this.uniformLocations.clear();
 
-        // Dispose of textures
-        Object.values(uniforms).forEach((uniform) => uniform.dispose?.());
-        delete this.uniforms;
+        this.attributeLocations.forEach((location) => {
+            this.gl.disableVertexAttribArray(location);
+        });
+        this.attributeLocations.clear();
     }
 }
 
