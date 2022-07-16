@@ -118,6 +118,11 @@ export class Vec3 extends Array {
         return Vec3Func.exactEquals(this, v);
     }
 
+    applyMatrix3(mat3) {
+        Vec3Func.transformMat3(this, this, mat3);
+        return this;
+    }
+
     applyMatrix4(mat4) {
         Vec3Func.transformMat4(this, this, mat4);
         return this;

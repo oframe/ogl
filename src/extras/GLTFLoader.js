@@ -5,29 +5,28 @@ import { Mesh } from '../core/Mesh.js';
 import { GLTFAnimation } from './GLTFAnimation.js';
 import { GLTFSkin } from './GLTFSkin.js';
 import { Mat4 } from '../math/Mat4.js';
+import { Vec3 } from '../math/Vec3.js';
 import { NormalProgram } from './NormalProgram.js';
 
 // Supports
+// [x] glb
 // [x] Geometry
-// [ ] Sparse support
 // [x] Nodes and Hierarchy
 // [x] Instancing
-// [ ] Morph Targets
 // [x] Skins
-// [ ] Materials
 // [x] Textures
 // [x] Animation
-// [ ] Cameras
-// [ ] Extensions
 // [x] GLB support
-// [x] Basis/ktx2 support
+// [x] Basis/ktx2
+// [x] KHR_lights_punctual lights
+// [ ] Morph Targets
+// [ ] Materials
+// [ ] Cameras
 
 // TODO: Sparse accessor packing? For morph targets basically
 // TODO: init accessor missing bufferView with 0s
 // TODO: morph target animations
-// TODO: what to do if multiple instances are in different groups? Only uses local matrices
-// TODO: what if instancing isn't wanted? Eg collision maps
-// TODO: ie11 fallback for TextDecoder?
+// TODO: option to turn off GPU instancing
 
 const TYPE_ARRAY = {
     5121: Uint8Array,
@@ -110,7 +109,7 @@ export class GLTFLoader {
         const meshes = this.parseMeshes(gl, desc, bufferViews, materials, skins);
 
         // Create transforms, meshes and hierarchy
-        const nodes = this.parseNodes(gl, desc, meshes, skins);
+        const nodes = this.parseNodes(gl, desc, meshes, skins, images);
 
         // Place nodes in skeletons
         this.populateSkins(skins, nodes);
@@ -121,6 +120,9 @@ export class GLTFLoader {
         // Get top level nodes for each scene
         const scenes = this.parseScenes(desc, nodes);
         const scene = scenes[desc.scene];
+
+        // Create uniforms for scene lights (TODO: light linking?)
+        const lights = this.parseLights(gl, desc, nodes, scenes);
 
         // Remove null nodes (instanced transforms)
         for (let i = nodes.length; i >= 0; i--) if (!nodes[i]) nodes.splice(i, 1);
@@ -134,6 +136,7 @@ export class GLTFLoader {
             materials,
             meshes,
             nodes,
+            lights,
             animations,
             scenes,
             scene,
@@ -271,25 +274,14 @@ export class GLTFLoader {
                 },
                 i
             ) => {
-                // For basis, just slice buffer
-                if (mimeType === 'image/ktx2') {
-                    bufferViews[i].data = buffers[bufferIndex].slice(byteOffset, byteOffset + byteLength);
-                    return;
-                }
-
-                const TypeArray = TYPE_ARRAY[componentType || mimeType];
-                const elementBytes = TypeArray.BYTES_PER_ELEMENT;
-
-                const data = new TypeArray(buffers[bufferIndex], byteOffset, byteLength / elementBytes);
-                bufferViews[i].data = data;
-                bufferViews[i].originalBuffer = buffers[bufferIndex];
+                bufferViews[i].data = buffers[bufferIndex].slice(byteOffset, byteOffset + byteLength);
 
                 if (!isAttribute) return;
                 // Create gl buffers for the bufferView, pushing it to the GPU
                 const buffer = gl.createBuffer();
                 gl.bindBuffer(target, buffer);
                 gl.renderer.state.boundBuffer = buffer;
-                gl.bufferData(target, data, gl.STATIC_DRAW);
+                gl.bufferData(target, bufferViews[i].data, gl.STATIC_DRAW);
                 bufferViews[i].buffer = buffer;
             }
         );
@@ -327,47 +319,52 @@ export class GLTFLoader {
 
     static parseTextures(gl, desc, images) {
         if (!desc.textures) return null;
-        return desc.textures.map(({ sampler: samplerIndex, source: sourceIndex, name, extensions, extras }) => {
-            if (sourceIndex === undefined && !!extensions) {
-                // Basis extension source index
-                if (extensions.KHR_texture_basisu) sourceIndex = extensions.KHR_texture_basisu.source;
+        return desc.textures.map((textureInfo) => this.createTexture(gl, desc, images, textureInfo));
+    }
+
+    static createTexture(gl, desc, images, { sampler: samplerIndex, source: sourceIndex, name, extensions, extras }) {
+        if (sourceIndex === undefined && !!extensions) {
+            // Basis extension source index
+            if (extensions.KHR_texture_basisu) sourceIndex = extensions.KHR_texture_basisu.source;
+        }
+
+        const image = images[sourceIndex];
+        if (image.texture) return image.texture;
+
+        const options = {
+            flipY: false,
+            wrapS: gl.REPEAT, // Repeat by default, opposed to OGL's clamp by default
+            wrapT: gl.REPEAT,
+        };
+        const sampler = samplerIndex !== undefined ? desc.samplers[samplerIndex] : null;
+        if (sampler) {
+            ['magFilter', 'minFilter', 'wrapS', 'wrapT'].forEach((prop) => {
+                if (sampler[prop]) options[prop] = sampler[prop];
+            });
+        }
+
+        // For compressed textures
+        if (image.isBasis) {
+            options.image = image;
+            options.internalFormat = image.internalFormat;
+            if (image.isCompressedTexture) {
+                options.generateMipmaps = false;
+                if (image.length > 1) this.minFilter = gl.NEAREST_MIPMAP_LINEAR;
             }
-
-            const options = {
-                flipY: false,
-                wrapS: gl.REPEAT, // Repeat by default, opposed to OGL's clamp by default
-                wrapT: gl.REPEAT,
-            };
-            const sampler = samplerIndex !== undefined ? desc.samplers[samplerIndex] : null;
-            if (sampler) {
-                ['magFilter', 'minFilter', 'wrapS', 'wrapT'].forEach((prop) => {
-                    if (sampler[prop]) options[prop] = sampler[prop];
-                });
-            }
-
-            const image = images[sourceIndex];
-
-            // For compressed textures
-            if (image.isBasis) {
-                options.image = image;
-                options.internalFormat = image.internalFormat;
-                if (image.isCompressedTexture) {
-                    options.generateMipmaps = false;
-                    if (image.length > 1) this.minFilter = gl.NEAREST_MIPMAP_LINEAR;
-                }
-                const texture = new Texture(gl, options);
-                texture.name = name;
-                return texture;
-            }
-
             const texture = new Texture(gl, options);
             texture.name = name;
-            image.ready.then(() => {
-                texture.image = image;
-            });
-
+            image.texture = texture;
             return texture;
+        }
+
+        const texture = new Texture(gl, options);
+        texture.name = name;
+        image.texture = texture;
+        image.ready.then(() => {
+            texture.image = image;
         });
+
+        return texture;
     }
 
     static parseMaterials(gl, desc, textures) {
@@ -421,6 +418,8 @@ export class GLTFLoader {
 
                 return {
                     name,
+                    extensions,
+                    extras,
                     baseColorFactor,
                     baseColorTexture,
                     metallicFactor,
@@ -474,31 +473,51 @@ export class GLTFLoader {
                 // TODO: weights stuff ?
                 // Parse through nodes to see how many instances there are
                 // and if there is a skin attached
+                // If multiple instances of a skin, need to create each
                 let numInstances = 0;
-                let skinIndex = false;
+                let skinIndices = [];
+                let isLightmap = false;
                 desc.nodes &&
-                    desc.nodes.forEach(({ mesh, skin }) => {
+                    desc.nodes.forEach(({ mesh, skin, extras }) => {
                         if (mesh === meshIndex) {
                             numInstances++;
-                            if (skin !== undefined) skinIndex = skin;
+                            if (skin !== undefined) skinIndices.push(skin);
+                            if (extras && extras.lightmap_scale_offset) isLightmap = true;
                         }
                     });
+                let isSkin = !!skinIndices.length;
 
-                primitives = this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances).map(({ geometry, program, mode }) => {
-                    // Create either skinned mesh or regular mesh
-                    const mesh =
-                        typeof skinIndex === 'number'
-                            ? new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode })
-                            : new Mesh(gl, { geometry, program, mode });
-                    mesh.name = name;
-                    if (mesh.geometry.isInstanced) {
-                        // Tag mesh so that nodes can add their transforms to the instance attribute
-                        mesh.numInstances = numInstances;
-                        // Avoid incorrect culling for instances
-                        mesh.frustumCulled = false;
-                    }
-                    return mesh;
-                });
+                // For skins, return array of skin meshes to account for multiple instances
+                if (isSkin) {
+                    primitives = skinIndices.map((skinIndex) => {
+                        return this.parsePrimitives(gl, primitives, desc, bufferViews, materials, 1, isLightmap).map(
+                            ({ geometry, program, mode }) => {
+                                const mesh = new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode });
+                                mesh.name = name;
+                                // TODO: support skin frustum culling
+                                mesh.frustumCulled = false;
+                                return mesh;
+                            }
+                        );
+                    });
+                    // For retrieval to add to node
+                    primitives.instanceCount = 0;
+                    primitives.numInstances = numInstances;
+                } else {
+                    primitives = this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap).map(
+                        ({ geometry, program, mode }) => {
+                            const mesh = new Mesh(gl, { geometry, program, mode });
+                            mesh.name = name;
+                            // Tag mesh so that nodes can add their transforms to the instance attribute
+                            mesh.numInstances = numInstances;
+                            if (mesh.geometry.attributes.instanceMatrix) {
+                                // Avoid incorrect culling for instances
+                                mesh.frustumCulled = false;
+                            }
+                            return mesh;
+                        }
+                    );
+                }
 
                 return {
                     primitives,
@@ -509,7 +528,7 @@ export class GLTFLoader {
         );
     }
 
-    static parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances) {
+    static parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap) {
         return primitives.map(
             ({
                 attributes, // required
@@ -520,6 +539,12 @@ export class GLTFLoader {
                 extensions, // optional
                 extras, // optional
             }) => {
+                // TODO: materials
+                const program = new NormalProgram(gl);
+                if (materialIndex !== undefined) {
+                    program.gltfMaterial = materials[materialIndex];
+                }
+
                 const geometry = new Geometry(gl);
 
                 // Add each attribute found in primitive
@@ -533,6 +558,7 @@ export class GLTFLoader {
                 }
 
                 // Add instanced transform attribute if multiple instances
+                // Ignore if skin as we don't support instanced skins out of the box
                 if (numInstances > 1) {
                     geometry.addAttribute('instanceMatrix', {
                         instanced: 1,
@@ -541,10 +567,14 @@ export class GLTFLoader {
                     });
                 }
 
-                // TODO: materials
-                const program = new NormalProgram(gl);
-                if (materialIndex !== undefined) {
-                    program.gltfMaterial = materials[materialIndex];
+                // Always supply lightmapScaleOffset as an instanced attribute
+                // Instanced skin lightmaps not supported
+                if (isLightmap) {
+                    geometry.addAttribute('lightmapScaleOffset', {
+                        instanced: 1,
+                        size: 4,
+                        data: new Float32Array(numInstances * 4),
+                    });
                 }
 
                 return {
@@ -577,7 +607,6 @@ export class GLTFLoader {
 
         const {
             data, // attached in parseBufferViews
-            originalBuffer, // attached in parseBufferViews
             buffer, // replaced to be the actual GL buffer
             byteOffset: bufferByteOffset = 0,
             // byteLength, // applied in parseBufferViews
@@ -593,12 +622,12 @@ export class GLTFLoader {
         // Parse data from joined buffers
         const TypeArray = TYPE_ARRAY[componentType];
         const elementBytes = data.BYTES_PER_ELEMENT;
-        const componentOffset = byteOffset / elementBytes;
         const componentStride = byteStride / elementBytes;
         const isInterleaved = !!byteStride && componentStride !== size;
 
         // TODO: interleaved
-        const newData = isInterleaved ? data : new TypeArray(originalBuffer, byteOffset + bufferByteOffset, count * size);
+        // Convert data to typed array for various uses (bounding boxes, animation etc)
+        const newData = isInterleaved ? new TypeArray(data) : new TypeArray(data, byteOffset, count * size);
 
         // Return attribute data
         return {
@@ -615,7 +644,7 @@ export class GLTFLoader {
         };
     }
 
-    static parseNodes(gl, desc, meshes, skins) {
+    static parseNodes(gl, desc, meshes, skins, images) {
         if (!desc.nodes) return null;
         const nodes = desc.nodes.map(
             ({
@@ -634,6 +663,13 @@ export class GLTFLoader {
             }) => {
                 const node = new Transform();
                 if (name) node.name = name;
+                node.extras = extras;
+                node.extensions = extensions;
+
+                // Need to attach to node as may have same material but different lightmap
+                if (extras && extras.lightmapTexture !== undefined) {
+                    extras.lightmapTexture.texture = this.createTexture(gl, desc, images, { source: extras.lightmapTexture.index });
+                }
 
                 // Apply transformations
                 if (matrix) {
@@ -649,40 +685,71 @@ export class GLTFLoader {
                 // Flags for avoiding duplicate transforms and removing unused instance nodes
                 let isInstanced = false;
                 let isFirstInstance = true;
+                let isInstancedMatrix = false;
+                let isSkin = skinIndex !== undefined;
 
                 // add mesh if included
                 if (meshIndex !== undefined) {
-                    meshes[meshIndex].primitives.forEach((mesh) => {
-                        if (mesh.geometry.isInstanced) {
-                            isInstanced = true;
-                            if (!mesh.instanceCount) {
-                                mesh.instanceCount = 0;
-                            } else {
-                                isFirstInstance = false;
-                            }
-                            node.matrix.toArray(mesh.geometry.attributes.instanceMatrix.data, mesh.instanceCount * 16);
-                            mesh.instanceCount++;
-
-                            if (mesh.instanceCount === mesh.numInstances) {
-                                // Remove properties once all instances added
-                                delete mesh.numInstances;
-                                delete mesh.instanceCount;
-                                // Flag attribute as dirty
-                                mesh.geometry.attributes.instanceMatrix.needsUpdate = true;
-                            }
-                        }
-
-                        // For instances, only the first node will actually have the mesh
-                        if (isInstanced) {
-                            if (isFirstInstance) mesh.setParent(node);
-                        } else {
+                    if (isSkin) {
+                        meshes[meshIndex].primitives[meshes[meshIndex].primitives.instanceCount].forEach((mesh) => {
+                            mesh.extras = extras;
                             mesh.setParent(node);
+                        });
+                        meshes[meshIndex].primitives.instanceCount++;
+                        // Remove properties once all instances added
+                        if (meshes[meshIndex].primitives.instanceCount === meshes[meshIndex].primitives.numInstances) {
+                            delete meshes[meshIndex].primitives.numInstances;
+                            delete meshes[meshIndex].primitives.instanceCount;
                         }
-                    });
+                    } else {
+                        meshes[meshIndex].primitives.forEach((mesh) => {
+                            mesh.extras = extras;
+
+                            // instanced mesh might only have 1
+                            if (mesh.geometry.isInstanced) {
+                                isInstanced = true;
+                                if (!mesh.instanceCount) {
+                                    mesh.instanceCount = 0;
+                                } else {
+                                    isFirstInstance = false;
+                                }
+                                if (mesh.geometry.attributes.instanceMatrix) {
+                                    isInstancedMatrix = true;
+                                    node.matrix.toArray(mesh.geometry.attributes.instanceMatrix.data, mesh.instanceCount * 16);
+                                }
+
+                                if (mesh.geometry.attributes.lightmapScaleOffset) {
+                                    mesh.geometry.attributes.lightmapScaleOffset.data.set(extras.lightmap_scale_offset, mesh.instanceCount * 4);
+                                }
+
+                                mesh.instanceCount++;
+
+                                if (mesh.instanceCount === mesh.numInstances) {
+                                    // Remove properties once all instances added
+                                    delete mesh.numInstances;
+                                    delete mesh.instanceCount;
+                                    // Flag attribute as dirty
+                                    if (mesh.geometry.attributes.instanceMatrix) {
+                                        mesh.geometry.attributes.instanceMatrix.needsUpdate = true;
+                                    }
+                                    if (mesh.geometry.attributes.lightmapScaleOffset) {
+                                        mesh.geometry.attributes.lightmapScaleOffset.needsUpdate = true;
+                                    }
+                                }
+                            }
+
+                            // For instances, only the first node will actually have the mesh
+                            if (isInstanced) {
+                                if (isFirstInstance) mesh.setParent(node);
+                            } else {
+                                mesh.setParent(node);
+                            }
+                        });
+                    }
                 }
 
                 // Reset node if instanced to not duplicate transforms
-                if (isInstanced) {
+                if (isInstancedMatrix) {
                     // Remove unused nodes just providing an instance transform
                     if (!isFirstInstance) return null;
                     // Avoid duplicate transform for node containing the instanced mesh
@@ -781,12 +848,60 @@ export class GLTFLoader {
                 extensions,
                 extras,
             }) => {
-                return nodesIndices.reduce((map, i) => {
+                const scene = nodesIndices.reduce((map, i) => {
                     // Don't add null nodes (instanced transforms)
                     if (nodes[i]) map.push(nodes[i]);
                     return map;
                 }, []);
+                scene.extras = extras;
+                return scene;
             }
         );
+    }
+
+    static parseLights(gl, desc, nodes, scenes) {
+        const lights = {
+            directional: [],
+            point: [],
+            spot: [],
+        };
+
+        // Update matrices on root nodes
+        scenes.forEach((scene) => scene.forEach((node) => node.updateMatrixWorld()));
+
+        // uses KHR_lights_punctual extension
+        const lightsDescArray = desc.extensions?.KHR_lights_punctual?.lights || [];
+
+        // Need nodes for transforms
+        nodes.forEach((node) => {
+            if (!node?.extensions?.KHR_lights_punctual) return;
+            const lightIndex = node.extensions.KHR_lights_punctual.light;
+            const lightDesc = lightsDescArray[lightIndex];
+            const light = {
+                name: lightDesc.name || '',
+                color: { value: new Vec3().set(lightDesc.color || 1) },
+            };
+            // Apply intensity directly to color
+            if (lightDesc.intensity !== undefined) light.color.value.multiply(lightDesc.intensity);
+
+            switch (lightDesc.type) {
+                case 'directional':
+                    light.direction = { value: new Vec3(0, 0, 1).transformDirection(node.worldMatrix) };
+                    break;
+                case 'point':
+                    light.position = { value: new Vec3().applyMatrix4(node.worldMatrix) };
+                    light.distance = { value: lightDesc.range };
+                    light.decay = { value: 2 };
+                    break;
+                case 'spot':
+                    // TODO: support spot uniforms
+                    Object.assign(light, lightDesc);
+                    break;
+            }
+
+            lights[lightDesc.type].push(light);
+        });
+
+        return lights;
     }
 }

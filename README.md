@@ -32,6 +32,8 @@ In its design, the library does the minimum abstraction necessary, so devs shoul
 
 Keeping the level of abstraction low helps to make the library easier to understand, extend, and also makes it more practical as a WebGL learning resource.
 
+⚠️ *Note: Typescript users may be interested in using a [TS fork of the library](https://github.com/nshen/ogl-typescript), kindly maintained by [nshen](https://github.com/nshen).*
+
 ## Install
 
 [Download](https://github.com/oframe/ogl/archive/master.zip) 
@@ -92,9 +94,9 @@ If you take this route, I would highly recommend defining a specific version (ap
 As a basic API example, below renders a spinning white cube.
 
 ```js
-{
-    import {Renderer, Camera, Transform, Box, Program, Mesh } from 'ogl';
+import { Renderer, Camera, Transform, Box, Program, Mesh } from 'ogl';
 
+{
     const renderer = new Renderer();
     const gl = renderer.gl;
     document.body.appendChild(gl.canvas);
@@ -116,7 +118,7 @@ As a basic API example, below renders a spinning white cube.
     const geometry = new Box(gl);
 
     const program = new Program(gl, {
-        vertex: `
+        vertex: /* glsl */ `
             attribute vec3 position;
 
             uniform mat4 modelViewMatrix;
@@ -125,15 +127,15 @@ As a basic API example, below renders a spinning white cube.
             void main() {
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
-            `,
-        fragment: `
+        `,
+        fragment: /* glsl */ `
             void main() {
                 gl_FragColor = vec4(1.0);
             }
         `,
     });
 
-    const mesh = new Mesh(gl, {geometry, program});
+    const mesh = new Mesh(gl, { geometry, program });
     mesh.setParent(scene);
 
     requestAnimationFrame(update);
@@ -142,7 +144,7 @@ As a basic API example, below renders a spinning white cube.
 
         mesh.rotation.y -= 0.04;
         mesh.rotation.x += 0.03;
-        renderer.render({scene, camera});
+        renderer.render({ scene, camera });
     }
 }
 ```
@@ -152,7 +154,7 @@ https://codesandbox.io/s/ogl-5i69p
 For a simpler use, such as a full-screen shader, more of the core can be omitted as a scene graph (Transform) and projection matrices (Camera) are not necessary. We'll also show how to easily create custom geometry.
 
 ```js
-import {Renderer, Geometry, Program, Mesh} from 'ogl';
+import { Renderer, Geometry, Program, Mesh } from 'ogl';
 
 {
     const renderer = new Renderer({
@@ -164,13 +166,13 @@ import {Renderer, Geometry, Program, Mesh} from 'ogl';
 
     // Triangle that covers viewport, with UVs that still span 0 > 1 across viewport
     const geometry = new Geometry(gl, {
-        position: {size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3])},
-        uv: {size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2])},
+        position: { size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3]) },
+        uv: { size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2]) },
     });
     // Alternatively, you could use the Triangle class.
 
     const program = new Program(gl, {
-        vertex: `
+        vertex: /* glsl */ `
             attribute vec2 uv;
             attribute vec2 position;
 
@@ -181,7 +183,7 @@ import {Renderer, Geometry, Program, Mesh} from 'ogl';
                 gl_Position = vec4(position, 0, 1);
             }
         `,
-        fragment: `
+        fragment: /* glsl */ `
             precision highp float;
 
             uniform float uTime;
@@ -194,11 +196,11 @@ import {Renderer, Geometry, Program, Mesh} from 'ogl';
             }
         `,
         uniforms: {
-            uTime: {value: 0},
+            uTime: { value: 0 },
         },
     });
 
-    const mesh = new Mesh(gl, {geometry, program});
+    const mesh = new Mesh(gl, { geometry, program });
 
     requestAnimationFrame(update);
     function update(t) {
@@ -207,7 +209,7 @@ import {Renderer, Geometry, Program, Mesh} from 'ogl';
         program.uniforms.uTime.value = t * 0.001;
 
         // Don't need a camera if camera uniforms aren't required
-        renderer.render({scene: mesh});
+        renderer.render({ scene: mesh });
     }
 }
 ```
@@ -228,34 +230,7 @@ The **Core** is made up of the following:
  - Texture.js
  - RenderTarget.js
 
-Any additional layers of abstraction will be included as **Extras**, and not part of the core as to reduce bloat. These provide a wide breadth of functionality, ranging from simple to fairly advanced.
-
-Below is an **Extras** wish-list, and is still a work-in-progress as examples are developed.
- - [x] Animation.js
- - [x] Box.js
- - [x] Curve.js
- - [x] Cylinder.js
- - [x] Flowmap.js
- - [x] GLTFLoader.js
- - [x] GLTFAnimation.js
- - [x] GLTFSkin.js
- - [x] GPGPU.js
- - [x] KTXTexture.js
- - [x] NormalProgram.js
- - [x] Orbit.js
- - [x] Plane.js
- - [x] Polyline.js
- - [x] Post.js
- - [x] Raycast.js
- - [x] Shadow.js
- - [x] Skin.js
- - [x] Sphere.js
- - [x] Text.js
- - [x] TextureLoader.js
- - [x] Torus.js
- - [x] Triangle.js
- - [ ] OBJLoader.js
-
+Any additional layers of abstraction will be included as **Extras**, and not part of the core as to reduce bloat. These provide a wide breadth of functionality, ranging from simple to advanced.
 
 ## Unlicense
 

@@ -105,6 +105,8 @@ export class Program {
         for (let aIndex = 0; aIndex < numAttribs; aIndex++) {
             const attribute = gl.getActiveAttrib(this.program, aIndex);
             const location = gl.getAttribLocation(this.program, attribute.name);
+            // Ignore special built-in inputs. eg gl_VertexID, gl_InstanceID
+            if (location === -1) continue;
             locations[location] = attribute.name;
             this.attributeLocations.set(attribute, location);
         }
@@ -145,12 +147,12 @@ export class Program {
 
     use({ flipFaces = false } = {}) {
         let textureUnit = -1;
-        const programActive = this.gl.renderer.currentProgram === this.id;
+        const programActive = this.gl.renderer.state.currentProgram === this.id;
 
         // Avoid gl call if program already in use
         if (!programActive) {
             this.gl.useProgram(this.program);
-            this.gl.renderer.currentProgram = this.id;
+            this.gl.renderer.state.currentProgram = this.id;
         }
 
         // Set only the active uniforms found in the shader

@@ -11,9 +11,10 @@ export class BasisManager {
 
     getSupportedFormat() {
         const gl = document.createElement('canvas').getContext('webgl');
-        if (!!gl.getExtension('WEBGL_compressed_texture_etc')) {
+        /* if (!!gl.getExtension('WEBGL_compressed_texture_etc')) {
             return 'etc2';
-        } else if (!!gl.getExtension('WEBGL_compressed_texture_astc')) {
+        } else  */
+        if (!!gl.getExtension('WEBGL_compressed_texture_astc')) {
             return 'astc';
         } else if (!!gl.getExtension('EXT_texture_compression_bptc')) {
             return 'bptc';

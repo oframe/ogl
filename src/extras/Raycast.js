@@ -165,9 +165,11 @@ export class Raycast {
             const geometry = mesh.geometry;
             const attributes = geometry.attributes;
             const index = attributes.index;
+            const position = attributes.position;
 
             const start = Math.max(0, geometry.drawRange.start);
-            const end = Math.min(index ? index.count : attributes.position.count, geometry.drawRange.start + geometry.drawRange.count);
+            const end = Math.min(index ? index.count : position.count, geometry.drawRange.start + geometry.drawRange.count);
+            const stride = position.stride ? position.stride / position.data.BYTES_PER_ELEMENT : position.size;
 
             for (let j = start; j < end; j += 3) {
                 // Position attribute indices for each triangle
@@ -175,9 +177,9 @@ export class Raycast {
                 const bi = index ? index.data[j + 1] : j + 1;
                 const ci = index ? index.data[j + 2] : j + 2;
 
-                a.fromArray(attributes.position.data, ai * 3);
-                b.fromArray(attributes.position.data, bi * 3);
-                c.fromArray(attributes.position.data, ci * 3);
+                a.fromArray(position.data, ai * stride);
+                b.fromArray(position.data, bi * stride);
+                c.fromArray(position.data, ci * stride);
 
                 const distance = this.intersectTriangle(a, b, c, cullFace, origin, direction, faceNormal);
                 if (!distance) continue;
@@ -217,9 +219,9 @@ export class Raycast {
             // Optional data, opt out to optimise a bit if necessary
             if (includeUV || includeNormal) {
                 // Calculate barycoords to find uv values at hit point
-                a.fromArray(attributes.position.data, closestA * 3);
-                b.fromArray(attributes.position.data, closestB * 3);
-                c.fromArray(attributes.position.data, closestC * 3);
+                a.fromArray(position.data, closestA * 3);
+                b.fromArray(position.data, closestB * 3);
+                c.fromArray(position.data, closestC * 3);
                 this.getBarycoord(mesh.hit.localPoint, a, b, c, barycoord);
             }
 
