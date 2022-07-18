@@ -23,7 +23,7 @@ export class Program {
             depthFunc = gl.LESS,
         } = {}
     ) {
-        if (!gl.canvas) console.error('gl not passed as fist argument to Program');
+        if (!gl.canvas) console.error('gl not passed as first argument to Program');
         this.gl = gl;
         this.uniforms = uniforms;
         this.id = ID++;
