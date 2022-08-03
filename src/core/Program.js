@@ -40,6 +40,7 @@ export class Program {
         this.depthFunc = depthFunc;
         this.blendFunc = {};
         this.blendEquation = {};
+        this.cloneCount = { value: 1 };
 
         // set default blendFunc if transparent flagged
         if (this.transparent && !this.blendFunc.src) {
@@ -208,8 +209,53 @@ export class Program {
     }
 
     remove() {
-        this.gl.deleteProgram(this.program);
+        this.cloneCount.value--;
+        if (this.cloneCount.value === 0) {
+            this.gl.deleteProgram(this.program);
+        }
     }
+
+    copy(source, overrideUniforms = {}) {
+        if (this.gl && this.gl !== source.gl) {
+            throw new Error('Failed to copy program. The source and target programs must belong to the same WebGLRenderingContext.');
+        }
+
+        Object.defineProperties(this, Object.getOwnPropertyDescriptors(source));
+
+        this.id = ID++;
+        this.cloneCount.value++;
+
+        this.blendFunc = { ...source.blendFunc };
+        this.blendEquation = { ...source.blendEquation };
+
+        this.uniforms = cloneUniforms(source.uniforms, overrideUniforms);
+        return this;
+    }
+
+    clone(overrideUniforms = {}) {
+        const clone = Object.create(Object.getPrototypeOf(this));
+        return clone.copy(this, overrideUniforms);
+    }
+}
+
+function shallowClone(obj) {
+    return Object.create(Object.getPrototypeOf(obj), Object.getOwnPropertyDescriptors(obj));
+}
+
+function cloneUniformValue(value) {
+    if (value == null) return value; // null or undefined
+    if (typeof value.clone === 'function') return value.clone();
+    if (typeof value.slice === 'function') return value.slice(); // Array or TypedArray
+    if (typeof value === 'object') return shallowClone(value); // Other non primitive values
+    return value;
+}
+
+function cloneUniforms(src, override) {
+    return Object.entries(src).reduce((clone, [name, val]) => {
+        if (clone.hasOwnProperty(name)) return clone;
+        clone[name] = cloneUniformValue(val);
+        return clone;
+    }, Object.assign(Object.create(Object.getPrototypeOf(src)), override));
 }
 
 function setUniform(gl, type, location, value) {
