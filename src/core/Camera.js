@@ -99,7 +99,7 @@ export class Camera extends Transform {
         }
     }
 
-    frustumIntersectsMesh(node) {
+    frustumIntersectsMesh(node, worldMatrix = node.worldMatrix) {
         // If no position attribute, treat as frustumCulled false
         if (!node.geometry.attributes.position) return true;
 
@@ -109,9 +109,9 @@ export class Camera extends Transform {
 
         const center = tempVec3a;
         center.copy(node.geometry.bounds.center);
-        center.applyMatrix4(node.worldMatrix);
+        center.applyMatrix4(worldMatrix);
 
-        const radius = node.geometry.bounds.radius * node.worldMatrix.getMaxScaleOnAxis();
+        const radius = node.geometry.bounds.radius * worldMatrix.getMaxScaleOnAxis();
 
         return this.frustumIntersectsSphere(center, radius);
     }
