@@ -7,6 +7,7 @@ import { GLTFSkin } from './GLTFSkin.js';
 import { Mat4 } from '../math/Mat4.js';
 import { Vec3 } from '../math/Vec3.js';
 import { NormalProgram } from './NormalProgram.js';
+import { InstancedMesh } from './InstancedMesh.js';
 
 // Supports
 // [x] glb
@@ -506,14 +507,12 @@ export class GLTFLoader {
                 } else {
                     primitives = this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap).map(
                         ({ geometry, program, mode }) => {
-                            const mesh = new Mesh(gl, { geometry, program, mode });
+                            // InstancedMesh class has custom frustum culling for instances
+                            const meshConstructor = geometry.attributes.instanceMatrix ? InstancedMesh : Mesh;
+                            const mesh = new meshConstructor(gl, { geometry, program, mode });
                             mesh.name = name;
                             // Tag mesh so that nodes can add their transforms to the instance attribute
                             mesh.numInstances = numInstances;
-                            if (mesh.geometry.attributes.instanceMatrix) {
-                                // Avoid incorrect culling for instances
-                                mesh.frustumCulled = false;
-                            }
                             return mesh;
                         }
                     );
@@ -766,6 +765,13 @@ export class GLTFLoader {
             children.forEach((childIndex) => {
                 if (!nodes[childIndex]) return;
                 nodes[childIndex].setParent(nodes[i]);
+            });
+        });
+
+        // Add frustum culling for instances now that instanceMatrix attribute is populated
+        meshes.forEach(({ primitives }, i) => {
+            primitives.forEach((primitive, i) => {
+                if (primitive.isInstancedMesh) primitive.addFrustumCull();
             });
         });
 
