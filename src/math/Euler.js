@@ -69,7 +69,6 @@ export class Euler extends Array {
 
     fromQuaternion(q, order = this.order) {
         tmpMat4.fromQuaternion(q);
-        this.onChange();
         return this.fromRotationMatrix(tmpMat4, order);
     }
 
