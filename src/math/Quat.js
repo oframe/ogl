@@ -120,16 +120,19 @@ export class Quat extends Array {
 
     fromEuler(euler) {
         QuatFunc.fromEuler(this, euler, euler.order);
+        this.onChange();
         return this;
     }
 
     fromAxisAngle(axis, a) {
         QuatFunc.setAxisAngle(this, axis, a);
+        this.onChange();
         return this;
     }
 
     slerp(q, t) {
         QuatFunc.slerp(this, this, q, t);
+        this.onChange();
         return this;
     }
 
@@ -138,6 +141,7 @@ export class Quat extends Array {
         this[1] = a[o + 1];
         this[2] = a[o + 2];
         this[3] = a[o + 3];
+        this.onChange();
         return this;
     }
 
