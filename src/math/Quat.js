@@ -120,7 +120,6 @@ export class Quat extends Array {
 
     fromEuler(euler) {
         QuatFunc.fromEuler(this, euler, euler.order);
-        this.onChange();
         return this;
     }
 
