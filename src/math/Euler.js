@@ -63,11 +63,13 @@ export class Euler extends Array {
 
     fromRotationMatrix(m, order = this.order) {
         EulerFunc.fromRotationMatrix(this, m, order);
+        this.onChange();
         return this;
     }
 
     fromQuaternion(q, order = this.order) {
         tmpMat4.fromQuaternion(q);
+        this.onChange();
         return this.fromRotationMatrix(tmpMat4, order);
     }
 
