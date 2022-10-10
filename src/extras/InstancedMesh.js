@@ -1,5 +1,6 @@
 import { Transform } from '../core/Transform.js';
 import { Mesh } from '../core/Mesh.js';
+import { Vec4 } from '../math/Vec4.js';
 
 export class InstancedMesh extends Mesh {
     constructor(...args) {
@@ -12,6 +13,7 @@ export class InstancedMesh extends Mesh {
 
     addFrustumCull() {
         this.instanceTransforms = null;
+        this.instanceLightmapScaleOffset = null;
         this.totalInstanceCount = 0;
         this.frustumCullFunction = null;
         this.instanceRenderList = null;
@@ -23,8 +25,9 @@ export class InstancedMesh extends Mesh {
         // Make list of transforms from instanceMatrix
         const matrixData = this.geometry.attributes.instanceMatrix.data;
         this.instanceTransforms = [];
-        for (let i = 0; i < matrixData.length; i += 16) {
+        for (let i = 0, j = 0; i < matrixData.length; i += 16, j++) {
             const transform = new Transform();
+            transform.index = j;
             transform.matrix.fromArray(matrixData, i);
             transform.decompose();
             this.instanceTransforms.push(transform);
@@ -32,6 +35,14 @@ export class InstancedMesh extends Mesh {
             transform.setParent(this.parent);
         }
         this.totalInstanceCount = this.instanceTransforms.length;
+
+        // Check for lightmap attributes - attach to transform
+        if (!!this.geometry.attributes.lightmapScaleOffset) {
+            const lightmapData = this.geometry.attributes.lightmapScaleOffset.data;
+            for (let i = 0, j = 0; i < lightmapData.length; i += 4, j++) {
+                this.instanceTransforms[j].lightmapData = new Vec4().fromArray(lightmapData, i);
+            }
+        }
 
         this.frustumCullFunction = ({ camera }) => {
             // frustum cull transforms each frame - pass world matrix
@@ -44,6 +55,12 @@ export class InstancedMesh extends Mesh {
             // update instanceMatrix and instancedCount with visible
             this.instanceRenderList.forEach((transform, i) => {
                 transform.matrix.toArray(this.geometry.attributes.instanceMatrix.data, i * 16);
+                
+                // Update lightmap attr
+                if (transform.lightmapData) {
+                    transform.lightmapData.toArray(this.geometry.attributes.lightmapScaleOffset.data, i * 4);
+                    this.geometry.attributes.lightmapScaleOffset.needsUpdate = true;
+                }
             });
             this.geometry.instancedCount = this.instanceRenderList.length;
             this.geometry.attributes.instanceMatrix.needsUpdate = true;
@@ -57,6 +74,12 @@ export class InstancedMesh extends Mesh {
         this.geometry.instancedCount = this.totalInstanceCount;
         this.instanceTransforms.forEach((transform, i) => {
             transform.matrix.toArray(this.geometry.attributes.instanceMatrix.data, i * 16);
+
+            // Update lightmap attr
+            if (transform.lightmapData) {
+                transform.lightmapData.toArray(this.geometry.attributes.lightmapScaleOffset.data, i * 4);
+                this.geometry.attributes.lightmapScaleOffset.needsUpdate = true;
+            }
         });
         this.geometry.attributes.instanceMatrix.needsUpdate = true;
     }
