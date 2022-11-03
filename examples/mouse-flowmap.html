@@ -168,7 +168,7 @@
                     flowmap.mouse.copy(mouse);
 
                     // Ease velocity input, slower when fading out
-                    flowmap.velocity.lerp(velocity, velocity.len ? 0.5 : 0.1);
+                    flowmap.velocity.lerp(velocity, velocity.len() ? 0.5 : 0.1);
 
                     flowmap.update();
 
