@@ -783,6 +783,7 @@ export class GLTFLoader {
         skins.forEach((skin) => {
             skin.joints = skin.joints.map((i, index) => {
                 const joint = nodes[i];
+                joint.skin = skin;
                 joint.bindInverse = new Mat4(...skin.inverseBindMatrices.data.slice(index * 16, (index + 1) * 16));
                 return joint;
             });
@@ -793,13 +794,16 @@ export class GLTFLoader {
     static parseAnimations(gl, desc, nodes, bufferViews) {
         if (!desc.animations) return null;
         return desc.animations.map(
-            ({
-                channels, // required
-                samplers, // required
-                name, // optional
-                // extensions, // optional
-                // extras,  // optional
-            }) => {
+            (
+                {
+                    channels, // required
+                    samplers, // required
+                    name, // optional
+                    // extensions, // optional
+                    // extras,  // optional
+                },
+                animationIndex
+            ) => {
                 const data = channels.map(
                     ({
                         sampler: samplerIndex, // required
@@ -826,6 +830,10 @@ export class GLTFLoader {
                         const transform = TRANSFORMS[path];
                         const times = this.parseAccessor(inputIndex, desc, bufferViews).data;
                         const values = this.parseAccessor(outputIndex, desc, bufferViews).data;
+
+                        // Store reference on node for cyclical retrieval
+                        if (!node.animations) node.animations = [];
+                        if (!node.animations.includes(animationIndex)) node.animations.push(animationIndex);
 
                         return {
                             node,
