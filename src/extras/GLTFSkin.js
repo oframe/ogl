@@ -11,7 +11,7 @@ export class GLTFSkin extends Mesh {
         this.skeleton = skeleton;
         this.program = program;
         this.createBoneTexture();
-        this.animations = [];
+        // this.animations = [];
     }
 
     createBoneTexture() {

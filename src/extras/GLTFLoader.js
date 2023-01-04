@@ -7,6 +7,7 @@ import { GLTFSkin } from './GLTFSkin.js';
 import { Mat4 } from '../math/Mat4.js';
 import { Vec3 } from '../math/Vec3.js';
 import { NormalProgram } from './NormalProgram.js';
+import { InstancedMesh } from './InstancedMesh.js';
 
 // Supports
 // [x] glb
@@ -506,14 +507,12 @@ export class GLTFLoader {
                 } else {
                     primitives = this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap).map(
                         ({ geometry, program, mode }) => {
-                            const mesh = new Mesh(gl, { geometry, program, mode });
+                            // InstancedMesh class has custom frustum culling for instances
+                            const meshConstructor = geometry.attributes.instanceMatrix ? InstancedMesh : Mesh;
+                            const mesh = new meshConstructor(gl, { geometry, program, mode });
                             mesh.name = name;
                             // Tag mesh so that nodes can add their transforms to the instance attribute
                             mesh.numInstances = numInstances;
-                            if (mesh.geometry.attributes.instanceMatrix) {
-                                // Avoid incorrect culling for instances
-                                mesh.frustumCulled = false;
-                            }
                             return mesh;
                         }
                     );
@@ -769,6 +768,13 @@ export class GLTFLoader {
             });
         });
 
+        // Add frustum culling for instances now that instanceMatrix attribute is populated
+        meshes.forEach(({ primitives }, i) => {
+            primitives.forEach((primitive, i) => {
+                if (primitive.isInstancedMesh) primitive.addFrustumCull();
+            });
+        });
+
         return nodes;
     }
 
@@ -777,6 +783,7 @@ export class GLTFLoader {
         skins.forEach((skin) => {
             skin.joints = skin.joints.map((i, index) => {
                 const joint = nodes[i];
+                joint.skin = skin;
                 joint.bindInverse = new Mat4(...skin.inverseBindMatrices.data.slice(index * 16, (index + 1) * 16));
                 return joint;
             });
@@ -787,13 +794,16 @@ export class GLTFLoader {
     static parseAnimations(gl, desc, nodes, bufferViews) {
         if (!desc.animations) return null;
         return desc.animations.map(
-            ({
-                channels, // required
-                samplers, // required
-                name, // optional
-                // extensions, // optional
-                // extras,  // optional
-            }) => {
+            (
+                {
+                    channels, // required
+                    samplers, // required
+                    name, // optional
+                    // extensions, // optional
+                    // extras,  // optional
+                },
+                animationIndex
+            ) => {
                 const data = channels.map(
                     ({
                         sampler: samplerIndex, // required
@@ -820,6 +830,10 @@ export class GLTFLoader {
                         const transform = TRANSFORMS[path];
                         const times = this.parseAccessor(inputIndex, desc, bufferViews).data;
                         const values = this.parseAccessor(outputIndex, desc, bufferViews).data;
+
+                        // Store reference on node for cyclical retrieval
+                        if (!node.animations) node.animations = [];
+                        if (!node.animations.includes(animationIndex)) node.animations.push(animationIndex);
 
                         return {
                             node,

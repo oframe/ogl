@@ -63,6 +63,7 @@ export class Euler extends Array {
 
     fromRotationMatrix(m, order = this.order) {
         EulerFunc.fromRotationMatrix(this, m, order);
+        this.onChange();
         return this;
     }
 

@@ -48,3 +48,4 @@ export { AxesHelper } from './extras/helpers/AxesHelper.js';
 export { GridHelper } from './extras/helpers/GridHelper.js';
 export { VertexNormalsHelper } from './extras/helpers/VertexNormalsHelper.js';
 export { FaceNormalsHelper } from './extras/helpers/FaceNormalsHelper.js';
+export { InstancedMesh } from './extras/InstancedMesh.js';
