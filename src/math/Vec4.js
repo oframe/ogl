@@ -38,7 +38,7 @@ export class Vec4 extends Array {
         this[3] = v;
     }
 
-    set(x, y, z, w) {
+    set(x, y = x, z = x, w = x) {
         if (x.length) return this.copy(x);
         Vec4Func.set(this, x, y, z, w);
         return this;
