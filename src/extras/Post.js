@@ -81,7 +81,7 @@ export class Post {
     }
 
     // Uses same arguments as renderer.render, with addition of optional texture passed in to avoid scene render
-    render({ scene, camera, texture, target = null, update = true, sort = true, frustumCull = true }) {
+    render({ scene, camera, texture, target = null, update = true, sort = true, frustumCull = true, beforePostCallbacks }) {
         const enabledPasses = this.passes.filter((pass) => pass.enabled);
 
         if (!texture) {
@@ -94,6 +94,9 @@ export class Post {
                 frustumCull,
             });
             this.fbo.swap();
+
+            // Callback after rendering scene, but before post effects
+            if (beforePostCallbacks) beforePostCallbacks.forEach((f) => f && f());
         }
 
         enabledPasses.forEach((pass, i) => {
