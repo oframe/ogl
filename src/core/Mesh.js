@@ -36,7 +36,6 @@ export class Mesh extends Transform {
     }
 
     draw({ camera } = {}) {
-        this.beforeRenderCallbacks.forEach((f) => f && f({ mesh: this, camera }));
         if (camera) {
             // Add empty matrix uniforms to program if unset
             if (!this.program.uniforms.modelMatrix) {
@@ -60,6 +59,7 @@ export class Mesh extends Transform {
             this.program.uniforms.modelViewMatrix.value = this.modelViewMatrix;
             this.program.uniforms.normalMatrix.value = this.normalMatrix;
         }
+        this.beforeRenderCallbacks.forEach((f) => f && f({ mesh: this, camera }));
 
         // determine if faces need to be flipped - when mesh scaled negatively
         let flipFaces = this.program.cullFace && this.worldMatrix.determinant() < 0;
