@@ -620,17 +620,36 @@ export class GLTFLoader {
 
         // Parse data from joined buffers
         const TypeArray = TYPE_ARRAY[componentType];
-        const elementBytes = data.BYTES_PER_ELEMENT;
+        const elementBytes = TypeArray.BYTES_PER_ELEMENT;
         const componentStride = byteStride / elementBytes;
         const isInterleaved = !!byteStride && componentStride !== size;
 
-        // TODO: interleaved
-        // Convert data to typed array for various uses (bounding boxes, animation etc)
-        const newData = isInterleaved ? new TypeArray(data) : new TypeArray(data, byteOffset, count * size);
+        let filteredData;
+
+        // Convert data to typed array for various uses (bounding boxes, raycasting, animation, merging etc)
+        if (isInterleaved) {
+            // First convert entire buffer to type
+            const typedData = new TypeArray(data, byteOffset);
+            // TODO: add length to not copy entire buffer if can help it
+            // const typedData = new TypeArray(data, byteOffset, (count - 1) * componentStride)
+
+            // Create output with length
+            filteredData = new TypeArray(count * size);
+
+            // Add element by element
+            for (let i = 0; i < count; i++) {
+                const start = componentStride * i;
+                const end = start + size;
+                filteredData.set(typedData.slice(start, end), i * size);
+            }
+        } else {
+            // Simply a slice
+            filteredData = new TypeArray(data, byteOffset, count * size);
+        }
 
         // Return attribute data
         return {
-            data: newData,
+            data: filteredData,
             size,
             type: componentType,
             normalized,

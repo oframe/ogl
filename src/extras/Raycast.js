@@ -169,7 +169,9 @@ export class Raycast {
 
             const start = Math.max(0, geometry.drawRange.start);
             const end = Math.min(index ? index.count : position.count, geometry.drawRange.start + geometry.drawRange.count);
-            const stride = position.stride ? position.stride / position.data.BYTES_PER_ELEMENT : position.size;
+            // Data loaded shouldn't haave stride, only buffers
+            // const stride = position.stride ? position.stride / position.data.BYTES_PER_ELEMENT : position.size;
+            const stride = position.size;
 
             for (let j = start; j < end; j += 3) {
                 // Position attribute indices for each triangle
