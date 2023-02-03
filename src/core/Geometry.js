@@ -213,7 +213,9 @@ export class Geometry {
     computeBoundingBox(attr) {
         if (!attr) attr = this.getPosition();
         const array = attr.data;
-        const stride = attr.stride ? attr.stride / array.BYTES_PER_ELEMENT : attr.size;
+        // Data loaded shouldn't haave stride, only buffers
+        // const stride = attr.stride ? attr.stride / array.BYTES_PER_ELEMENT : attr.size;
+        const stride = attr.size;
 
         if (!this.bounds) {
             this.bounds = {
@@ -255,7 +257,9 @@ export class Geometry {
     computeBoundingSphere(attr) {
         if (!attr) attr = this.getPosition();
         const array = attr.data;
-        const stride = attr.stride ? attr.stride / array.BYTES_PER_ELEMENT : attr.size;
+        // Data loaded shouldn't haave stride, only buffers
+        // const stride = attr.stride ? attr.stride / array.BYTES_PER_ELEMENT : attr.size;
+        const stride = attr.size;
 
         if (!this.bounds) this.computeBoundingBox(attr);
 
