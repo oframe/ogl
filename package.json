@@ -1,6 +1,6 @@
 {
     "name": "ogl",
-    "version": "0.0.106",
+    "version": "0.0.107",
     "description": "WebGL Library",
     "exports": "./src/index.mjs",
     "type": "module",
