@@ -9,6 +9,7 @@ export class Shadow {
         this.light = light;
 
         this.target = new RenderTarget(gl, { width, height });
+        this.targetUniform = { value: this.target.texture };
 
         this.depthProgram = new Program(gl, {
             vertex: defaultVertex,
@@ -33,7 +34,7 @@ export class Shadow {
         if (receive && !mesh.program.uniforms[uniformProjection]) {
             mesh.program.uniforms[uniformProjection] = { value: this.light.projectionMatrix };
             mesh.program.uniforms[uniformView] = { value: this.light.viewMatrix };
-            mesh.program.uniforms[uniformTexture] = { value: this.target.texture };
+            mesh.program.uniforms[uniformTexture] = this.targetUniform;
         }
 
         if (!cast) return;
@@ -57,6 +58,11 @@ export class Shadow {
             fragment,
             cullFace: null,
         });
+    }
+
+    setSize({ width = 1024, height = width }) {
+        this.target = new RenderTarget(this.gl, { width, height });
+        this.targetUniform.value = this.target.texture;
     }
 
     render({ scene }) {
