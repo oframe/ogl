@@ -119,6 +119,7 @@ export class Renderer {
         this.gl.canvas.width = width * this.dpr;
         this.gl.canvas.height = height * this.dpr;
 
+        if (!this.gl.canvas.style) return;
         Object.assign(this.gl.canvas.style, {
             width: width + 'px',
             height: height + 'px',
