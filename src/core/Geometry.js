@@ -179,13 +179,17 @@ export class Geometry {
             if (attr.needsUpdate) this.updateAttribute(attr);
         });
 
+        // For drawElements, offset needs to be multiple of type size
+        let indexBytesPerElement = 2;
+        if (this.attributes.index?.type === this.gl.UNSIGNED_INT) indexBytesPerElement = 4;
+
         if (this.isInstanced) {
             if (this.attributes.index) {
                 this.gl.renderer.drawElementsInstanced(
                     mode,
                     this.drawRange.count,
                     this.attributes.index.type,
-                    this.attributes.index.offset + this.drawRange.start * 2,
+                    this.attributes.index.offset + this.drawRange.start * indexBytesPerElement,
                     this.instancedCount
                 );
             } else {
@@ -193,7 +197,12 @@ export class Geometry {
             }
         } else {
             if (this.attributes.index) {
-                this.gl.drawElements(mode, this.drawRange.count, this.attributes.index.type, this.attributes.index.offset + this.drawRange.start * 2);
+                this.gl.drawElements(
+                    mode,
+                    this.drawRange.count,
+                    this.attributes.index.type,
+                    this.attributes.index.offset + this.drawRange.start * indexBytesPerElement
+                );
             } else {
                 this.gl.drawArrays(mode, this.drawRange.start, this.drawRange.count);
             }
