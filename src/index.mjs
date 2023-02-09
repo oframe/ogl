@@ -29,6 +29,7 @@ export { Orbit } from './extras/Orbit.js';
 export { Raycast } from './extras/Raycast.js';
 export { Curve } from './extras/Curve.js';
 export { Path } from './extras/Path/Path.js';
+export { Tube } from './extras/Tube.js';
 export { Post } from './extras/Post.js';
 export { Skin } from './extras/Skin.js';
 export { Animation } from './extras/Animation.js';
