@@ -128,15 +128,10 @@
 
                 // Disclaimer: video autoplay is a confusing, constantly-changing browser feature.
                 // The best approach is to never assume that it will work, and therefore prepare for a fallback.
-                // Tested on mac: Chrome, Safari, Firefox; android: chrome
                 video.loop = true;
                 video.muted = true;
+                video.setAttribute('playsinline', 'playsinline');
                 video.play();
-
-                // TODO: test ios. Possible add following
-                // video.setAttribute('crossorigin', 'anonymous');
-                // video.setAttribute('webkit-playsinline', true);
-                // video.setAttribute('playsinline', true);
 
                 const videoProgram = new Program(gl, {
                     vertex,
