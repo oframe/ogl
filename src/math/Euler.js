@@ -72,6 +72,13 @@ export class Euler extends Array {
         return this.fromRotationMatrix(tmpMat4, order);
     }
 
+    fromArray(a, o = 0) {
+        this[0] = a[o];
+        this[1] = a[o + 1];
+        this[2] = a[o + 2];
+        return this;
+    }
+
     toArray(a = [], o = 0) {
         a[o] = this[0];
         a[o + 1] = this[1];
