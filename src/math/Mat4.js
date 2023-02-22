@@ -76,8 +76,22 @@ export class Mat4 extends Array {
         return this;
     }
 
+    add(ma, mb) {
+        if (mb) Mat4Func.add(this, ma, mb);
+        else Mat4Func.add(this, this, ma);
+        return this;
+    }
+
+    sub(ma, mb) {
+        if (mb) Mat4Func.subtract(this, ma, mb);
+        else Mat4Func.subtract(this, this, ma);
+        return this;
+    }
+
     multiply(ma, mb) {
-        if (mb) {
+        if (!ma.length) {
+            Mat4Func.multiplyScalar(this, this, ma);
+        } else if (mb) {
             Mat4Func.multiply(this, ma, mb);
         } else {
             Mat4Func.multiply(this, this, ma);
