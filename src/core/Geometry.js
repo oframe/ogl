@@ -149,8 +149,8 @@ export class Geometry {
             if (type === 35676) numLoc = 4; // mat4
 
             const size = attr.size / numLoc;
-            const stride = numLoc === 1 ? 0 : numLoc * numLoc * numLoc;
-            const offset = numLoc === 1 ? 0 : numLoc * numLoc;
+            const stride = numLoc === 1 ? 0 : numLoc * numLoc * 4;
+            const offset = numLoc === 1 ? 0 : numLoc * 4;
 
             for (let i = 0; i < numLoc; i++) {
                 this.gl.vertexAttribPointer(location + i, size, attr.type, attr.normalized, attr.stride + stride, attr.offset + i * offset);
