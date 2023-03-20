@@ -2,15 +2,14 @@ let supportedFormat;
 let id = 0;
 
 export class BasisManager {
-    constructor(workerSrc, canvas) {
-        if (!supportedFormat) supportedFormat = this.getSupportedFormat(canvas);
+    constructor(workerSrc, gl) {
+        if (!supportedFormat) supportedFormat = this.getSupportedFormat(gl);
         this.onMessage = this.onMessage.bind(this);
         this.queue = new Map();
         this.initWorker(workerSrc);
     }
 
-    getSupportedFormat(canvas = document.createElement('canvas')) {
-        const gl = canvas.getContext('webgl');
+    getSupportedFormat(gl = document.createElement('canvas').getContext('webgl')) {
         /* if (!!gl.getExtension('WEBGL_compressed_texture_etc')) {
             return 'etc2';
         } else  */
