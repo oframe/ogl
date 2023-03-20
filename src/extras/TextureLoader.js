@@ -6,6 +6,17 @@ import { KTXTexture } from './KTXTexture.js';
 let cache = {};
 const supportedExtensions = [];
 
+const isCreateImageBitmap = (() => {
+    const isChrome = navigator.userAgent.toLowerCase().includes('chrome');
+    if (!isChrome) return false;
+    try {
+        createImageBitmap;
+    } catch (e) {
+        return false;
+    }
+    return true;
+})();
+
 export class TextureLoader {
     static load(
         gl,
@@ -139,11 +150,8 @@ export class TextureLoader {
 
         for (const ext in extensions) if (extensions[ext]) supportedExtensions.push(ext);
 
-        // Check for WebP support
-        if (detectWebP()) supportedExtensions.push('webp');
-
         // Formats supported by all
-        supportedExtensions.push('png', 'jpg');
+        supportedExtensions.push('png', 'jpg', 'webp');
 
         return supportedExtensions;
     }
@@ -180,10 +188,6 @@ export class TextureLoader {
     }
 }
 
-function detectWebP() {
-    return document.createElement('canvas').toDataURL('image/webp').indexOf('data:image/webp') == 0;
-}
-
 function powerOfTwo(value) {
     // (width & (width - 1)) !== 0
     return Math.log2(value) % 1 === 0;
@@ -191,12 +195,10 @@ function powerOfTwo(value) {
 
 function decodeImage(src, flipY) {
     return new Promise((resolve) => {
-        // Only chrome's implementation of createImageBitmap is fully supported
-        const isChrome = navigator.userAgent.toLowerCase().includes('chrome');
-        if (!!window.createImageBitmap && isChrome) {
+        if (isCreateImageBitmap) {
             fetch(src, { mode: 'cors' })
-                .then(r => r.blob())
-                .then(b => createImageBitmap(b, { imageOrientation: flipY ? 'flipY' : 'none', premultiplyAlpha: 'none' }))
+                .then((r) => r.blob())
+                .then((b) => createImageBitmap(b, { imageOrientation: flipY ? 'flipY' : 'none', premultiplyAlpha: 'none' }))
                 .then(resolve);
         } else {
             const img = new Image();
