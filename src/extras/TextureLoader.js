@@ -6,17 +6,6 @@ import { KTXTexture } from './KTXTexture.js';
 let cache = {};
 const supportedExtensions = [];
 
-const isCreateImageBitmap = (() => {
-    const isChrome = navigator.userAgent.toLowerCase().includes('chrome');
-    if (!isChrome) return false;
-    try {
-        createImageBitmap;
-    } catch (e) {
-        return false;
-    }
-    return true;
-})();
-
 export class TextureLoader {
     static load(
         gl,
@@ -195,7 +184,7 @@ function powerOfTwo(value) {
 
 function decodeImage(src, flipY) {
     return new Promise((resolve) => {
-        if (isCreateImageBitmap) {
+        if (isCreateImageBitmap()) {
             fetch(src, { mode: 'cors' })
                 .then((r) => r.blob())
                 .then((b) => createImageBitmap(b, { imageOrientation: flipY ? 'flipY' : 'none', premultiplyAlpha: 'none' }))
@@ -208,4 +197,15 @@ function decodeImage(src, flipY) {
             img.onload = () => resolve(img);
         }
     });
+}
+
+function isCreateImageBitmap() {
+    const isChrome = navigator.userAgent.toLowerCase().includes('chrome');
+    if (!isChrome) return false;
+    try {
+        createImageBitmap;
+    } catch (e) {
+        return false;
+    }
+    return true;
 }
