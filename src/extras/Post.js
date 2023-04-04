@@ -78,14 +78,11 @@ export class Post {
         }
 
         dpr = this.dpr || this.gl.renderer.dpr;
-        width = Math.floor((this.width || this.gl.renderer.width) * dpr);
-        height = Math.floor((this.height || this.gl.renderer.height) * dpr);
+        let scaledWidth = Math.floor((this.width || this.gl.renderer.width) * dpr);
+        let scaledHeight = Math.floor((this.height || this.gl.renderer.height) * dpr);
 
-        this.options.width = width;
-        this.options.height = height;
-
-        this.fbo.read.setSize(width, height)
-        this.fbo.write.setSize(width, height)
+        this.fbo.read.setSize(scaledWidth, scaledHeight)
+        this.fbo.write.setSize(scaledWidth, scaledHeight)
 
         this.resizeCallbacks.forEach(cb => cb({width, height}))
     }
