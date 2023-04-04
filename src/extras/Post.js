@@ -25,6 +25,7 @@ export class Post {
         this.options = { wrapS, wrapT, minFilter, magFilter };
 
         this.passes = [];
+        this.resizeCallbacks = []
 
         this.geometry = geometry;
 
@@ -32,8 +33,8 @@ export class Post {
         this.targetOnly = targetOnly;
 
         const fbo = (this.fbo = {
-            read: null,
-            write: null,
+            read: new RenderTarget(this.gl),
+            write: new RenderTarget(this.gl),
             swap: () => {
                 let temp = fbo.read;
                 fbo.read = fbo.write;
@@ -44,7 +45,7 @@ export class Post {
         this.resize({ width, height, dpr });
     }
 
-    addPass({ vertex = defaultVertex, fragment = defaultFragment, uniforms = {}, textureUniform = 'tMap', enabled = true } = {}) {
+    addPass({ vertex = defaultVertex, fragment = defaultFragment, uniforms = {}, textureUniform = 'tMap', enabled = true, beforePass} = {}) {
         uniforms[textureUniform] = { value: this.fbo.read.texture };
 
         const program = new Program(this.gl, { vertex, fragment, uniforms });
@@ -56,10 +57,17 @@ export class Post {
             uniforms,
             enabled,
             textureUniform,
+            beforePass
         };
 
         this.passes.push(pass);
         return pass;
+    }
+
+    addPassEffect(passEffect){
+        const { resizeCallback } = passEffect.addPassRef(this.addPass.bind(this))
+        resizeCallback && (this.resizeCallbacks.push(resizeCallback))
+        return this;
     }
 
     resize({ width, height, dpr } = {}) {
@@ -76,8 +84,10 @@ export class Post {
         this.options.width = width;
         this.options.height = height;
 
-        this.fbo.read = new RenderTarget(this.gl, this.options);
-        this.fbo.write = new RenderTarget(this.gl, this.options);
+        this.fbo.read.setSize(width, height)
+        this.fbo.write.setSize(width, height)
+
+        this.resizeCallbacks.forEach(cb => cb({width, height}))
     }
 
     // Uses same arguments as renderer.render, with addition of optional texture passed in to avoid scene render
@@ -101,6 +111,7 @@ export class Post {
 
         enabledPasses.forEach((pass, i) => {
             pass.mesh.program.uniforms[pass.textureUniform].value = !i && texture ? texture : this.fbo.read.texture;
+            pass.beforePass && pass.beforePass({scene, camera, texture: !i && texture ? texture : this.fbo.read.texture})
             this.gl.renderer.render({
                 scene: pass.mesh,
                 target: i === enabledPasses.length - 1 && (target || !this.targetOnly) ? target : this.fbo.write,
@@ -135,3 +146,4 @@ const defaultFragment = /* glsl */ `
         gl_FragColor = texture2D(tMap, vUv);
     }
 `;
+
