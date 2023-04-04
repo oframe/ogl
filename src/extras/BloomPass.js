@@ -56,31 +56,6 @@ export default class BloomPass {
   }
 
   addPassRef(addPass) {
-    // let program = new Program(this.gl, {
-    //   fragment: compositeFragment,
-    //   vertex: defaultVertex,
-    //   uniforms: {
-    //     uResolution: this.resolution,
-    //     tBloom: {value: null},
-    //     uBloomStrength: this.bloomStrength,
-    //     tMap: { value: null },
-    //   },
-    // });
-    // let mesh = new Mesh(this.gl, { geometry, program });
-    //
-    // const passes = [
-    //   {
-    //     mesh,
-    //     enabled: this.enabled,
-    //     textureUniform: "tMap",
-    //     beforePass: ({scene, camera, texture}) => { 
-    //       this.postBloom.render({texture})
-    //       mesh.program.uniforms.tBloom.value = this.postBloom.uniform.value
-    //     },
-    //   },
-    // ];
-    // return passes;
-
     this.pass = addPass({
       fragment: compositeFragment,
       uniforms: {
