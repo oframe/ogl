@@ -33,8 +33,8 @@ export class Post {
         this.targetOnly = targetOnly;
 
         const fbo = (this.fbo = {
-            read: new RenderTarget(this.gl),
-            write: new RenderTarget(this.gl),
+            read: new RenderTarget(this.gl, this.options),
+            write: new RenderTarget(this.gl, this.options),
             swap: () => {
                 let temp = fbo.read;
                 fbo.read = fbo.write;
@@ -111,7 +111,9 @@ export class Post {
 
         enabledPasses.forEach((pass, i) => {
             pass.mesh.program.uniforms[pass.textureUniform].value = !i && texture ? texture : this.fbo.read.texture;
+
             pass.beforePass && pass.beforePass({scene, camera, texture: !i && texture ? texture : this.fbo.read.texture})
+
             this.gl.renderer.render({
                 scene: pass.mesh,
                 target: i === enabledPasses.length - 1 && (target || !this.targetOnly) ? target : this.fbo.write,
