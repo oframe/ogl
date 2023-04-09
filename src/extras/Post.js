@@ -22,7 +22,6 @@ export class Post {
     ) {
         this.gl = gl;
 
-        this.options = { wrapS, wrapT, minFilter, magFilter };
 
         this.passes = [];
 
@@ -31,9 +30,11 @@ export class Post {
         this.uniform = { value: null };
         this.targetOnly = targetOnly;
 
+        let options = { wrapS, wrapT, minFilter, magFilter };
+
         const fbo = (this.fbo = {
-            read: null,
-            write: null,
+            read: new RenderTarget(this.gl, options),
+            write: new RenderTarget(this.gl, options),
             swap: () => {
                 let temp = fbo.read;
                 fbo.read = fbo.write;
@@ -73,11 +74,9 @@ export class Post {
         width = Math.floor((this.width || this.gl.renderer.width) * dpr);
         height = Math.floor((this.height || this.gl.renderer.height) * dpr);
 
-        this.options.width = width;
-        this.options.height = height;
 
-        this.fbo.read = new RenderTarget(this.gl, this.options);
-        this.fbo.write = new RenderTarget(this.gl, this.options);
+        this.fbo.read.setSize(width, height)
+        this.fbo.write.setSize(width, height)
     }
 
     // Uses same arguments as renderer.render, with addition of optional texture passed in to avoid scene render
