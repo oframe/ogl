@@ -255,6 +255,19 @@ export class Raycast {
         return hits;
     }
 
+    intersectPlane(plane, origin = this.origin, direction = this.direction) {
+        const xminp = tempVec3a;
+        xminp.sub(plane.origin, origin);
+
+        const a = xminp.dot(plane.normal);
+        const b = direction.dot(plane.normal);
+        // Assuming we don't want to count a ray parallel to the plane as intersecting
+        if (b == 0) return 0;
+        const delta = a / b;
+        if (delta <= 0) return 0;
+        return origin.add(direction.scale(delta));
+    }
+
     intersectSphere(sphere, origin = this.origin, direction = this.direction) {
         const ray = tempVec3c;
         ray.sub(sphere.center, origin);
