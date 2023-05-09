@@ -34,10 +34,10 @@ export class Camera extends Transform {
     orthographic({
         near = this.near,
         far = this.far,
-        left = this.left,
-        right = this.right,
-        bottom = this.bottom,
-        top = this.top,
+        left = this.left || -1,
+        right = this.right || 1,
+        bottom = this.bottom || -1,
+        top = this.top || 1,
         zoom = this.zoom,
     } = {}) {
         Object.assign(this, { near, far, left, right, bottom, top, zoom });
