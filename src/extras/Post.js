@@ -1,5 +1,3 @@
-// TODO: Destroy render targets if size changed and exists
-
 import { Program } from '../core/Program.js';
 import { Mesh } from '../core/Mesh.js';
 import { RenderTarget } from '../core/RenderTarget.js';
@@ -22,7 +20,6 @@ export class Post {
     ) {
         this.gl = gl;
 
-
         this.passes = [];
 
         this.geometry = geometry;
@@ -30,7 +27,23 @@ export class Post {
         this.uniform = { value: null };
         this.targetOnly = targetOnly;
 
-        let options = { wrapS, wrapT, minFilter, magFilter };
+        if (dpr) this.dpr = dpr;
+        if (width) this.width = width;
+        if (height) this.height = height;
+
+        dpr = this.dpr || this.gl.renderer.dpr;
+        this.resolutionWidth = Math.floor(this.width || this.gl.renderer.width * dpr);
+        this.resolutionHeight = Math.floor(this.height || this.gl.renderer.height * dpr);
+
+        let options = {
+            dpr: this.dpr,
+            width: this.resolutionWidth,
+            height: this.resolutionHeight,
+            wrapS,
+            wrapT,
+            minFilter,
+            magFilter,
+        };
 
         const fbo = (this.fbo = {
             read: new RenderTarget(this.gl, options),
@@ -41,8 +54,6 @@ export class Post {
                 fbo.write = temp;
             },
         });
-
-        this.resize({ width, height, dpr });
     }
 
     addPass({ vertex = defaultVertex, fragment = defaultFragment, uniforms = {}, textureUniform = 'tMap', enabled = true } = {}) {
@@ -65,18 +76,15 @@ export class Post {
 
     resize({ width, height, dpr } = {}) {
         if (dpr) this.dpr = dpr;
-        if (width) {
-            this.width = width;
-            this.height = height || width;
-        }
+        if (width) this.width = width;
+        if (height) this.height = height;
 
         dpr = this.dpr || this.gl.renderer.dpr;
-        width = Math.floor((this.width || this.gl.renderer.width) * dpr);
-        height = Math.floor((this.height || this.gl.renderer.height) * dpr);
+        this.resolutionWidth = Math.floor(this.width || this.gl.renderer.width * dpr);
+        this.resolutionHeight = Math.floor(this.height || this.gl.renderer.height * dpr);
 
-
-        this.fbo.read.setSize(width, height)
-        this.fbo.write.setSize(width, height)
+        this.fbo.read.setSize(this.resolutionWidth, this.resolutionHeight);
+        this.fbo.write.setSize(this.resolutionWidth, this.resolutionHeight);
     }
 
     // Uses same arguments as renderer.render, with addition of optional texture passed in to avoid scene render
