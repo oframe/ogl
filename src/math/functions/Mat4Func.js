@@ -547,7 +547,7 @@ export function getMaxScaleOnAxis(mat) {
  * @return {quat} out
  */
 export const getRotation = (function () {
-    const temp = [0, 0, 0];
+    const temp = [1, 1, 1];
 
     return function (out, mat) {
         let scaling = temp;
