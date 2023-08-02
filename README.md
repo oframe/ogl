@@ -20,8 +20,6 @@
 
 <br />
 
-⚠️ *Note: currently in alpha, so expect breaking changes.*
-
 [See the Examples!](https://oframe.github.io/ogl/examples)
 
 OGL is a small, effective WebGL library aimed at developers who like minimal layers of abstraction, and are interested in creating their own shaders.
@@ -32,11 +30,9 @@ In its design, the library does the minimum abstraction necessary, so devs shoul
 
 Keeping the level of abstraction low helps to make the library easier to understand, extend, and also makes it more practical as a WebGL learning resource.
 
-⚠️ *Note: Typescript users may be interested in using a [TS fork of the library](https://github.com/nshen/ogl-typescript), kindly maintained by [nshen](https://github.com/nshen).*
-
 ## Install
 
-[Download](https://github.com/oframe/ogl/archive/master.zip) 
+[Download](https://github.com/oframe/ogl/archive/master.zip)
 
 **or**
 
@@ -60,12 +56,12 @@ Inspired by the effectiveness of ThreeJS' examples, they will hopefully serve as
 
 Even though the source is modular, as a guide, below are the complete component download sizes.
 
-Component | Size (minzipped)
------------- | -------------:
-Core | 8kb
-Math | 6kb
-Extras | 15kb
-Total | 29kb
+| Component | Size (minzipped) |
+| --------- | ---------------: |
+| Core      |              8kb |
+| Math      |              6kb |
+| Extras    |             15kb |
+| Total     |             29kb |
 
 With tree-shaking applied in a build step, one can expect the final size to be much lighter than the values above.
 
@@ -74,21 +70,25 @@ With tree-shaking applied in a build step, one can expect the final size to be m
 If installed amongst your project files, importing can be done from one single entry point.
 
 ```js
-import { ... } from './path/to/src/index.mjs';
+import { ... } from './path/to/src/index.js';
 ```
 
 Else if using a bundler or import maps with node modules, then import directly from the installed node module.
+
 ```js
 import { ... } from 'ogl';
 ```
-By default, the ES source modules are loaded (`src/index.mjs`).
+
+By default, the ES source modules are loaded (`src/index.js`).
 
 As another alternative, you could load from a CDN, using either the jsdelivr, unpkg or skypack services.
+
 ```js
 import { ... } from 'https://cdn.jsdelivr.net/npm/ogl';
 import { ... } from 'https://unpkg.com/ogl';
 import { ... } from 'https://cdn.skypack.dev/ogl';
 ```
+
 If you take this route, I would highly recommend defining a specific version (append `@x.x.x`) to avoid code breaking, rather than fetching the latest version, as per the above links.
 
 As a basic API example, below renders a spinning white cube.
@@ -148,6 +148,7 @@ import { Renderer, Camera, Transform, Box, Program, Mesh } from 'ogl';
     }
 }
 ```
+
 Here you can play with the above template live in a codesandbox
 https://codesandbox.io/s/ogl-5i69p
 
@@ -221,14 +222,15 @@ In an attempt to keep things light and modular, the library is split up into thr
 The **Math** component is an extension of [gl-matrix](http://glmatrix.net/), providing instancable classes that extend Array for each of the module types. 8kb when gzipped, it has no dependencies and can be used separately.
 
 The **Core** is made up of the following:
- - Geometry.js
- - Program.js
- - Renderer.js
- - Camera.js
- - Transform.js
- - Mesh.js
- - Texture.js
- - RenderTarget.js
+
+-   Geometry.js
+-   Program.js
+-   Renderer.js
+-   Camera.js
+-   Transform.js
+-   Mesh.js
+-   Texture.js
+-   RenderTarget.js
 
 Any additional layers of abstraction will be included as **Extras**, and not part of the core as to reduce bloat. These provide a wide breadth of functionality, ranging from simple to advanced.
 
