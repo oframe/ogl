@@ -2,7 +2,8 @@
     "name": "ogl",
     "version": "0.0.117",
     "description": "WebGL Library",
-    "exports": "./src/index.mjs",
+    "main": "./src/index.js",
+    "exports": "./src/index.js",
     "type": "module",
     "sideEffects": false,
     "directories": {
