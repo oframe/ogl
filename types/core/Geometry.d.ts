@@ -8,7 +8,7 @@ export interface AttributeMap {
 
 export interface Attribute {
     size: number;
-    data: ArrayLike<number> | ArrayBufferView;
+    data: ArrayBufferView;
     instanced?: null | number | boolean;
     type: GLenum;
     normalized: boolean;
