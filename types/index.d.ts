@@ -1,6 +1,6 @@
 // Core
 export { CameraOptions, PerspectiveOptions, OrthographicOptions, CameraType, Camera } from './core/Camera';
-export { AttributeMap, Attribute, Bounds, GeometryRaycast, Geometry } from './core/Geometry';
+export { AttributeMap, AttributeData, Attribute, Bounds, GeometryRaycast, Geometry } from './core/Geometry';
 export { MeshOptions, DrawOptions, MeshRenderCallback, RaycastHit, Mesh } from './core/Mesh';
 export { ProgramOptions, UniformInfo, Program } from './core/Program';
 export {

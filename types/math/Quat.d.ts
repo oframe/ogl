@@ -1,6 +1,7 @@
 import { Mat3 } from './Mat3.js';
 import { Euler } from './Euler.js';
 import { Vec3 } from './Vec3.js';
+import { AttributeData } from '../core/Geometry.js';
 
 export declare type QuatTuple = [x: number, y: number, z: number, w: number];
 
@@ -31,6 +32,6 @@ export declare class Quat extends Array<number> {
     fromEuler(euler: Euler): this;
     fromAxisAngle(axis: Vec3, a: number): this;
     slerp(q: Quat, t: number): this;
-    fromArray(a: number[], o?: number): this;
-    toArray(a?: number[], o?: number): number[];
+    fromArray(a: number[] | AttributeData, o?: number): this;
+    toArray<T extends number[] | AttributeData>(a?: T, o?: number): T;
 }

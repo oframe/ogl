@@ -6,9 +6,11 @@ export interface AttributeMap {
     [key: string]: Partial<Attribute>;
 }
 
+export type AttributeData = Float32Array | Uint32Array | Uint16Array;
+
 export interface Attribute {
     size: number;
-    data: ArrayBufferView;
+    data: AttributeData;
     instanced?: null | number | boolean;
     type: GLenum;
     normalized: boolean;

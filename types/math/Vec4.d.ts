@@ -1,3 +1,5 @@
+import { AttributeData } from '../core/Geometry';
+
 export declare type Vec4Tuple = [x: number, y: number, z: number, w: number];
 
 export declare class Vec4 extends Array<number> {
@@ -15,6 +17,6 @@ export declare class Vec4 extends Array<number> {
     normalize(): this;
     multiply(v: number): this;
     dot(v: Vec4): number;
-    fromArray(a: number[], o?: number): this;
-    toArray(a?: number[], o?: number): number[];
+    fromArray(a: number[] | AttributeData, o?: number): this;
+    toArray<T extends number[] | AttributeData>(a?: T, o?: number): T;
 }

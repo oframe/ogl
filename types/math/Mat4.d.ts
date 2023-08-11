@@ -1,5 +1,6 @@
 import { Vec3 } from './Vec3.js';
 import { Quat } from './Quat.js';
+import { AttributeData } from '../core/Geometry.js';
 
 export declare type Mat4Tuple = [
     m00: number,
@@ -100,6 +101,6 @@ export declare class Mat4 extends Array<number> {
     getMaxScaleOnAxis(): number;
     lookAt(eye: Vec3, target: Vec3, up: Vec3): this;
     determinant(): number;
-    fromArray(a: number[], o?: number): this;
-    toArray(a?: number[], o?: number): number[];
+    fromArray(a: number[] | AttributeData, o?: number): this;
+    toArray<T extends number[] | AttributeData>(a?: T, o?: number): T;
 }

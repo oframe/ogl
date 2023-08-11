@@ -1,3 +1,4 @@
+import { AttributeData } from '../core/Geometry.js';
 import { Mat3 } from './Mat3.js';
 import { Mat4 } from './Mat4.js';
 
@@ -30,6 +31,6 @@ export declare class Vec2 extends Array<number> {
     applyMatrix4(mat4: Mat4): this;
     lerp(v: Vec2, a: number): this;
     clone(): Vec2;
-    fromArray(a: number[], o?: number): this;
-    toArray(a?: number[], o?: number): number[];
+    fromArray(a: number[] | AttributeData, o?: number): this;
+    toArray<T extends number[] | AttributeData>(a?: T, o?: number): T;
 }

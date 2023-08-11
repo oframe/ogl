@@ -1,3 +1,4 @@
+import { AttributeData } from '../core/Geometry.js';
 import { Mat4 } from './Mat4.js';
 import { Quat } from './Quat.js';
 
@@ -19,6 +20,6 @@ export declare class Euler extends Array<number> {
     reorder(order: EulerOrder): this;
     fromRotationMatrix(m: Mat4, order?: EulerOrder): this;
     fromQuaternion(q: Quat, order?: EulerOrder): this;
-    fromArray(a: number[], o?: number): this;
-    toArray(a?: number[], o?: number): number[];
+    fromArray(a: number[] | AttributeData, o?: number): this;
+    toArray<T extends number[] | AttributeData>(a?: T, o?: number): T;
 }

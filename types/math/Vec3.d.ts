@@ -1,3 +1,4 @@
+import { AttributeData } from '../core/Geometry.js';
 import { Mat3 } from './Mat3.js';
 import { Mat4 } from './Mat4.js';
 import { Quat } from './Quat.js';
@@ -36,7 +37,7 @@ export declare class Vec3 extends Array<number> {
     angle(v: Vec3): number;
     lerp(v: Vec3, t: number): this;
     clone(): Vec3;
-    fromArray(a: number[], o?: number): this;
-    toArray(a?: number[], o?: number): number[];
+    fromArray(a: number[] | AttributeData, o?: number): this;
+    toArray<T extends number[] | AttributeData>(a?: T, o?: number): T;
     transformDirection(mat4: Mat4): this;
 }
