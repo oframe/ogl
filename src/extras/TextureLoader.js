@@ -153,8 +153,8 @@ export class TextureLoader {
 
     static loadImage(gl, src, texture, flipY) {
         return decodeImage(src, flipY).then((imgBmp) => {
-            // Catch non POT textures and update params to avoid errors
-            if (!powerOfTwo(imgBmp.width) || !powerOfTwo(imgBmp.height)) {
+            // Catch non POT textures for WebGL1 and update params to avoid errors
+            if (!gl.renderer.isWebgl2 && (!powerOfTwo(imgBmp.width) || !powerOfTwo(imgBmp.height))) {
                 if (texture.generateMipmaps) texture.generateMipmaps = false;
                 if (texture.minFilter === gl.NEAREST_MIPMAP_LINEAR) texture.minFilter = gl.LINEAR;
                 if (texture.wrapS === gl.REPEAT) texture.wrapS = texture.wrapT = gl.CLAMP_TO_EDGE;
