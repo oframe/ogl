@@ -15,20 +15,7 @@
     <body>
         <div class="Info" style="color: #fff">MRT (Multiple Render Targets)</div>
         <script type="module">
-            import {
-                Renderer,
-                Camera,
-                Transform,
-                Geometry,
-                Texture,
-                RenderTarget,
-                Program,
-                Mesh,
-                Vec3,
-                Vec2,
-                Orbit,
-                Triangle,
-            } from '../src/index.js';
+            import { Renderer, Camera, Transform, Geometry, Texture, RenderTarget, Program, Mesh, Vec3, Orbit, Triangle } from '../src/index.js';
 
             const vertex100 = /* glsl */ `
                 attribute vec3 position;
@@ -61,13 +48,13 @@
                     vUv = uv;
                     vNormal = normalize(normalMatrix * normal);
                     vMPos = (modelMatrix * vec4(pos, 1.0)).xyz;
-                    
+
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
                 }
             `;
 
             const fragment100 = /* glsl */ `
-                #extension GL_EXT_draw_buffers : require 
+                #extension GL_EXT_draw_buffers : require
 
                 precision highp float;
 
@@ -78,7 +65,7 @@
                 varying vec3 vMPos;
 
                 void main() {
-                    gl_FragData[0] = texture2D(tMap, vUv); 
+                    gl_FragData[0] = texture2D(tMap, vUv);
                     gl_FragData[1] = vec4(vMPos, gl_FragCoord.z);
                 }
             `;
@@ -114,7 +101,7 @@
                     vUv = uv;
                     vNormal = normalize(normalMatrix * normal);
                     vMPos = (modelMatrix * vec4(pos, 1.0)).xyz;
-                    
+
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
                 }
             `;
@@ -131,7 +118,7 @@
                 out vec4 FragData[2];
 
                 void main() {
-                    FragData[0] = texture(tMap, vUv); 
+                    FragData[0] = texture(tMap, vUv);
                     FragData[1] = vec4(vMPos, gl_FragCoord.z);
                 }
             `;
@@ -195,7 +182,6 @@
                     } else if (uv.y < 3.0 && uv.x < 1.0) {
                         gl_FragColor.rgb = texture2D(tColor, mod(uv, 1.0)).rgb;
                     }
-
                 }
             `;
 
@@ -301,6 +287,7 @@
                 requestAnimationFrame(update);
                 function update(t) {
                     requestAnimationFrame(update);
+
                     controls.update();
 
                     // Render scene to targets

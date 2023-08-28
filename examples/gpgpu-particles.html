@@ -15,7 +15,7 @@
     <body>
         <div class="Info">GPGPU Particles (General-Purpose computing on Graphics Processing Units)</div>
         <script type="module">
-            import { Renderer, Camera, Geometry, Program, Texture, Mesh, Vec2, GPGPU } from '../src/index.js';
+            import { Renderer, Camera, Geometry, Program, Mesh, Vec2, GPGPU } from '../src/index.js';
 
             const vertex = /* glsl */ `
                 attribute vec2 coords;
@@ -34,7 +34,7 @@
                     // Get position from texture, rather than attribute
                     vec4 position = texture2D(tPosition, coords);
                     vVelocity = texture2D(tVelocity, coords);
-                    
+
                     // Add some subtle random oscillating so it never fully stops
                     position.xy += sin(vec2(uTime) * vRandom.wy + vRandom.xz * 6.28) * vRandom.zy * 0.1;
 
@@ -43,7 +43,6 @@
 
                     // Make bigger while moving
                     gl_PointSize *= 1.0 + min(1.0, length(vVelocity.xy));
-
                 }
             `;
 
@@ -85,7 +84,7 @@
                     vec4 velocity = texture2D(tVelocity, vUv);
 
                     position.xy += velocity.xy * 0.01;
-                                    
+
                     // Keep in bounds
                     vec2 limits = vec2(1);
                     position.xy += (1.0 - step(-limits.xy, position.xy)) * limits.xy * 2.0;

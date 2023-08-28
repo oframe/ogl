@@ -12,7 +12,7 @@ export default class LineSegment extends BaseSegment {
 
         this.tiltStart = tiltStart;
         this.tiltEnd = tiltEnd;
-        
+
         this._len = -1;
     }
 

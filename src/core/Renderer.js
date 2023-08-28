@@ -55,7 +55,7 @@ export class Renderer {
         this.state = {};
         this.state.blendFunc = { src: this.gl.ONE, dst: this.gl.ZERO };
         this.state.blendEquation = { modeRGB: this.gl.FUNC_ADD };
-        this.state.cullFace = null;
+        this.state.cullFace = false;
         this.state.frontFace = this.gl.CCW;
         this.state.depthMask = true;
         this.state.depthFunc = this.gl.LESS;

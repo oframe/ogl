@@ -1,10 +1,10 @@
 import { Mesh } from '../core/Mesh.js';
 import { Program } from '../core/Program.js';
 import { Geometry } from '../core/Geometry.js';
-import { Vec3 } from '../math/Vec3.js';
+import { Color } from '../math/Color.js';
 
 export class WireMesh extends Mesh {
-    constructor(gl, { geometry, wireColor = new Vec3(0, 0.75, 0.5), ...meshProps } = {}) {
+    constructor(gl, { geometry, wireColor = new Color(0, 0.75, 0.5), ...meshProps } = {}) {
         const wireProgram = new Program(gl, {
             vertex,
             fragment,

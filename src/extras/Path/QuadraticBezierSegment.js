@@ -1,12 +1,12 @@
 import BaseSegment from './BaseSegment.js';
 import { Vec3 } from '../../math/Vec3.js';
-import { T_VALUES, C_VALUES } from "./utils.js";
+import { T_VALUES, C_VALUES } from './utils.js';
 
 const tempVec3 = new Vec3();
 
 function quadraticBezier(t, p0, p1, p2) {
     const k = 1 - t;
-    return k * k * p0 + 2 * k * t *p1 + t * t * p2;
+    return k * k * p0 + 2 * k * t * p1 + t * t * p2;
 }
 
 function quadraticBezierDeriv(t, p0, p1, p2) {
@@ -23,7 +23,7 @@ export default class QuadraticBezierSegment extends BaseSegment {
 
         this.tiltStart = tiltStart;
         this.tiltEnd = tiltEnd;
-        
+
         this._len = -1;
     }
 

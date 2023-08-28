@@ -48,7 +48,7 @@ a {
 @font-face {
     font-family: 'Raleway';
     src: url('fonts/raleway-regular-webfont.woff2') format('woff2'),
-        url('fonts/raleway-regular-webfont.woff') format('woff');
+         url('fonts/raleway-regular-webfont.woff') format('woff');
     font-weight: 400;
     font-style: normal;
 }
@@ -56,7 +56,7 @@ a {
 @font-face {
     font-family: 'Raleway';
     src: url('fonts/raleway-bold-webfont.woff2') format('woff2'),
-        url('fonts/raleway-bold-webfont.woff') format('woff');
+         url('fonts/raleway-bold-webfont.woff') format('woff');
     font-weight: 700;
     font-style: normal;
 }
@@ -159,7 +159,7 @@ div.Example {
     [data-hideSidebar] .Side {
         transform: translateX(-100%);
     }
-    
+
     [data-hideSidebar] .SideIcon {
         left: 0;
         transform: rotate(180deg);

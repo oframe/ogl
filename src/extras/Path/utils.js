@@ -54,7 +54,7 @@ export function mat4fromRotationSinCos(out, axis, sin, cos) {
     const y = axis[1];
     const z = axis[2];
     const t = 1 - cos;
-    
+
     out[0] = x * x * t + cos;
     out[1] = y * x * t + z * sin;
     out[2] = z * x * t - y * sin;

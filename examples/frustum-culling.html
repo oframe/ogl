@@ -15,20 +15,7 @@
     <body>
         <div class="Info">Frustum Culling. Model by Google Poly</div>
         <script type="module">
-            import {
-                Renderer,
-                Camera,
-                Transform,
-                Texture,
-                Program,
-                Color,
-                Geometry,
-                Mesh,
-                Vec3,
-                Orbit,
-                Cylinder,
-                NormalProgram,
-            } from '../src/index.js';
+            import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Vec3, Orbit, Cylinder, NormalProgram } from '../src/index.js';
 
             const vertex = /* glsl */ `
                 attribute vec2 uv;
@@ -60,12 +47,12 @@
 
                 void main() {
                     vec3 tex = texture2D(tMap, vUv).rgb;
-                    
+
                     float dist = length(vMVPos);
                     float fog = smoothstep(2.0, 15.0, dist);
                     tex = mix(tex, vec3(1), fog * 0.8);
-                    tex = mix(tex, vec3(1), smoothstep(1.0, 0.0, vPos.y)); 
-                    
+                    tex = mix(tex, vec3(1), smoothstep(1.0, 0.0, vPos.y));
+
                     gl_FragColor.rgb = tex;
                     gl_FragColor.a = 1.0;
                 }
@@ -148,7 +135,7 @@
                         }),
                         program: new NormalProgram(gl),
                     });
-                    mesh.program.cullFace = null;
+                    mesh.program.cullFace = false;
 
                     mesh.setParent(frustumTransform);
                     mesh.isCameraShape = true;
@@ -167,8 +154,6 @@
                 requestAnimationFrame(update);
                 function update(t) {
                     requestAnimationFrame(update);
-
-                    controls.update();
 
                     // Move camera around a path
                     cameraPath(frustumCamera.position, t * 0.001, 2);
@@ -189,6 +174,7 @@
                         node.visible = frustumCamera.frustumIntersectsMesh(node);
                     });
 
+                    controls.update();
                     renderer.render({ scene, camera });
                 }
             }
