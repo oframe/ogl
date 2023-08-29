@@ -13,7 +13,7 @@ export class Vec3 extends Array<number> {
     set x(v: number);
     set y(v: number);
     set z(v: number);
-    set(x: Vec3 | number, y?: number, z?: number): this;
+    set(x: number | Vec3 | Vec3Tuple, y?: number, z?: number): this;
     copy(v: Vec3): this;
     add(va: Vec3, vb?: Vec3): this;
     sub(va: Vec3, vb?: Vec3): this;

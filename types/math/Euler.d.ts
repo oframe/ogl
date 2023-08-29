@@ -16,7 +16,7 @@ export class Euler extends Array<number> {
     set x(v: number);
     set y(v: number);
     set z(v: number);
-    set(x: number | Euler, y?: number, z?: number): this;
+    set(x: number | Euler | EulerTuple, y?: number, z?: number): this;
     copy(v: Euler): this;
     reorder(order: EulerOrder): this;
     fromRotationMatrix(m: Mat4, order?: EulerOrder): this;

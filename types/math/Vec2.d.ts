@@ -10,7 +10,7 @@ export class Vec2 extends Array<number> {
     get y(): number;
     set x(v: number);
     set y(v: number);
-    set(x: number | Vec2, y?: number): this;
+    set(x: number | Vec2 | Vec2Tuple, y?: number): this;
     copy(v: Vec2): this;
     add(va: Vec2, vb?: Vec2): this;
     sub(va: Vec2, vb?: Vec2): this;

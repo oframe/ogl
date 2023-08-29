@@ -12,7 +12,7 @@ export class Vec4 extends Array<number> {
     set y(v: number);
     set z(v: number);
     set w(v: number);
-    set(x: number | Vec4, y?: number, z?: number, w?: number): this;
+    set(x: number | Vec4 | Vec4Tuple, y?: number, z?: number, w?: number): this;
     copy(v: Vec4): this;
     normalize(): this;
     multiply(v: number): this;

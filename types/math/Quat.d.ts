@@ -17,8 +17,7 @@ export class Quat extends Array<number> {
     set z(v: number);
     set w(v: number);
     identity(): this;
-    set(x: number, y: number, z: number, w: number): this;
-    set(x: Quat): this;
+    set(x: number | Quat | QuatTuple, y: number, z: number, w: number): this;
     rotateX(a: number): this;
     rotateY(a: number): this;
     rotateZ(a: number): this;
