@@ -1,6 +1,6 @@
-import { AttributeData } from '../core/Geometry.js';
-import { Mat3 } from './Mat3.js';
-import { Mat4 } from './Mat4.js';
+import type { Mat3 } from './Mat3.js';
+import type { Mat4 } from './Mat4.js';
+import type { AttributeData } from '../core/Geometry.js';
 
 export declare type Vec2Tuple = [x: number, y: number];
 

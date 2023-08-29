@@ -1,5 +1,6 @@
-import { OGLRenderingContext } from './Renderer.js';
 import { Texture } from './Texture.js';
+
+import type { OGLRenderingContext } from './Renderer.js';
 
 export interface RenderTargetOptions {
     width: number;

@@ -1,33 +1,22 @@
 // Core
-export { CameraOptions, PerspectiveOptions, OrthographicOptions, CameraType, Camera } from './core/Camera';
-export { AttributeMap, AttributeData, Attribute, Bounds, GeometryRaycast, Geometry } from './core/Geometry';
-export { MeshOptions, DrawOptions, MeshRenderCallback, RaycastHit, Mesh } from './core/Mesh';
-export { ProgramOptions, UniformInfo, Program } from './core/Program';
-export {
-    OGLRenderingContext,
-    RendererOptions,
-    DeviceParameters,
-    BlendFunc,
-    BlendEquation,
-    Viewport,
-    RenderState,
-    RenderExtensions,
-    RendererSortable,
-    Renderer,
-} from './core/Renderer';
-export { RenderTargetOptions, RenderTarget } from './core/RenderTarget';
-export { CompressedImage, ImageRepresentation, TextureOptions, Texture } from './core/Texture';
-export { Transform } from './core/Transform';
+export * from './core/Geometry';
+export * from './core/Program';
+export * from './core/Renderer';
+export * from './core/Camera';
+export * from './core/Transform';
+export * from './core/Mesh';
+export * from './core/Texture';
+export * from './core/RenderTarget';
 
 // Maths
-export { ColorTuple, ColorRepresentation, Color } from './math/Color';
-export { EulerTuple, EulerOrder, Euler } from './math/Euler';
-export { Mat3Tuple, Mat3 } from './math/Mat3';
-export { Mat4Tuple, Mat4 } from './math/Mat4';
-export { QuatTuple, Quat } from './math/Quat';
-export { Vec2Tuple, Vec2 } from './math/Vec2';
-export { Vec3Tuple, Vec3 } from './math/Vec3';
-export { Vec4Tuple, Vec4 } from './math/Vec4';
+export * from './math/Color';
+export * from './math/Euler';
+export * from './math/Mat3';
+export * from './math/Mat4';
+export * from './math/Quat';
+export * from './math/Vec2';
+export * from './math/Vec3';
+export * from './math/Vec4';
 
 // Extras
 // TODO

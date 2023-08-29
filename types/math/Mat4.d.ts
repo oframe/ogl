@@ -1,6 +1,6 @@
-import { Vec3 } from './Vec3.js';
-import { Quat } from './Quat.js';
-import { AttributeData } from '../core/Geometry.js';
+import type { Quat } from './Quat.js';
+import type { Vec3 } from './Vec3.js';
+import type { AttributeData } from '../core/Geometry.js';
 
 export declare type Mat4Tuple = [
     m00: number,

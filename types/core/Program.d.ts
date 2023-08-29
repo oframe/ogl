@@ -1,4 +1,4 @@
-import { OGLRenderingContext, BlendFunc, BlendEquation } from './Renderer';
+import type { OGLRenderingContext, BlendFunc, BlendEquation } from './Renderer';
 
 export interface ProgramOptions {
     vertex: string;

@@ -1,7 +1,7 @@
-import { Vec2 } from './Vec2.js';
-import { Vec3 } from './Vec3.js';
-import { Quat } from './Quat.js';
-import { Mat4 } from './Mat4.js';
+import type { Mat4 } from './Mat4.js';
+import type { Quat } from './Quat.js';
+import type { Vec2 } from './Vec2.js';
+import type { Vec3 } from './Vec3.js';
 
 export declare type Mat3Tuple = [m00: number, m01: number, m02: number, m10: number, m11: number, m12: number, m20: number, m21: number, m22: number];
 

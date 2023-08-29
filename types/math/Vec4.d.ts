@@ -1,4 +1,4 @@
-import { AttributeData } from '../core/Geometry';
+import type { AttributeData } from '../core/Geometry';
 
 export declare type Vec4Tuple = [x: number, y: number, z: number, w: number];
 

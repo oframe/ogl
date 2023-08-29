@@ -1,8 +1,9 @@
 import { Transform } from './Transform.js';
 import { Mat4 } from '../math/Mat4.js';
 import { Vec3 } from '../math/Vec3.js';
-import { Mesh } from './Mesh.js';
-import { OGLRenderingContext } from './Renderer.js';
+
+import type { OGLRenderingContext } from './Renderer.js';
+import type { Mesh } from './Mesh.js';
 
 export interface CameraOptions {
     near: number;

@@ -1,7 +1,7 @@
-import { Camera } from './Camera.js';
-import { Mesh } from './Mesh.js';
-import { Transform } from './Transform.js';
-import { RenderTarget } from './RenderTarget.js';
+import type { Camera } from './Camera.js';
+import type { Transform } from './Transform.js';
+import type { Mesh } from './Mesh.js';
+import type { RenderTarget } from './RenderTarget.js';
 
 export declare type OGLRenderingContext = {
     renderer: Renderer;

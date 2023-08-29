@@ -1,4 +1,4 @@
-import { OGLRenderingContext, RenderState } from './Renderer';
+import type { OGLRenderingContext, RenderState } from './Renderer';
 
 export declare type CompressedImage = {
     isCompressedTexture?: boolean;

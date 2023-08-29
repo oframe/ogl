@@ -1,6 +1,7 @@
 import { Vec3 } from '../math/Vec3.js';
-import { OGLRenderingContext, RenderState } from './Renderer.js';
-import { Program } from './Program.js';
+
+import type { OGLRenderingContext, RenderState } from './Renderer.js';
+import type { Program } from './Program.js';
 
 export interface AttributeMap {
     [key: string]: Partial<Attribute>;

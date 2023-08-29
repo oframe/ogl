@@ -1,6 +1,7 @@
-import { AttributeData } from '../core/Geometry.js';
 import { Mat4 } from './Mat4.js';
-import { Quat } from './Quat.js';
+
+import type { Quat } from './Quat.js';
+import type { AttributeData } from '../core/Geometry.js';
 
 export declare type EulerTuple = [x: number, y: number, z: number];
 export declare type EulerOrder = 'XYZ' | 'XZY' | 'YXZ' | 'YZX' | 'ZXY' | 'ZYX';

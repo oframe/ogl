@@ -1,12 +1,13 @@
 import { Transform } from './Transform.js';
 import { Mat3 } from '../math/Mat3.js';
 import { Mat4 } from '../math/Mat4.js';
-import { Vec3 } from '../math/Vec3.js';
-import { Vec2 } from '../math/Vec2.js';
-import { Camera } from './Camera.js';
-import { Geometry } from './Geometry.js';
-import { Program } from './Program.js';
-import { OGLRenderingContext } from './Renderer.js';
+
+import type { OGLRenderingContext } from './Renderer.js';
+import type { Vec2 } from '../math/Vec2.js';
+import type { Vec3 } from '../math/Vec3.js';
+import type { Geometry } from './Geometry.js';
+import type { Program } from './Program.js';
+import type { Camera } from './Camera.js';
 
 export interface MeshOptions {
     geometry: Geometry;
