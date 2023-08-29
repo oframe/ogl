@@ -18,7 +18,7 @@ export declare type Mat4Tuple = [
     m30: number,
     m31: number,
     m32: number,
-    m33: number
+    m33: number,
 ];
 
 export declare class Mat4 extends Array<number> {
