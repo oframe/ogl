@@ -2,8 +2,12 @@
     "name": "ogl",
     "version": "1.0.0",
     "description": "WebGL Library",
+    "types": "./types/index.d.ts",
     "main": "./src/index.js",
-    "exports": "./src/index.js",
+    "exports": {
+        "types": "./types/index.d.ts",
+        "default": "./src/index.js"
+    },
     "type": "module",
     "sideEffects": false,
     "directories": {
