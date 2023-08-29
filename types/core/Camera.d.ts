@@ -21,9 +21,9 @@ export interface PerspectiveOptions extends Pick<CameraOptions, 'near' | 'far' |
 
 export interface OrthographicOptions extends Pick<CameraOptions, 'near' | 'far' | 'left' | 'right' | 'bottom' | 'top' | 'zoom'> {}
 
-export declare type CameraType = 'perspective' | 'orthographic';
+export type CameraType = 'perspective' | 'orthographic';
 
-export declare class Camera extends Transform {
+export class Camera extends Transform {
     projectionMatrix: Mat4;
     viewMatrix: Mat4;
     projectionViewMatrix: Mat4;

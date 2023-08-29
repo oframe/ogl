@@ -3,9 +3,9 @@ import type { Mat4 } from './Mat4.js';
 import type { Quat } from './Quat.js';
 import type { AttributeData } from '../core/Geometry.js';
 
-export declare type Vec3Tuple = [x: number, y: number, z: number];
+export type Vec3Tuple = [x: number, y: number, z: number];
 
-export declare class Vec3 extends Array<number> {
+export class Vec3 extends Array<number> {
     constructor(x?: number, y?: number, z?: number);
     get x(): number;
     get y(): number;

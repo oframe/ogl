@@ -2,9 +2,9 @@ import type { Mat3 } from './Mat3.js';
 import type { Mat4 } from './Mat4.js';
 import type { AttributeData } from '../core/Geometry.js';
 
-export declare type Vec2Tuple = [x: number, y: number];
+export type Vec2Tuple = [x: number, y: number];
 
-export declare class Vec2 extends Array<number> {
+export class Vec2 extends Array<number> {
     constructor(x?: number, y?: number);
     get x(): number;
     get y(): number;

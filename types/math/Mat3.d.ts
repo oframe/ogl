@@ -3,9 +3,9 @@ import type { Quat } from './Quat.js';
 import type { Vec2 } from './Vec2.js';
 import type { Vec3 } from './Vec3.js';
 
-export declare type Mat3Tuple = [m00: number, m01: number, m02: number, m10: number, m11: number, m12: number, m20: number, m21: number, m22: number];
+export type Mat3Tuple = [m00: number, m01: number, m02: number, m10: number, m11: number, m12: number, m20: number, m21: number, m22: number];
 
-export declare class Mat3 extends Array<number> {
+export class Mat3 extends Array<number> {
     constructor(m00?: number, m01?: number, m02?: number, m10?: number, m11?: number, m12?: number, m20?: number, m21?: number, m22?: number);
     set(m00: number, m01: number, m02: number, m10: number, m11: number, m12: number, m20: number, m21: number, m22: number): this;
     set(m: Mat3): this;

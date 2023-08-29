@@ -21,7 +21,7 @@ export interface RenderTargetOptions {
     premultiplyAlpha: boolean;
 }
 
-export declare class RenderTarget {
+export class RenderTarget {
     gl: OGLRenderingContext;
     width: number;
     height: number;

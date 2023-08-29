@@ -34,9 +34,9 @@ export interface Bounds {
     radius: number;
 }
 
-export declare type GeometryRaycast = 'sphere' | 'box';
+export type GeometryRaycast = 'sphere' | 'box';
 
-export declare class Geometry {
+export class Geometry {
     gl: OGLRenderingContext;
     attributes: AttributeMap;
     id: number;

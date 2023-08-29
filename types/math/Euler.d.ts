@@ -3,10 +3,10 @@ import { Mat4 } from './Mat4.js';
 import type { Quat } from './Quat.js';
 import type { AttributeData } from '../core/Geometry.js';
 
-export declare type EulerTuple = [x: number, y: number, z: number];
-export declare type EulerOrder = 'XYZ' | 'XZY' | 'YXZ' | 'YZX' | 'ZXY' | 'ZYX';
+export type EulerTuple = [x: number, y: number, z: number];
+export type EulerOrder = 'XYZ' | 'XZY' | 'YXZ' | 'YZX' | 'ZXY' | 'ZYX';
 
-export declare class Euler extends Array<number> {
+export class Euler extends Array<number> {
     order: EulerOrder;
     onChange: () => void;
     constructor(x?: number, y?: number, z?: number, order?: EulerOrder);

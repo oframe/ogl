@@ -3,7 +3,7 @@ import type { Mat4 } from '../math/Mat4.js';
 import type { Quat } from '../math/Quat.js';
 import type { Vec3 } from '../math/Vec3.js';
 
-export declare class Transform {
+export class Transform {
     parent: Transform | null;
     children: Transform[];
     visible: boolean;

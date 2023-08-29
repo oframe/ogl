@@ -3,7 +3,7 @@ import type { Transform } from './Transform.js';
 import type { Mesh } from './Mesh.js';
 import type { RenderTarget } from './RenderTarget.js';
 
-export declare type OGLRenderingContext = {
+export type OGLRenderingContext = {
     renderer: Renderer;
     canvas: HTMLCanvasElement;
 } & (WebGL2RenderingContext | WebGLRenderingContext);
@@ -75,7 +75,7 @@ export interface RendererSortable extends Mesh {
     zDepth: number;
 }
 
-export declare class Renderer {
+export class Renderer {
     dpr: number;
     alpha: boolean;
     color: boolean;

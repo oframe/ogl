@@ -25,7 +25,7 @@ export interface UniformInfo extends WebGLActiveInfo {
     structProperty: string;
 }
 
-export declare class Program {
+export class Program {
     gl: OGLRenderingContext;
     uniforms: {
         [name: string]: {

@@ -1,6 +1,6 @@
-export declare type ColorTuple = [r: number, g: number, b: number];
+export type ColorTuple = [r: number, g: number, b: number];
 
-export declare type ColorRepresentation =
+export type ColorRepresentation =
     | number
     | 'black'
     | 'white'
@@ -14,7 +14,7 @@ export declare type ColorRepresentation =
     | string
     | ColorTuple;
 
-export declare class Color extends Array<number> {
+export class Color extends Array<number> {
     constructor(color: [number, number, number]);
     constructor(color: number, g: number, b: number);
     constructor(color: string);

@@ -21,7 +21,7 @@ export interface DrawOptions {
     camera: Camera;
 }
 
-export declare type MeshRenderCallback = (renderInfo: { mesh: Mesh; camera?: Camera }) => any;
+export type MeshRenderCallback = (renderInfo: { mesh: Mesh; camera?: Camera }) => any;
 
 export interface RaycastHit {
     localPoint: Vec3;
@@ -34,7 +34,7 @@ export interface RaycastHit {
     normal: Vec3;
 }
 
-export declare class Mesh extends Transform {
+export class Mesh extends Transform {
     gl: OGLRenderingContext;
     id: number;
     geometry: Geometry;

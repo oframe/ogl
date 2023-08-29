@@ -1,8 +1,8 @@
 import type { AttributeData } from '../core/Geometry';
 
-export declare type Vec4Tuple = [x: number, y: number, z: number, w: number];
+export type Vec4Tuple = [x: number, y: number, z: number, w: number];
 
-export declare class Vec4 extends Array<number> {
+export class Vec4 extends Array<number> {
     constructor(x?: number, y?: number, z?: number, w?: number);
     get x(): number;
     get y(): number;

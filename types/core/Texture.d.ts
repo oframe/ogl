@@ -1,6 +1,6 @@
 import type { OGLRenderingContext, RenderState } from './Renderer';
 
-export declare type CompressedImage = {
+export type CompressedImage = {
     isCompressedTexture?: boolean;
 } & {
     data: Uint8Array;
@@ -8,7 +8,7 @@ export declare type CompressedImage = {
     height: number;
 }[];
 
-export declare type ImageRepresentation = HTMLImageElement | HTMLVideoElement | HTMLImageElement[] | ArrayBufferView | CompressedImage;
+export type ImageRepresentation = HTMLImageElement | HTMLVideoElement | HTMLImageElement[] | ArrayBufferView | CompressedImage;
 
 export interface TextureOptions {
     image: ImageRepresentation;
@@ -30,7 +30,7 @@ export interface TextureOptions {
     anisotropy: number;
 }
 
-export declare class Texture {
+export class Texture {
     ext: string;
     gl: OGLRenderingContext;
     id: number;

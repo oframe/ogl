@@ -2,7 +2,7 @@ import type { Quat } from './Quat.js';
 import type { Vec3 } from './Vec3.js';
 import type { AttributeData } from '../core/Geometry.js';
 
-export declare type Mat4Tuple = [
+export type Mat4Tuple = [
     m00: number,
     m01: number,
     m02: number,
@@ -21,7 +21,7 @@ export declare type Mat4Tuple = [
     m33: number,
 ];
 
-export declare class Mat4 extends Array<number> {
+export class Mat4 extends Array<number> {
     constructor(
         m00?: number,
         m01?: number,
