@@ -26,4 +26,34 @@ export * from './math/Vec3';
 export * from './math/Vec4';
 
 // Extras
-// TODO
+export * from './extras/Plane';
+export * from './extras/Box';
+export * from './extras/Sphere';
+export * from './extras/Cylinder';
+export * from './extras/Triangle';
+export * from './extras/Torus';
+export * from './extras/Orbit';
+export * from './extras/Raycast';
+export * from './extras/Curve';
+export * from './extras/path/Path';
+export * from './extras/Tube';
+export * from './extras/Post';
+export * from './extras/Skin';
+export * from './extras/Animation';
+export * from './extras/Text';
+export * from './extras/NormalProgram';
+export * from './extras/Flowmap';
+export * from './extras/GPGPU';
+export * from './extras/Polyline';
+export * from './extras/Shadow';
+export * from './extras/KTXTexture';
+export * from './extras/TextureLoader';
+export * from './extras/GLTFLoader';
+export * from './extras/GLTFSkin';
+export * from './extras/BasisManager';
+export * from './extras/WireMesh';
+export * from './extras/helpers/AxesHelper';
+export * from './extras/helpers/GridHelper';
+export * from './extras/helpers/VertexNormalsHelper';
+export * from './extras/helpers/FaceNormalsHelper';
+export * from './extras/InstancedMesh';
