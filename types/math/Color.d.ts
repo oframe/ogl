@@ -14,23 +14,26 @@ export type ColorRepresentation =
     | string
     | ColorTuple;
 
+/**
+ * Represents a color.
+ * @see {@link https://github.com/oframe/ogl/blob/master/src/math/Color.js | Source}
+ */
 export class Color extends Array<number> {
-    constructor(color: [number, number, number]);
-    constructor(color: number, g: number, b: number);
-    constructor(color: string);
-    constructor(color: 'black' | 'white' | 'red' | 'green' | 'blue' | 'fuchsia' | 'cyan' | 'yellow' | 'orange');
-    constructor(color?: ColorRepresentation);
+    constructor(color?: number | Color | ColorRepresentation, g?: number, b?: number);
+
     get r(): number;
+
     get g(): number;
+
     get b(): number;
+
     set r(v: number);
+
     set g(v: number);
+
     set b(v: number);
-    set(color: [number, number, number]): this;
-    set(color: number, g: number, b: number): this;
-    set(color: string): this;
-    set(color: 'black' | 'white' | 'red' | 'green' | 'blue' | 'fuchsia' | 'cyan' | 'yellow' | 'orange'): this;
-    set(color: number): this;
-    set(color: ColorRepresentation): this;
+
+    set(color?: number | Color | ColorRepresentation, g?: number, b?: number): this;
+
     copy(v: Color): this;
 }

@@ -9,16 +9,15 @@ import type { Geometry } from './Geometry.js';
 import type { Program } from './Program.js';
 import type { Camera } from './Camera.js';
 
-export interface MeshOptions {
-    geometry: Geometry;
-    program: Program;
+export interface MeshOptions<
+    TGeometry extends Geometry = Geometry,
+    TProgram extends Program = Program,
+> {
+    geometry: TGeometry;
+    program: TProgram;
     mode: GLenum;
     frustumCulled: boolean;
     renderOrder: number;
-}
-
-export interface DrawOptions {
-    camera: Camera;
 }
 
 export type MeshRenderCallback = (renderInfo: { mesh: Mesh; camera?: Camera }) => any;
@@ -34,20 +33,35 @@ export interface RaycastHit {
     normal: Vec3;
 }
 
-export class Mesh extends Transform {
+/**
+ * Represents a {@link https://en.wikipedia.org/wiki/Polygon_mesh | polygon mesh}.
+ * @see {@link https://github.com/oframe/ogl/blob/master/src/core/Mesh.js | Source}
+ */
+export class Mesh<
+    TGeometry extends Geometry = Geometry,
+    TProgram extends Program = Program,
+> extends Transform {
     gl: OGLRenderingContext;
     id: number;
-    geometry: Geometry;
-    program: Program;
+    geometry: TGeometry;
+    program: TProgram;
     mode: GLenum;
+
     frustumCulled: boolean;
+
     renderOrder: number;
     modelViewMatrix: Mat4;
     normalMatrix: Mat3;
     beforeRenderCallbacks: MeshRenderCallback[];
     afterRenderCallbacks: MeshRenderCallback[];
-    constructor(gl: OGLRenderingContext, { geometry, program, mode, frustumCulled, renderOrder }?: Partial<MeshOptions>);
+
+    hit?: Partial<RaycastHit>; // Set from raycaster
+
+    constructor(gl: OGLRenderingContext, options?: Partial<MeshOptions>);
+
     onBeforeRender(f: MeshRenderCallback): this;
+
     onAfterRender(f: MeshRenderCallback): this;
-    draw({ camera }?: { camera?: Camera }): void;
+
+    draw(options?: { camera?: Camera }): void;
 }

@@ -3,13 +3,9 @@ import type { OGLRenderingContext, BlendFunc, BlendEquation } from './Renderer';
 export interface ProgramOptions {
     vertex: string;
     fragment: string;
-    uniforms: {
-        [name: string]: {
-            value: any;
-        };
-    };
+    uniforms: Record<string, any>;
     transparent: boolean;
-    cullFace: GLenum | false;
+    cullFace: GLenum | false | null;
     frontFace: GLenum;
     depthTest: boolean;
     depthWrite: boolean;
@@ -25,33 +21,38 @@ export interface UniformInfo extends WebGLActiveInfo {
     structProperty: string;
 }
 
+/**
+ * A WebGL program.
+ * @see {@link https://github.com/oframe/ogl/blob/master/src/core/Program.js | Source}
+ */
 export class Program {
     gl: OGLRenderingContext;
-    uniforms: {
-        [name: string]: {
-            value: any;
-        };
-    };
+    uniforms: Record<string, any>;
     id: number;
+
     transparent: boolean;
-    cullFace: GLenum | false;
+    cullFace: GLenum | false | null;
     frontFace: GLenum;
     depthTest: boolean;
     depthWrite: boolean;
     depthFunc: GLenum;
     blendFunc: BlendFunc;
     blendEquation: BlendEquation;
+
     program: WebGLProgram;
     uniformLocations: Map<UniformInfo, WebGLUniformLocation>;
     attributeLocations: Map<WebGLActiveInfo, GLint>;
     attributeOrder: string;
-    constructor(
-        gl: OGLRenderingContext,
-        { vertex, fragment, uniforms, transparent, cullFace, frontFace, depthTest, depthWrite, depthFunc }?: Partial<ProgramOptions>
-    );
+
+    constructor(gl: OGLRenderingContext, options?: Partial<ProgramOptions>);
+
     setBlendFunc(src: GLenum, dst: GLenum, srcAlpha?: GLenum, dstAlpha?: GLenum): void;
+
     setBlendEquation(modeRGB: GLenum, modeAlpha: GLenum): void;
+
     applyState(): void;
-    use({ flipFaces }?: { flipFaces?: boolean }): void;
+
+    use(options?: { flipFaces?: boolean }): void;
+
     remove(): void;
 }

@@ -21,6 +21,10 @@ export interface RenderTargetOptions {
     premultiplyAlpha: boolean;
 }
 
+/**
+ * A render target.
+ * @see {@link https://github.com/oframe/ogl/blob/master/src/core/RenderTarget.js | Source}
+ */
 export class RenderTarget {
     gl: OGLRenderingContext;
     width: number;
@@ -28,32 +32,15 @@ export class RenderTarget {
     depth: boolean;
     buffer: WebGLFramebuffer;
     target: number;
+
     textures: Texture[];
     texture: Texture;
     depthTexture: Texture;
     depthBuffer: WebGLRenderbuffer;
     stencilBuffer: WebGLRenderbuffer;
     depthStencilBuffer: WebGLRenderbuffer;
-    constructor(
-        gl: OGLRenderingContext,
-        {
-            width,
-            height,
-            target,
-            color, // number of color attachments
-            depth,
-            stencil,
-            depthTexture, // note - stencil breaks
-            wrapS,
-            wrapT,
-            minFilter,
-            magFilter,
-            type,
-            format,
-            internalFormat,
-            unpackAlignment,
-            premultiplyAlpha,
-        }?: Partial<RenderTargetOptions>
-    );
+
+    constructor(gl: OGLRenderingContext, options?: Partial<RenderTargetOptions>);
+
     setSize(width: number, height: number): void;
 }

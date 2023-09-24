@@ -8,7 +8,12 @@ export type CompressedImage = {
     height: number;
 }[];
 
-export type ImageRepresentation = HTMLImageElement | HTMLVideoElement | HTMLImageElement[] | ArrayBufferView | CompressedImage;
+export type ImageRepresentation =
+    | HTMLImageElement
+    | HTMLVideoElement
+    | HTMLImageElement[]
+    | ArrayBufferView
+    | CompressedImage;
 
 export interface TextureOptions {
     image: ImageRepresentation;
@@ -24,39 +29,45 @@ export interface TextureOptions {
     premultiplyAlpha: boolean;
     unpackAlignment: number;
     flipY: boolean;
+    anisotropy: number;
     level: number;
     width: number;
     height: number;
-    anisotropy: number;
 }
 
+/**
+ * A surface, reflection, or refraction map.
+ * @see {@link https://github.com/oframe/ogl/blob/master/src/core/Texture.js | Source}
+ */
 export class Texture {
-    ext: string;
     gl: OGLRenderingContext;
     id: number;
-    name: string;
+
     image?: ImageRepresentation;
     target: number;
     type: number;
     format: number;
     internalFormat: number;
+    minFilter: number;
+    magFilter: number;
     wrapS: number;
     wrapT: number;
     generateMipmaps: boolean;
-    minFilter: number;
-    magFilter: number;
     premultiplyAlpha: boolean;
     unpackAlignment: number;
     flipY: boolean;
+    anisotropy: number;
     level: number;
     width: number;
     height: number;
-    anisotropy: number;
     texture: WebGLTexture;
+
     store: {
         image?: ImageRepresentation | null;
     };
+
     glState: RenderState;
+
     state: {
         minFilter: number;
         magFilter: number;
@@ -64,30 +75,18 @@ export class Texture {
         wrapT: number;
         anisotropy: number;
     };
+
     needsUpdate: boolean;
     onUpdate?: () => void;
-    constructor(
-        gl: OGLRenderingContext,
-        {
-            image,
-            target,
-            type,
-            format,
-            internalFormat,
-            wrapS,
-            wrapT,
-            generateMipmaps,
-            minFilter,
-            magFilter,
-            premultiplyAlpha,
-            unpackAlignment,
-            flipY,
-            anisotropy,
-            level,
-            width, // used for RenderTargets or Data Textures
-            height,
-        }?: Partial<TextureOptions>
-    );
+
+    // Set from texture loader
+    ext?: string;
+    name?: string;
+    loaded?: Promise<Texture>;
+
+    constructor(gl: OGLRenderingContext, options?: Partial<TextureOptions>);
+
     bind(): void;
+
     update(textureUnit?: number): void;
 }

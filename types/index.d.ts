@@ -1,3 +1,10 @@
+// Type definitions for ogl 1.0.0
+// Project: https://github.com/oframe/ogl
+// Definitions by: Xin Chen <https://github.com/nshen>
+//                 Cody Bennett <https://github.com/CodyJasonBennett>
+//                 Patrick Schroen <https://github.com/pschroen>
+// Definitions: https://github.com/oframe/ogl
+
 // Core
 export * from './core/Geometry';
 export * from './core/Program';
