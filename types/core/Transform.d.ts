@@ -82,7 +82,7 @@ export class Transform {
     constructor();
 
     /**
-     * Set the parent.
+     * Sets the parent.
      * @param {Transform | null} parent The parent.
      * @param {boolean} [notifyParent=true] Adds this as a child of the parent.
      */
