@@ -1,8 +1,8 @@
 import { Mesh } from '../core/Mesh.js';
 
 import type { OGLRenderingContext } from '../core/Renderer.js';
-import type { MeshOptions } from '../core/Mesh.js';
 import type { Color } from '../math/Color.js';
+import type { MeshOptions } from '../core/Mesh.js';
 
 export interface WireMeshOptions extends MeshOptions {
     wireColor: Color;
