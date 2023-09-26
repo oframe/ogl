@@ -1,6 +1,6 @@
 import { Vec3 } from '../math/Vec3.js';
 
-import type { Transform } from '../core/Transform.js';
+import type { Camera } from '../core/Camera.js';
 
 export type ZoomStyle = 'dolly' | 'fov';
 
@@ -43,7 +43,7 @@ export class Orbit {
 
     offset: Vec3;
 
-    constructor(object: Transform & { fov: number }, options?: Partial<OrbitOptions>);
+    constructor(object: Camera & { fov: number }, options?: Partial<OrbitOptions>);
 
     update(): void;
 
