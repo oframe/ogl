@@ -5,10 +5,10 @@ const CUBICBEZIER = 'cubicbezier';
 const QUADRATICBEZIER = 'quadraticbezier';
 
 // temp
-const _a0 = new Vec3(),
-    _a1 = new Vec3(),
-    _a2 = new Vec3(),
-    _a3 = new Vec3();
+const _a0 = /* @__PURE__ */ new Vec3(),
+    _a1 = /* @__PURE__ */ new Vec3(),
+    _a2 = /* @__PURE__ */ new Vec3(),
+    _a3 = /* @__PURE__ */ new Vec3();
 
 /**
  * Get the control points of cubic bezier curve.

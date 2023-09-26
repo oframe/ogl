@@ -2,9 +2,9 @@ import { Transform } from './Transform.js';
 import { Mat4 } from '../math/Mat4.js';
 import { Vec3 } from '../math/Vec3.js';
 
-const tempMat4 = new Mat4();
-const tempVec3a = new Vec3();
-const tempVec3b = new Vec3();
+const tempMat4 = /* @__PURE__ */ new Mat4();
+const tempVec3a = /* @__PURE__ */ new Vec3();
+const tempVec3b = /* @__PURE__ */ new Vec3();
 
 export class Camera extends Transform {
     constructor(gl, { near = 0.1, far = 100, fov = 45, aspect = 1, left, right, bottom, top, zoom = 1 } = {}) {

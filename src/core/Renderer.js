@@ -10,7 +10,7 @@ import { Vec3 } from '../math/Vec3.js';
 // gl.stencilOp( stencilFail, stencilZFail, stencilZPass );
 // gl.clearStencil( stencil );
 
-const tempVec3 = new Vec3();
+const tempVec3 = /* @__PURE__ */ new Vec3();
 let ID = 1;
 
 export class Renderer {
