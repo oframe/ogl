@@ -5,7 +5,10 @@
     "type": "module",
     "main": "./src/index.js",
     "exports": {
-        ".": "./src/index.js",
+        ".": {
+            "types": "./types/index.d.ts",
+            "default": "./src/index.js"
+        },
         "./src/*": "./src/*"
     },
     "sideEffects": false,
