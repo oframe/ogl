@@ -43,7 +43,7 @@ export class Orbit {
 
     offset: Vec3;
 
-    constructor(object: Camera & { fov: number }, options?: Partial<OrbitOptions>);
+    constructor(object: Camera, options?: Partial<OrbitOptions>);
 
     update(): void;
 
