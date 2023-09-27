@@ -2,7 +2,6 @@ import type { OGLRenderingContext, RenderState } from './Renderer';
 
 export type CompressedImage = {
     isCompressedTexture?: boolean;
-} & {
     data: Uint8Array;
     width: number;
     height: number;
