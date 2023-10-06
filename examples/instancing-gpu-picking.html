@@ -15,7 +15,7 @@
     <body>
         <div class="Info">Instancing with GPU Picking. Model by Google Poly</div>
         <script type="module">
-            import { Renderer, Camera, RenderTarget, Vec3, Transform, Texture, Program, Box, Mesh, NormalProgram } from '../src/index.js';
+            import { Renderer, Camera, RenderTarget, Vec3, Transform, Program, Box, Mesh, NormalProgram } from '../src/index.js';
 
             const vertex = /* glsl */ `
                 attribute vec2 uv;
@@ -44,18 +44,18 @@
                     vUv = uv;
                     vId = id;
                     vNormal = normal;
-                    
+
                     // copy position so that we can modify the instances
                     vec3 pos = position;
-                    
+
                     // scale first
                     pos *= 0.9 + random.y * 0.2;
-                    
+
                     // rotate around y axis
                     rotate2d(pos.xz, random.x * 6.28 + 4.0 * uTime * (random.y - 0.5));
-                    
+
                     pos += offset;
-                    
+
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
                 }
             `;
@@ -156,7 +156,7 @@
                     mesh.setParent(scene);
 
                     // Create a single non-instanced copy
-                    highlight = new Mesh(gl, { geometry, program: NormalProgram(gl) });
+                    highlight = new Mesh(gl, { geometry, program: new NormalProgram(gl) });
                     highlight.setParent(scene);
                     highlight.visible = false;
                 }
@@ -182,6 +182,7 @@
                 requestAnimationFrame(update);
                 function update(t) {
                     requestAnimationFrame(update);
+
                     if (!mesh) return;
 
                     let time = t * 0.001;

@@ -144,6 +144,7 @@ import { Renderer, Camera, Transform, Box, Program, Mesh } from 'ogl';
 
         mesh.rotation.y -= 0.04;
         mesh.rotation.x += 0.03;
+
         renderer.render({ scene, camera });
     }
 }

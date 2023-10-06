@@ -18,7 +18,8 @@
             <a href="https://sketchfab.com/3d-models/hershel-little-america-f4d7a0ed8af2453e9adc632278c9aa50" target="_blank">VRModelFactory</a>
         </div>
         <script type="module">
-            import { Renderer, Camera, Transform, Orbit, Program, GLTFLoader, GLTFSkin, Vec3, Color, TextureLoader } from '../src/index.js';
+            import { Renderer, Camera, Transform, Orbit, Program, GLTFLoader, Vec3, TextureLoader } from '../src/index.js';
+
             const shader = {
                 vertex: /* glsl */ `
                     attribute vec3 position;
@@ -127,7 +128,7 @@
 
                         gl_Position = projectionMatrix * vMVPos;
                     }
-                    `,
+                `,
 
                 fragment: /* glsl */ `
                     uniform mat4 viewMatrix;
@@ -187,7 +188,7 @@
                     }
 
                     vec3 getNormal() ${`{`}
-                        #ifdef NORMAL_MAP  
+                        #ifdef NORMAL_MAP
                             vec3 pos_dx = dFdx(vMPos.xyz);
                             vec3 pos_dy = dFdy(vMPos.xyz);
                             vec2 tex_dx = dFdx(vUv);
@@ -246,7 +247,7 @@
                         float level0 = floor(blend);
                         float level1 = min(ENV_LODS, level0 + 1.0);
                         blend -= level0;
-                        
+
                         // Sample the specular env map atlas depending on the roughness value
                         vec2 uvSpec = cartesianToPolar(reflection);
                         uvSpec.y /= 2.0;
@@ -265,7 +266,7 @@
                         vec3 specularLight = mix(specular0, specular1, blend);
 
                         diffuse = diffuseLight * diffuseColor;
-                        
+
                         // Bit of extra reflection for smooth materials
                         float reflectivity = pow((1.0 - roughness), 2.0) * 0.05;
                         specular = specularLight * (specularColor * brdf.x + brdf.y + reflectivity);
@@ -318,7 +319,7 @@
 
                         vec3 diffuseContrib = (1.0 - F) * (diffuseColor / PI);
                         vec3 specContrib = F * G * D / (4.0 * NdL * NdV);
-                        
+
                         // Shading based off lights
                         vec3 color = NdL * uLightColor * (diffuseContrib + specContrib);
 
@@ -336,19 +337,19 @@
                         // Add IBL spec to alpha for reflections on transparent surfaces (glass)
                         alpha = max(alpha, max(max(specularIBL.r, specularIBL.g), specularIBL.b));
 
-                        #ifdef OCC_MAP  
+                        #ifdef OCC_MAP
                             // TODO: figure out how to apply occlusion
                             // color *= SRGBtoLinear(texture2D(tOcclusion, vUv)).rgb;
                         #endif
 
-                        #ifdef EMISSIVE_MAP  
+                        #ifdef EMISSIVE_MAP
                             vec3 emissive = SRGBtoLinear(texture2D(tEmissive, vUv)).rgb * uEmissive;
                             color += emissive;
                         #endif
 
                         // Convert to sRGB to display
                         gl_FragColor.rgb = linearToSRGB(color);
-                        
+
                         // Apply uAlpha uniform at the end to overwrite any specular additions on transparent surfaces
                         gl_FragColor.a = alpha * uAlpha;
                     }
@@ -574,7 +575,7 @@
                             uAlphaCutoff: { value: gltf.alphaCutoff },
                         },
                         transparent: gltf.alphaMode === 'BLEND',
-                        cullFace: gltf.doubleSided ? null : gl.BACK,
+                        cullFace: gltf.doubleSided ? false : gl.BACK,
                     });
 
                     return program;
@@ -583,7 +584,6 @@
                 requestAnimationFrame(update);
                 function update() {
                     requestAnimationFrame(update);
-                    controls.update();
 
                     // Play first animation
                     if (gltf && gltf.animations && gltf.animations.length) {
@@ -592,6 +592,7 @@
                         animation.update();
                     }
 
+                    controls.update();
                     renderer.render({ scene, camera, sort: false, frustumCull: false });
                 }
             }

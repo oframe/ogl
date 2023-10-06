@@ -77,7 +77,7 @@ export class GLTFLoader {
         // load main description json
         const desc = await this.parseDesc(src);
 
-        return await this.parse(gl, desc, dir);
+        return this.parse(gl, desc, dir);
     }
 
     static async parse(gl, desc, dir) {
@@ -144,11 +144,11 @@ export class GLTFLoader {
         };
     }
 
-    static async parseDesc(src) {
+    static parseDesc(src) {
         if (!src.match(/\.glb/)) {
-            return await fetch(src).then((res) => res.json());
+            return fetch(src).then((res) => res.json());
         } else {
-            return await fetch(src)
+            return fetch(src)
                 .then((res) => res.arrayBuffer())
                 .then((glb) => this.unpackGLB(glb));
         }
@@ -213,9 +213,9 @@ export class GLTFLoader {
         return dir + uri;
     }
 
-    static async loadBuffers(desc, dir) {
+    static loadBuffers(desc, dir) {
         if (!desc.buffers) return null;
-        return await Promise.all(
+        return Promise.all(
             desc.buffers.map((buffer) => {
                 // For GLB, binary buffer ready to go
                 if (buffer.binary) return buffer.binary;
@@ -290,9 +290,9 @@ export class GLTFLoader {
         return bufferViews;
     }
 
-    static async parseImages(gl, desc, dir, bufferViews) {
+    static parseImages(gl, desc, dir, bufferViews) {
         if (!desc.images) return null;
-        return await Promise.all(
+        return Promise.all(
             desc.images.map(async ({ uri, bufferView: bufferViewIndex, mimeType, name }) => {
                 if (mimeType === 'image/ktx2') {
                     const { data } = bufferViews[bufferViewIndex];

@@ -5,7 +5,7 @@ import { Vec2 } from '../math/Vec2.js';
 import { Vec3 } from '../math/Vec3.js';
 import { Color } from '../math/Color.js';
 
-const tmp = new Vec3();
+const tmp = /* @__PURE__ */ new Vec3();
 
 export class Polyline {
     constructor(

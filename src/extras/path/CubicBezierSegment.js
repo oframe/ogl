@@ -1,8 +1,8 @@
 import BaseSegment from './BaseSegment.js';
 import { Vec3 } from '../../math/Vec3.js';
-import { T_VALUES, C_VALUES } from "./utils.js";
+import { T_VALUES, C_VALUES } from './utils.js';
 
-const tempVec3 = new Vec3();
+const tempVec3 = /* @__PURE__ */ new Vec3();
 
 function cubicBezier(t, p0, p1, p2, p3) {
     const k = 1 - t;
@@ -35,7 +35,7 @@ export default class CubicBezierSegment extends BaseSegment {
 
         this.tiltStart = tiltStart;
         this.tiltEnd = tiltEnd;
-        
+
         this._len = -1;
     }
 

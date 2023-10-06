@@ -15,7 +15,7 @@
     <body>
         <div class="Info">Compressed Textures.</div>
         <script type="module">
-            import { Renderer, Camera, Transform, Texture, Program, Mesh, Plane, Orbit, TextureLoader } from '../src/index.js';
+            import { Renderer, Camera, Transform, Program, Mesh, Plane, Orbit, TextureLoader } from '../src/index.js';
 
             const vertex = /* glsl */ `
                 attribute vec2 uv;
@@ -112,14 +112,14 @@
                     uniforms: {
                         tMap: { value: texture },
                     },
-                    cullFace: null,
+                    cullFace: false,
                 });
 
                 const mesh = new Mesh(gl, { geometry, program });
                 mesh.setParent(scene);
 
                 requestAnimationFrame(update);
-                function update(t) {
+                function update() {
                     requestAnimationFrame(update);
 
                     controls.update();

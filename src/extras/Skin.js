@@ -4,7 +4,7 @@ import { Mat4 } from '../math/Mat4.js';
 import { Texture } from '../core/Texture.js';
 import { Animation } from './Animation.js';
 
-const tempMat4 = new Mat4();
+const tempMat4 = /* @__PURE__ */ new Mat4();
 
 export class Skin extends Mesh {
     constructor(gl, { rig, geometry, program, mode = gl.TRIANGLES } = {}) {

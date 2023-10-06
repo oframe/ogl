@@ -23,7 +23,7 @@
             <a href="https://www.solarsystemscope.com/textures/" target="_blank">Solar System Scope</a>
         </div>
         <script type="module">
-            import { Renderer, Camera, Vec3, Orbit, Sphere, Transform, Geometry, Program, Mesh, Texture } from '../src/index.js';
+            import { Renderer, Camera, Vec3, Orbit, Sphere, Transform, Program, Mesh, Texture } from '../src/index.js';
 
             const VERTEX_SHADER = /* glsl */ `
                 attribute vec2 uv;
@@ -37,7 +37,6 @@
 
                 uniform vec3 u_lightWorldPosition;
                 uniform vec3 cameraPosition;
-                
 
                 varying vec3 v_normal;
                 varying vec3 v_surfaceToLight;
@@ -45,6 +44,7 @@
                 varying vec2 v_uv;
 
                 void main() {
+
                     // Pass UV information to Fragment Shader
                     v_uv = uv;
 
@@ -72,15 +72,14 @@
                 varying vec3 v_surfaceToView;
                 varying vec2 v_uv;
 
-
                 uniform float u_dt;
                 uniform float u_shininess;
                 uniform sampler2D colMap;
                 uniform sampler2D specMap;
                 uniform sampler2D cloudMap;
-                
 
                 void main() {
+
                     // Re-normalize interpolated varyings
                     vec3 normal = normalize(v_normal);
                     vec3 surfaceToLightDirection = normalize(v_surfaceToLight);
@@ -90,10 +89,10 @@
                     // This vector indecates the "brightest point"; A "refrence vector" if you will.
                     vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
 
-                    // Then we can get the brightness at any point by seeing "how similar" 
-                    // the surface normal is to the refrence vector. 
+                    // Then we can get the brightness at any point by seeing "how similar"
+                    // the surface normal is to the refrence vector.
                     float light = dot(normal, surfaceToLightDirection);
-                    
+
                     // By raising the specular vector to a power we can control the intensity
                     // of the light
                     float specular = 0.0;
@@ -112,6 +111,7 @@
 
                     // Add Point Lighting
                     gl_FragColor.rgb *= light;
+
                     // Add Specular Highlights
                     gl_FragColor.rgb += specular * spec;
                 }
@@ -188,12 +188,12 @@
                 });
 
                 requestAnimationFrame(update);
-                function update(dt) {
+                function update(t) {
                     requestAnimationFrame(update);
 
                     mesh.rotation.y += 0.005;
 
-                    program.uniforms.u_dt.value = -dt * 0.00002;
+                    program.uniforms.u_dt.value = -t * 0.00002;
 
                     controls.update();
                     renderer.render({ scene, camera });

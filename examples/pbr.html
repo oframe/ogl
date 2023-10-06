@@ -154,7 +154,7 @@
                     float level0 = floor(blend);
                     float level1 = min(ENV_LODS, level0 + 1.0);
                     blend -= level0;
-                    
+
                     // Sample the specular env map atlas depending on the roughness value
                     vec2 uvSpec = cartesianToPolar(reflection);
                     uvSpec.y /= 2.0;
@@ -173,7 +173,7 @@
                     vec3 specularLight = mix(specular0, specular1, blend);
 
                     diffuse = diffuseLight * diffuseColor;
-                    
+
                     // Bit of extra reflection for smooth materials
                     float reflectivity = pow((1.0 - roughness), 2.0) * 0.05;
                     specular = specularLight * (specularColor * brdf.x + brdf.y + reflectivity);
@@ -213,7 +213,7 @@
 
                     vec3 diffuseContrib = (1.0 - F) * (diffuseColor / PI);
                     vec3 specContrib = F * G * D / (4.0 * NdL * NdV);
-                    
+
                     // Shading based off lights
                     vec3 color = NdL * uLightColor * (diffuseContrib + specContrib);
 
@@ -244,7 +244,7 @@
 
                     // Convert to sRGB to display
                     gl_FragColor.rgb = linearToSRGB(color);
-                    
+
                     // Apply uAlpha uniform at the end to overwrite any specular additions on transparent surfaces
                     gl_FragColor.a = alpha * uAlpha;
                 }
@@ -385,7 +385,7 @@
                     float level0 = floor(blend);
                     float level1 = min(ENV_LODS, level0 + 1.0);
                     blend -= level0;
-                    
+
                     // Sample the specular env map atlas depending on the roughness value
                     vec2 uvSpec = cartesianToPolar(reflection);
                     uvSpec.y /= 2.0;
@@ -404,7 +404,7 @@
                     vec3 specularLight = mix(specular0, specular1, blend);
 
                     diffuse = diffuseLight * diffuseColor;
-                    
+
                     // Bit of extra reflection for smooth materials
                     float reflectivity = pow((1.0 - roughness), 2.0) * 0.05;
                     specular = specularLight * (specularColor * brdf.x + brdf.y + reflectivity);
@@ -444,7 +444,7 @@
 
                     vec3 diffuseContrib = (1.0 - F) * (diffuseColor / PI);
                     vec3 specContrib = F * G * D / (4.0 * NdL * NdV);
-                    
+
                     // Shading based off lights
                     vec3 color = NdL * uLightColor * (diffuseContrib + specContrib);
 
@@ -475,7 +475,7 @@
 
                     // Convert to sRGB to display
                     FragColor.rgb = linearToSRGB(color);
-                    
+
                     // Apply uAlpha uniform at the end to overwrite any specular additions on transparent surfaces
                     FragColor.a = alpha * uAlpha;
                 }
@@ -494,7 +494,7 @@
 
                 void main() {
                     vUv = uv;
-                    
+
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                 }
             `;
@@ -508,7 +508,7 @@
 
                 void main() {
                     float shadow = texture2D(tMap, vUv).g;
-                    
+
                     gl_FragColor.rgb = vec3(0.0);
                     gl_FragColor.a = shadow;
                 }
@@ -723,6 +723,7 @@
                     requestAnimationFrame(update);
 
                     scene.rotation.y += 0.005;
+
                     controls.update();
                     renderer.render({ scene, camera });
                 }

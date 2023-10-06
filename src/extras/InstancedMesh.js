@@ -55,7 +55,7 @@ export class InstancedMesh extends Mesh {
             // update instanceMatrix and instancedCount with visible
             this.instanceRenderList.forEach((transform, i) => {
                 transform.matrix.toArray(this.geometry.attributes.instanceMatrix.data, i * 16);
-                
+
                 // Update lightmap attr
                 if (transform.lightmapData) {
                     transform.lightmapData.toArray(this.geometry.attributes.lightmapScaleOffset.data, i * 4);

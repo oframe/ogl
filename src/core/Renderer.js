@@ -10,7 +10,7 @@ import { Vec3 } from '../math/Vec3.js';
 // gl.stencilOp( stencilFail, stencilZFail, stencilZPass );
 // gl.clearStencil( stencil );
 
-const tempVec3 = new Vec3();
+const tempVec3 = /* @__PURE__ */ new Vec3();
 let ID = 1;
 
 export class Renderer {
@@ -55,7 +55,7 @@ export class Renderer {
         this.state = {};
         this.state.blendFunc = { src: this.gl.ONE, dst: this.gl.ZERO };
         this.state.blendEquation = { modeRGB: this.gl.FUNC_ADD };
-        this.state.cullFace = null;
+        this.state.cullFace = false;
         this.state.frontFace = this.gl.CCW;
         this.state.depthMask = true;
         this.state.depthFunc = this.gl.LESS;

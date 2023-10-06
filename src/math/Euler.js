@@ -1,7 +1,7 @@
 import * as EulerFunc from './functions/EulerFunc.js';
 import { Mat4 } from './Mat4.js';
 
-const tmpMat4 = new Mat4();
+const tmpMat4 = /* @__PURE__ */ new Mat4();
 
 export class Euler extends Array {
     constructor(x = 0, y = x, z = x, order = 'YXZ') {

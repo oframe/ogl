@@ -4,11 +4,11 @@ import { Geometry } from '../../core/Geometry.js';
 import { Vec3 } from '../../math/Vec3.js';
 import { Mat3 } from '../../math/Mat3.js';
 
-const vA = new Vec3();
-const vB = new Vec3();
-const vC = new Vec3();
-const vCenter = new Vec3();
-const vNormal = new Vec3();
+const vA = /* @__PURE__ */ new Vec3();
+const vB = /* @__PURE__ */ new Vec3();
+const vC = /* @__PURE__ */ new Vec3();
+const vCenter = /* @__PURE__ */ new Vec3();
+const vNormal = /* @__PURE__ */ new Vec3();
 
 export class FaceNormalsHelper extends Mesh {
     constructor(object, { size = 0.1, color = new Vec3(0.15, 0.86, 0.86), ...meshProps } = {}) {
@@ -47,7 +47,7 @@ export class FaceNormalsHelper extends Mesh {
 
             normalsArray.set(vNormal, i2);
             normalsArray.set(vNormal, i2 + 3);
-            sizeArray.set(sizeData, i / 3 * 2);
+            sizeArray.set(sizeData, (i / 3) * 2);
         }
 
         const geometry = new Geometry(gl, {
