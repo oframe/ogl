@@ -1,15 +1,15 @@
 import { Vec3 } from '../math/Vec3.js';
 import { Quat } from '../math/Quat.js';
 
-const tmpVec3A = new Vec3();
-const tmpVec3B = new Vec3();
-const tmpVec3C = new Vec3();
-const tmpVec3D = new Vec3();
+const tmpVec3A = /* @__PURE__ */ new Vec3();
+const tmpVec3B = /* @__PURE__ */ new Vec3();
+const tmpVec3C = /* @__PURE__ */ new Vec3();
+const tmpVec3D = /* @__PURE__ */ new Vec3();
 
-const tmpQuatA = new Quat();
-const tmpQuatB = new Quat();
-const tmpQuatC = new Quat();
-const tmpQuatD = new Quat();
+const tmpQuatA = /* @__PURE__ */ new Quat();
+const tmpQuatB = /* @__PURE__ */ new Quat();
+const tmpQuatC = /* @__PURE__ */ new Quat();
+const tmpQuatD = /* @__PURE__ */ new Quat();
 
 export class GLTFAnimation {
     constructor(data, weight = 1) {

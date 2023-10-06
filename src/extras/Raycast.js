@@ -5,23 +5,23 @@ import { Vec2 } from '../math/Vec2.js';
 import { Vec3 } from '../math/Vec3.js';
 import { Mat4 } from '../math/Mat4.js';
 
-const tempVec2a = new Vec2();
-const tempVec2b = new Vec2();
-const tempVec2c = new Vec2();
+const tempVec2a = /* @__PURE__ */ new Vec2();
+const tempVec2b = /* @__PURE__ */ new Vec2();
+const tempVec2c = /* @__PURE__ */ new Vec2();
 
-const tempVec3a = new Vec3();
-const tempVec3b = new Vec3();
-const tempVec3c = new Vec3();
-const tempVec3d = new Vec3();
-const tempVec3e = new Vec3();
-const tempVec3f = new Vec3();
-const tempVec3g = new Vec3();
-const tempVec3h = new Vec3();
-const tempVec3i = new Vec3();
-const tempVec3j = new Vec3();
-const tempVec3k = new Vec3();
+const tempVec3a = /* @__PURE__ */ new Vec3();
+const tempVec3b = /* @__PURE__ */ new Vec3();
+const tempVec3c = /* @__PURE__ */ new Vec3();
+const tempVec3d = /* @__PURE__ */ new Vec3();
+const tempVec3e = /* @__PURE__ */ new Vec3();
+const tempVec3f = /* @__PURE__ */ new Vec3();
+const tempVec3g = /* @__PURE__ */ new Vec3();
+const tempVec3h = /* @__PURE__ */ new Vec3();
+const tempVec3i = /* @__PURE__ */ new Vec3();
+const tempVec3j = /* @__PURE__ */ new Vec3();
+const tempVec3k = /* @__PURE__ */ new Vec3();
 
-const tempMat4 = new Mat4();
+const tempMat4 = /* @__PURE__ */ new Mat4();
 
 export class Raycast {
     constructor() {

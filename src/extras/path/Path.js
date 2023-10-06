@@ -5,8 +5,8 @@ import QuadraticBezierSegment from './QuadraticBezierSegment.js';
 import LineSegment from './LineSegment.js';
 import { clamp, toDegrees, toRadian, mat4fromRotationSinCos, rotateNormalBinormal } from './utils.js';
 
-const tempVec3 = new Vec3();
-const tempMat4 = new Mat4();
+const tempVec3 = /* @__PURE__ */ new Vec3();
+const tempMat4 = /* @__PURE__ */ new Mat4();
 
 function throwIfNullProperty(property, message) {
     if (this[property] == null) throw new Error(message);
