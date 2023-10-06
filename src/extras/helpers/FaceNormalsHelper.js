@@ -47,7 +47,7 @@ export class FaceNormalsHelper extends Mesh {
 
             normalsArray.set(vNormal, i2);
             normalsArray.set(vNormal, i2 + 3);
-            sizeArray.set(sizeData, i / 3 * 2);
+            sizeArray.set(sizeData, (i / 3) * 2);
         }
 
         const geometry = new Geometry(gl, {

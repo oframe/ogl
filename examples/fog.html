@@ -38,28 +38,28 @@
 
                 void main() {
                     vUv = uv;
-                    
+
                     // copy position so that we can modify the instances
                     vec3 pos = position;
-                    
+
                     // scale first
                     pos *= 0.8 + random.y * 0.3;
-                    
+
                     // pass scaled object position to fragment to add low-lying fog
                     vPos = pos;
-                    
+
                     // rotate around Y axis
                     rotate2d(pos.xz, random.x * 6.28);
-                    
+
                     // add position offset
                     pos += offset;
-                    
+
                     // add some hilliness to vary the height
                     pos.y += sin(pos.x * 0.5) * sin(pos.z * 0.5) * 0.5;
-                    
-                    // pass model view position to fragment shader to get distance from camera 
+
+                    // pass model view position to fragment shader to get distance from camera
                     vMVPos = modelViewMatrix * vec4(pos, 1.0);
-                    
+
                     gl_Position = projectionMatrix * vMVPos;
                 }
             `;
@@ -79,15 +79,15 @@
 
                 void main() {
                     vec3 tex = texture2D(tMap, vUv).rgb;
-                    
+
                     // add the fog relative to the distance from the camera
                     float dist = length(vMVPos);
                     float fog = smoothstep(uFogNear, uFogFar, dist);
                     tex = mix(tex, uFogColor, fog);
-                    
-                    // add some fog along the height of each tree to simulate low-lying fog 
-                    tex = mix(tex, uFogColor, smoothstep(1.0, 0.0, vPos.y)); 
-                    
+
+                    // add some fog along the height of each tree to simulate low-lying fog
+                    tex = mix(tex, uFogColor, smoothstep(1.0, 0.0, vPos.y));
+
                     gl_FragColor.rgb = tex;
                     gl_FragColor.a = 1.0;
                 }
@@ -167,6 +167,7 @@
                         mesh.rotation.y += 0.003;
                         mesh.position.z = Math.sin(t * 0.0004) * 3.0;
                     }
+
                     program.uniforms.uTime.value = t * 0.001;
                     renderer.render({ scene, camera });
                 }

@@ -17,7 +17,7 @@
             Skydome. Image credit <a href="https://www.flickr.com/photos/charlesashaw/6264765128" target="_blank">charlesashaw</a>.
         </div>
         <script type="module">
-            import { Renderer, Geometry, Program, Mesh, Camera, Transform, Texture, Sphere, Orbit } from '../src/index.js';
+            import { Renderer, Program, Mesh, Camera, Transform, Texture, Sphere, Orbit } from '../src/index.js';
 
             const vertex = /* glsl */ `
                 attribute vec2 uv;
@@ -44,7 +44,7 @@
 
                 void main() {
                     vec3 tex = texture2D(tMap, vUv).rgb;
-                    
+
                     gl_FragColor.rgb = tex;
                     gl_FragColor.a = 1.0;
                 }
@@ -90,7 +90,7 @@
                     },
 
                     // Need inside of sphere to be visible
-                    cullFace: null,
+                    cullFace: false,
                 });
 
                 // A smaller sphere in the center just to help illustrate

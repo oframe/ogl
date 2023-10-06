@@ -14,7 +14,7 @@ export class Shadow {
         this.depthProgram = new Program(gl, {
             vertex: defaultVertex,
             fragment: defaultFragment,
-            cullFace: null,
+            cullFace: false,
         });
 
         this.castMeshes = [];
@@ -56,7 +56,7 @@ export class Shadow {
         mesh.depthProgram = new Program(this.gl, {
             vertex,
             fragment,
-            cullFace: null,
+            cullFace: false,
         });
     }
 

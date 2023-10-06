@@ -24,7 +24,7 @@
             </div>
         </div>
         <script type="module">
-            import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Box, Orbit } from '../src/index.js';
+            import { Renderer, Camera, Transform, Texture, Program, Mesh, Box, Orbit } from '../src/index.js';
 
             const vertex = /* glsl */ `
                 attribute vec3 position;
@@ -36,7 +36,7 @@
 
                 void main() {
                     vDir = normalize(position);
-                    
+
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                 }
             `;
@@ -53,7 +53,7 @@
 
                     // sample function is textureCube rather than texture2D
                     vec3 tex = textureCube(tMap, vDir).rgb;
-                    
+
                     gl_FragColor.rgb = tex;
                     gl_FragColor.a = 1.0;
                 }
@@ -127,7 +127,7 @@
                     uniforms: {
                         tMap: { value: texture },
                     },
-                    cullFace: null,
+                    cullFace: false,
                 });
 
                 const skybox = new Mesh(gl, { geometry, program });
@@ -138,12 +138,12 @@
                 mesh.setParent(scene);
 
                 requestAnimationFrame(update);
-                function update(t) {
+                function update() {
                     requestAnimationFrame(update);
 
-                    controls.update();
-
                     mesh.rotation.y += 0.003;
+
+                    controls.update();
                     renderer.render({ scene, camera });
                 }
             }

@@ -64,6 +64,7 @@
                 varying vec2 vUv;
 
                 void main() {
+
                     // Swap with blur9 for higher quality
                     // gl_FragColor = blur9(tMap, vUv, uResolution, uDirection);
                     gl_FragColor = blur5(tMap, vUv, uResolution, uDirection);
@@ -104,7 +105,7 @@
                 const resolution = { value: new Vec2() };
                 const bloomResolution = { value: new Vec2() };
 
-                const scene = new Transform(gl);
+                const scene = new Transform();
 
                 let mesh;
                 // Store this so we can toggle it on and off during render phase
@@ -137,7 +138,7 @@
                             varying vec2 vUv;
 
                             void main() {
-                            gl_FragColor = vec4(vUv, 1.0, 1.0);
+                                gl_FragColor = vec4(vUv, 1.0, 1.0);
                             }
                         `,
                     });
@@ -217,7 +218,7 @@
 
                     // This render the bloom effect's bright and blur passes to postBloom.fbo.read
                     // Passing in a `texture` argument avoids the post initially rendering the scene
-                    postBloom.render({ texture: postComposite.uniform.value, targetOnly: true });
+                    postBloom.render({ texture: postComposite.uniform.value });
 
                     // Re-enable composite pass
                     compositePass.enabled = true;
