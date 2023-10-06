@@ -12,6 +12,7 @@ export class Transform {
         this.matrix = new Mat4();
         this.worldMatrix = new Mat4();
         this.matrixAutoUpdate = true;
+        this.worldMatrixNeedsUpdate = false;
 
         this.position = new Vec3();
         this.quaternion = new Quat();
