@@ -2,7 +2,7 @@ import BaseSegment from './BaseSegment.js';
 import { Vec3 } from '../../math/Vec3.js';
 import { T_VALUES, C_VALUES } from "./utils.js";
 
-const tempVec3 = new Vec3();
+const tempVec3 = /* @__PURE__ */ new Vec3();
 
 function quadraticBezier(t, p0, p1, p2) {
     const k = 1 - t;

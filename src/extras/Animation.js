@@ -1,13 +1,13 @@
 import { Vec3 } from '../math/Vec3.js';
 import { Quat } from '../math/Quat.js';
 
-const prevPos = new Vec3();
-const prevRot = new Quat();
-const prevScl = new Vec3();
+const prevPos = /* @__PURE__ */ new Vec3();
+const prevRot = /* @__PURE__ */ new Quat();
+const prevScl = /* @__PURE__ */ new Vec3();
 
-const nextPos = new Vec3();
-const nextRot = new Quat();
-const nextScl = new Vec3();
+const nextPos = /* @__PURE__ */ new Vec3();
+const nextRot = /* @__PURE__ */ new Quat();
+const nextScl = /* @__PURE__ */ new Vec3();
 
 export class Animation {
     constructor({ objects, data }) {

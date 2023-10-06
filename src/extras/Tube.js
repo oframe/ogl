@@ -3,10 +3,10 @@ import { Vec3 } from '../math/Vec3.js';
 import { Vec2 } from '../math/Vec2.js';
 
 // helper variables
-const vertex = new Vec3();
-const normal = new Vec3();
-const uv = new Vec2();
-const point = new Vec3();
+const vertex = /* @__PURE__ */ new Vec3();
+const normal = /* @__PURE__ */ new Vec3();
+const uv = /* @__PURE__ */ new Vec2();
+const point = /* @__PURE__ */ new Vec3();
 
 export class Tube extends Geometry {
     constructor(gl, { path, radius = 1, tubularSegments = 64, radialSegments = 8, closed = false, attributes = {} } = {}) {

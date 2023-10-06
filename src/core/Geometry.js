@@ -18,7 +18,7 @@
 
 import { Vec3 } from '../math/Vec3.js';
 
-const tempVec3 = new Vec3();
+const tempVec3 = /* @__PURE__ */ new Vec3();
 
 let ID = 1;
 let ATTR_ID = 1;

@@ -2,7 +2,7 @@ import BaseSegment from './BaseSegment.js';
 import { Vec3 } from '../../math/Vec3.js';
 import { lerp as lerp3 } from '../../math/functions/Vec3Func.js';
 
-const tempVec3 = new Vec3();
+const tempVec3 = /* @__PURE__ */ new Vec3();
 
 export default class LineSegment extends BaseSegment {
     constructor(p0, p1, tiltStart = 0, tiltEnd = 0) {
