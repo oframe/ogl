@@ -28,7 +28,7 @@
 
                 void main() {
                     vUv = uv;
-                    
+
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                 }
             `;
@@ -96,19 +96,19 @@
                 const scene = new Transform();
 
                 /*
-            
-            Instructions to generate necessary MSDF assets
 
-            Install msdf-bmfont https://github.com/soimy/msdf-bmfont-xml
-            `npm install msdf-bmfont-xml -g`
+                Instructions to generate necessary MSDF assets
 
-            Then, using a font .ttf file, run the following (using 'FiraSans-Bold.ttf' as example)
+                Install msdf-bmfont https://github.com/soimy/msdf-bmfont-xml
+                `npm install msdf-bmfont-xml -g`
 
-            `msdf-bmfont -f json -m 512,512 -d 2 --pot --smart-size FiraSans-Bold.ttf`
+                Then, using a font .ttf file, run the following (using 'FiraSans-Bold.ttf' as example)
 
-            Outputs a .png bitmap spritesheet and a .json with character parameters.
+                `msdf-bmfont -f json -m 512,512 -d 2 --pot --smart-size FiraSans-Bold.ttf`
 
-            */
+                Outputs a .png bitmap spritesheet and a .json with character parameters.
+
+                */
 
                 const texture = new Texture(gl, {
                     generateMipmaps: false,
@@ -125,7 +125,7 @@
                         tMap: { value: texture },
                     },
                     transparent: true,
-                    cullFace: null,
+                    cullFace: false,
                     depthWrite: false,
                 });
 
@@ -162,6 +162,7 @@
                 requestAnimationFrame(update);
                 function update(t) {
                     requestAnimationFrame(update);
+
                     controls.update();
                     renderer.render({ scene, camera });
                 }

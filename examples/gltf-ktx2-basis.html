@@ -27,19 +27,8 @@
             // and then use it to compress the textures
             // gltf-transform etc1s scene.glb scene-compressed.glb
 
-            import {
-                Renderer,
-                Camera,
-                Transform,
-                Orbit,
-                Program,
-                BasisManager,
-                GLTFLoader,
-                GLTFSkin,
-                Vec3,
-                Color,
-                TextureLoader,
-            } from '../src/index.js';
+            import { Renderer, Camera, Transform, Orbit, Program, BasisManager, GLTFLoader, Vec3, TextureLoader } from '../src/index.js';
+
             const shader = {
                 vertex: /* glsl */ `
                     attribute vec3 position;
@@ -148,7 +137,7 @@
 
                         gl_Position = projectionMatrix * vMVPos;
                     }
-                    `,
+                `,
 
                 fragment: /* glsl */ `
                     uniform mat4 viewMatrix;
@@ -599,7 +588,7 @@
                             uAlphaCutoff: { value: gltf.alphaCutoff },
                         },
                         transparent: gltf.alphaMode === 'BLEND',
-                        cullFace: gltf.doubleSided ? null : gl.BACK,
+                        cullFace: gltf.doubleSided ? false : gl.BACK,
                     });
 
                     return program;
@@ -608,7 +597,6 @@
                 requestAnimationFrame(update);
                 function update() {
                     requestAnimationFrame(update);
-                    controls.update();
 
                     // Play first animation
                     if (gltf && gltf.animations && gltf.animations.length) {
@@ -617,6 +605,7 @@
                         animation.update();
                     }
 
+                    controls.update();
                     renderer.render({ scene, camera, sort: false, frustumCull: false });
                 }
             }

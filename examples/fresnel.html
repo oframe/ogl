@@ -113,10 +113,10 @@
                 requestAnimationFrame(update);
                 function update() {
                     requestAnimationFrame(update);
+
                     torus.rotation.x += 0.01;
 
                     controls.update();
-
                     renderer.render({ scene, camera });
                 }
             }

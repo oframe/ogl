@@ -36,10 +36,10 @@
                     vec2 aspect = vec2(uResolution.x / uResolution.y, 1);
                     vec2 nextScreen = next.xy * aspect;
                     vec2 prevScreen = prev.xy * aspect;
-                
+
                     // Calculate the tangent direction
                     vec2 tangent = normalize(nextScreen - prevScreen);
-                
+
                     // Rotate 90 degrees to get the normal
                     vec2 normal = vec2(-tangent.y, tangent.x);
                     normal /= aspect;
@@ -55,7 +55,7 @@
                     float pixelWidth = current.w * pixelWidthRatio;
                     normal *= pixelWidth * uThickness;
                     current.xy -= normal * side;
-                
+
                     return current;
                 }
 

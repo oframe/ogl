@@ -15,7 +15,7 @@
     <body>
         <div class="Info">Render to texture</div>
         <script type="module">
-            import { Renderer, Camera, Transform, Texture, RenderTarget, Program, Mesh, Box } from '../src/index.js';
+            import { Renderer, Camera, Texture, RenderTarget, Program, Mesh, Box } from '../src/index.js';
 
             const vertex = /* glsl */ `
                 attribute vec3 position;
@@ -32,7 +32,7 @@
                 void main() {
                     vUv = uv;
                     vNormal = normalize(normalMatrix * normal);
-                    
+
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                 }
             `;

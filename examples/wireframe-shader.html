@@ -15,7 +15,7 @@
     <body>
         <div class="Info">Wireframe Shader. Model by Google Poly</div>
         <script type="module">
-            import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Vec3, Orbit } from '../src/index.js';
+            import { Renderer, Camera, Transform, Program, Geometry, Mesh, Vec3, Orbit } from '../src/index.js';
 
             const vertex100 = /* glsl */ `
                 attribute vec3 position;
@@ -133,7 +133,7 @@
                     vertex: renderer.isWebgl2 ? vertex300 : vertex100,
                     fragment: renderer.isWebgl2 ? fragment300 : fragment100,
                     transparent: true,
-                    cullFace: null,
+                    cullFace: false,
                     depthTest: false,
                 });
 
@@ -169,8 +169,8 @@
                 function update() {
                     requestAnimationFrame(update);
 
-                    controls.update();
                     if (mesh) mesh.rotation.y += 0.005;
+                    controls.update();
                     renderer.render({ scene, camera });
                 }
             }

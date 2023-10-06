@@ -77,7 +77,7 @@
                     fragment,
 
                     // Don't cull faces so that plane is double sided - default is gl.BACK
-                    cullFace: null,
+                    cullFace: false,
                 });
 
                 const plane = new Mesh(gl, { geometry: planeGeometry, program });
@@ -99,13 +99,13 @@
                 requestAnimationFrame(update);
                 function update() {
                     requestAnimationFrame(update);
-                    controls.update();
 
                     plane.rotation.y -= 0.02;
                     sphere.rotation.y -= 0.03;
                     cube.rotation.y -= 0.04;
                     cylinder.rotation.y -= 0.02;
 
+                    controls.update();
                     renderer.render({ scene, camera });
                 }
             }

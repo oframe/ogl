@@ -79,10 +79,10 @@
                     vec3 tex = texture2D(tDiffuse, vUv).rgb;
 
                     vec3 normal = getNormal();
-                    
+
                     vec3 light = normalize(vec3(sin(uTime), 1.0, cos(uTime)));
                     float shading = dot(normal, light) * 0.5;
-                    
+
                     gl_FragColor.rgb = tex + shading;
                     gl_FragColor.a = 1.0;
                 }
@@ -150,10 +150,10 @@
                     vec3 tex = texture(tDiffuse, vUv).rgb;
 
                     vec3 normal = getNormal();
-                    
+
                     vec3 light = normalize(vec3(sin(uTime), 1.0, cos(uTime)));
                     float shading = dot(normal, light) * 0.5;
-                    
+
                     FragColor.rgb = tex + shading;
                     FragColor.a = 1.0;
                 }
@@ -219,9 +219,10 @@
                 requestAnimationFrame(update);
                 function update(t) {
                     requestAnimationFrame(update);
-                    controls.update();
 
                     program.uniforms.uTime.value = t * 0.001;
+
+                    controls.update();
                     renderer.render({ scene, camera });
                 }
             }

@@ -15,7 +15,7 @@
     <body>
         <div class="Info">Post FXAA (Fast Approximate Anti-Aliasing)</div>
         <script type="module">
-            import { Renderer, Camera, Program, Mesh, Vec2, Post, Box, NormalProgram } from '../src/index.js';
+            import { Renderer, Camera, Mesh, Vec2, Post, Box, NormalProgram } from '../src/index.js';
 
             const fragment = /* glsl */ `
                 precision highp float;
@@ -40,16 +40,16 @@
                     float lM  = dot(texture2D(tex, uv).rgb, l);
                     float lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
                     float lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
-                    
+
                     vec2 dir = vec2(
                         -((lNW + lNE) - (lSW + lSE)),
                         ((lNW + lSW) - (lNE + lSE))
                     );
-                    
+
                     float dirReduce = max((lNW + lNE + lSW + lSE) * 0.03125, 0.0078125);
                     float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
                     dir = min(vec2(8, 8), max(vec2(-8, -8), dir * rcpDirMin)) * pixel;
-                    
+
                     vec3 rgbA = 0.5 * (
                         texture2D(tex, uv + dir * (1.0 / 3.0 - 0.5)).rgb +
                         texture2D(tex, uv + dir * (2.0 / 3.0 - 0.5)).rgb);

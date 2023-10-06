@@ -82,12 +82,12 @@
                 requestAnimationFrame(update);
                 function update() {
                     requestAnimationFrame(update);
+
                     torus.rotation.x += 0.001;
                     torus.rotation.y += 0.005;
                     torus.rotation.z += 0.003;
 
                     controls.update();
-
                     renderer.render({ scene, camera });
                 }
             }

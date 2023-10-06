@@ -76,7 +76,7 @@
                 const program = new Program(gl, {
                     vertex,
                     fragment,
-                    cullFace: null,
+                    cullFace: false,
                     uniforms: {
                         uHit: { value: 0 },
                     },
@@ -105,15 +105,15 @@
                 requestAnimationFrame(update);
                 function update() {
                     requestAnimationFrame(update);
-                    orbit.update();
 
+                    orbit.update();
                     renderer.render({ scene, camera });
                 }
 
                 const mouse = new Vec2();
 
                 // Create a raycast object
-                const raycast = new Raycast(gl);
+                const raycast = new Raycast();
 
                 // Define an array of the meshes we want to test our ray against
                 const meshes = [plane, sphere, cube];

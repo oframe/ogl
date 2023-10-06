@@ -74,7 +74,7 @@
                     fragment,
 
                     // Don't cull faces so that plane is double sided - default is gl.BACK
-                    cullFace: null,
+                    cullFace: false,
                 });
 
                 const sphere = new Mesh(gl, { geometry: sphereGeometry, program });
@@ -117,8 +117,8 @@
                 });
 
                 for (let i = 0; i <= 60; i++) {
-                    const p = [polyline, polyline2, polyline3][i % 3];
-                    const mesh = new Mesh(gl, { geometry: p.geometry, program: p.program });
+                    const { geometry, program } = [polyline, polyline2, polyline3][i % 3];
+                    const mesh = new Mesh(gl, { geometry, program });
                     mesh.setParent(sphere);
                     mesh.rotation.y = (i * Math.PI) / 60;
                 }
@@ -126,7 +126,9 @@
                 requestAnimationFrame(update);
                 function update() {
                     requestAnimationFrame(update);
+
                     sphere.rotation.y -= 0.01;
+
                     controls.update();
                     renderer.render({ scene, camera });
                 }

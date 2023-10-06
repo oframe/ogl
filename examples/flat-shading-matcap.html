@@ -59,7 +59,7 @@
 
                     // We're using the matcap to add some shininess to the model
                     float mat = texture2D(tMap, matcap(normalize(vMVPos.xyz), normal)).g;
-                    
+
                     gl_FragColor.rgb = normal + mat;
                     gl_FragColor.a = 1.0;
                 }
@@ -122,7 +122,7 @@
                     uniforms: {
                         tMap: { value: texture },
                     },
-                    cullFace: null,
+                    cullFace: false,
                 });
 
                 loadModel();
