@@ -11,7 +11,6 @@ export class GLTFSkin extends Mesh {
         this.skeleton = skeleton;
         this.program = program;
         this.createBoneTexture();
-        // this.animations = [];
     }
 
     createBoneTexture() {
@@ -31,23 +30,6 @@ export class GLTFSkin extends Mesh {
         });
     }
 
-    // addAnimation(data) {
-    //     const animation = new Animation({ objects: this.bones, data });
-    //     this.animations.push(animation);
-    //     return animation;
-    // }
-
-    // updateAnimations() {
-    //     // Calculate combined animation weight
-    //     let total = 0;
-    //     this.animations.forEach((animation) => (total += animation.weight));
-
-    //     this.animations.forEach((animation, i) => {
-    //         // force first animation to set in order to reset frame
-    //         animation.update(total, i === 0);
-    //     });
-    // }
-
     updateUniforms() {
         // Update bone texture
         this.skeleton.joints.forEach((bone, i) => {
@@ -55,7 +37,10 @@ export class GLTFSkin extends Mesh {
             tempMat4.multiply(bone.worldMatrix, bone.bindInverse);
             this.boneMatrices.set(tempMat4, i * 16);
         });
-        if (this.boneTexture) this.boneTexture.needsUpdate = true;
+        this.boneTexture.needsUpdate = true;
+        // Reset for programs shared between multiple skins
+        this.program.uniforms.boneTexture.value = this.boneTexture;
+        this.program.uniforms.boneTextureSize.value = this.boneTextureSize;
     }
 
     draw({ camera } = {}) {
