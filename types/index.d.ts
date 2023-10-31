@@ -50,6 +50,7 @@ export * from './extras/KTXTexture';
 export * from './extras/TextureLoader';
 export * from './extras/GLTFLoader';
 export * from './extras/GLTFSkin';
+export * from './extras/GLTFAnimation';
 export * from './extras/BasisManager';
 export * from './extras/WireMesh';
 export * from './extras/helpers/AxesHelper';
