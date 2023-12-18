@@ -99,7 +99,7 @@ export interface GLTF {
     nodes: (InstancedMesh | Mesh)[];
     lights: GLTFLights;
     animations: GLTFAnimationReference[];
-    scenes: Transform[];
+    scenes: Transform[][];
     scene: Transform[];
 }
 
