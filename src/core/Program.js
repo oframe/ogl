@@ -47,41 +47,48 @@ export class Program {
             else this.setBlendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
         }
 
-        // compile vertex shader and log errors
-        const vertexShader = gl.createShader(gl.VERTEX_SHADER);
-        gl.shaderSource(vertexShader, vertex);
-        gl.compileShader(vertexShader);
-        if (gl.getShaderInfoLog(vertexShader) !== '') {
-            console.warn(`${gl.getShaderInfoLog(vertexShader)}\nVertex Shader\n${addLineNumbers(vertex)}`);
+        // Create empty shaders and attach to program
+        this.vertexShader = gl.createShader(gl.VERTEX_SHADER);
+        this.fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+        this.program = gl.createProgram();
+        gl.attachShader(this.program, this.vertexShader);
+        gl.attachShader(this.program, this.fragmentShader);
+
+        // Compile shaders with source
+        this.setShaders({ vertex, fragment });
+    }
+
+    setShaders({ vertex, fragment }) {
+        if (vertex) {
+            // compile vertex shader and log errors
+            this.gl.shaderSource(this.vertexShader, vertex);
+            this.gl.compileShader(this.vertexShader);
+            if (this.gl.getShaderInfoLog(this.vertexShader) !== '') {
+                console.warn(`${this.gl.getShaderInfoLog(this.vertexShader)}\nVertex Shader\n${addLineNumbers(vertex)}`);
+            }
         }
 
-        // compile fragment shader and log errors
-        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-        gl.shaderSource(fragmentShader, fragment);
-        gl.compileShader(fragmentShader);
-        if (gl.getShaderInfoLog(fragmentShader) !== '') {
-            console.warn(`${gl.getShaderInfoLog(fragmentShader)}\nFragment Shader\n${addLineNumbers(fragment)}`);
+        if (fragment) {
+            // compile fragment shader and log errors
+            this.gl.shaderSource(this.fragmentShader, fragment);
+            this.gl.compileShader(this.fragmentShader);
+            if (this.gl.getShaderInfoLog(this.fragmentShader) !== '') {
+                console.warn(`${this.gl.getShaderInfoLog(this.fragmentShader)}\nFragment Shader\n${addLineNumbers(fragment)}`);
+            }
         }
 
         // compile program and log errors
-        this.program = gl.createProgram();
-        gl.attachShader(this.program, vertexShader);
-        gl.attachShader(this.program, fragmentShader);
-        gl.linkProgram(this.program);
-        if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
-            return console.warn(gl.getProgramInfoLog(this.program));
+        this.gl.linkProgram(this.program);
+        if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
+            return console.warn(this.gl.getProgramInfoLog(this.program));
         }
-
-        // Remove shader once linked
-        gl.deleteShader(vertexShader);
-        gl.deleteShader(fragmentShader);
 
         // Get active uniform locations
         this.uniformLocations = new Map();
-        let numUniforms = gl.getProgramParameter(this.program, gl.ACTIVE_UNIFORMS);
+        let numUniforms = this.gl.getProgramParameter(this.program, this.gl.ACTIVE_UNIFORMS);
         for (let uIndex = 0; uIndex < numUniforms; uIndex++) {
-            let uniform = gl.getActiveUniform(this.program, uIndex);
-            this.uniformLocations.set(uniform, gl.getUniformLocation(this.program, uniform.name));
+            let uniform = this.gl.getActiveUniform(this.program, uIndex);
+            this.uniformLocations.set(uniform, this.gl.getUniformLocation(this.program, uniform.name));
 
             // split uniforms' names to separate array and struct declarations
             const split = uniform.name.match(/(\w+)/g);
@@ -93,10 +100,10 @@ export class Program {
         // Get active attribute locations
         this.attributeLocations = new Map();
         const locations = [];
-        const numAttribs = gl.getProgramParameter(this.program, gl.ACTIVE_ATTRIBUTES);
+        const numAttribs = this.gl.getProgramParameter(this.program, this.gl.ACTIVE_ATTRIBUTES);
         for (let aIndex = 0; aIndex < numAttribs; aIndex++) {
-            const attribute = gl.getActiveAttrib(this.program, aIndex);
-            const location = gl.getAttribLocation(this.program, attribute.name);
+            const attribute = this.gl.getActiveAttrib(this.program, aIndex);
+            const location = this.gl.getAttribLocation(this.program, attribute.name);
             // Ignore special built-in inputs. eg gl_VertexID, gl_InstanceID
             if (location === -1) continue;
             locations[location] = attribute.name;
