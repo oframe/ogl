@@ -467,7 +467,7 @@ export class GLTFLoader {
                     weights, // optional
                     name, // optional
                     extensions, // optional
-                    extras, // optional
+                    extras = {}, // optional - will get merged with node extras
                 },
                 meshIndex
             ) => {
@@ -495,6 +495,8 @@ export class GLTFLoader {
                             ({ geometry, program, mode }) => {
                                 const mesh = new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode });
                                 mesh.name = name;
+                                mesh.extras = extras;
+                                if (extensions) mesh.extensions = extensions;
                                 // TODO: support skin frustum culling
                                 mesh.frustumCulled = false;
                                 return mesh;
@@ -511,6 +513,8 @@ export class GLTFLoader {
                             const meshConstructor = geometry.attributes.instanceMatrix ? InstancedMesh : Mesh;
                             const mesh = new meshConstructor(gl, { geometry, program, mode });
                             mesh.name = name;
+                            mesh.extras = extras;
+                            if (extensions) mesh.extensions = extensions;
                             // Tag mesh so that nodes can add their transforms to the instance attribute
                             mesh.numInstances = numInstances;
                             return mesh;
@@ -545,6 +549,8 @@ export class GLTFLoader {
                 }
 
                 const geometry = new Geometry(gl);
+                if (extras) geometry.extras = extras;
+                if (extensions) geometry.extensions = extensions;
 
                 // Add each attribute found in primitive
                 for (let attr in attributes) {
@@ -681,8 +687,8 @@ export class GLTFLoader {
             }) => {
                 const node = new Transform();
                 if (name) node.name = name;
-                node.extras = extras;
-                node.extensions = extensions;
+                if (extras) node.extras = extras;
+                if (extensions) node.extensions = extensions;
 
                 // Need to attach to node as may have same material but different lightmap
                 if (extras && extras.lightmapTexture !== undefined) {
@@ -710,7 +716,7 @@ export class GLTFLoader {
                 if (meshIndex !== undefined) {
                     if (isSkin) {
                         meshes[meshIndex].primitives[meshes[meshIndex].primitives.instanceCount].forEach((mesh) => {
-                            mesh.extras = extras;
+                            if (extras) Object.assign(mesh.extras, extras);
                             mesh.setParent(node);
                         });
                         meshes[meshIndex].primitives.instanceCount++;
@@ -721,7 +727,7 @@ export class GLTFLoader {
                         }
                     } else {
                         meshes[meshIndex].primitives.forEach((mesh) => {
-                            mesh.extras = extras;
+                            if (extras) Object.assign(mesh.extras, extras);
 
                             // instanced mesh might only have 1
                             if (mesh.geometry.isInstanced) {
