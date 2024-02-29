@@ -20,8 +20,8 @@ export class Transform {
         this.rotation = new Euler();
         this.up = new Vec3(0, 1, 0);
 
-        this.rotation.onChange = () => this.quaternion.fromEuler(this.rotation);
-        this.quaternion.onChange = () => this.rotation.fromQuaternion(this.quaternion);
+        this.rotation._target.onChange = () => this.quaternion.fromEuler(this.rotation, true);
+        this.quaternion._target.onChange = () => this.rotation.fromQuaternion(this.quaternion, undefined, true);
     }
 
     setParent(parent, notifyParent = true) {
@@ -69,7 +69,7 @@ export class Transform {
 
     decompose() {
         this.matrix.getTranslation(this.position);
-        this.matrix.getRotation(this.quaternion);
+        this.matrix.getRotation(this.quaternion._target);
         this.matrix.getScaling(this.scale);
         this.rotation.fromQuaternion(this.quaternion);
     }
@@ -77,7 +77,7 @@ export class Transform {
     lookAt(target, invert = false) {
         if (invert) this.matrix.lookAt(this.position, target, this.up);
         else this.matrix.lookAt(target, this.position, this.up);
-        this.matrix.getRotation(this.quaternion);
+        this.matrix.getRotation(this.quaternion._target);
         this.rotation.fromQuaternion(this.quaternion);
     }
 }

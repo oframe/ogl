@@ -4,7 +4,19 @@ export class Quat extends Array {
     constructor(x = 0, y = 0, z = 0, w = 1) {
         super(x, y, z, w);
         this.onChange = () => {};
-        return this;
+
+        // Keep reference to proxy target to avoid triggering onChange internally
+        this._target = this;
+
+        // Return a proxy to trigger onChange when array elements are edited directly
+        const triggerProps = ['0', '1', '2', '3'];
+        return new Proxy(this, {
+            set(target, property) {
+                const success = Reflect.set(...arguments);
+                if (success && triggerProps.includes(property)) target.onChange();
+                return success;
+            },
+        });
     }
 
     get x() {
@@ -24,122 +36,124 @@ export class Quat extends Array {
     }
 
     set x(v) {
-        this[0] = v;
+        this._target[0] = v;
         this.onChange();
     }
 
     set y(v) {
-        this[1] = v;
+        this._target[1] = v;
         this.onChange();
     }
 
     set z(v) {
-        this[2] = v;
+        this._target[2] = v;
         this.onChange();
     }
 
     set w(v) {
-        this[3] = v;
+        this._target[3] = v;
         this.onChange();
     }
 
     identity() {
-        QuatFunc.identity(this);
+        QuatFunc.identity(this._target);
         this.onChange();
         return this;
     }
 
     set(x, y, z, w) {
         if (x.length) return this.copy(x);
-        QuatFunc.set(this, x, y, z, w);
+        QuatFunc.set(this._target, x, y, z, w);
         this.onChange();
         return this;
     }
 
     rotateX(a) {
-        QuatFunc.rotateX(this, this, a);
+        QuatFunc.rotateX(this._target, this._target, a);
         this.onChange();
         return this;
     }
 
     rotateY(a) {
-        QuatFunc.rotateY(this, this, a);
+        QuatFunc.rotateY(this._target, this._target, a);
         this.onChange();
         return this;
     }
 
     rotateZ(a) {
-        QuatFunc.rotateZ(this, this, a);
+        QuatFunc.rotateZ(this._target, this._target, a);
         this.onChange();
         return this;
     }
 
-    inverse(q = this) {
-        QuatFunc.invert(this, q);
+    inverse(q = this._target) {
+        QuatFunc.invert(this._target, q);
         this.onChange();
         return this;
     }
 
-    conjugate(q = this) {
-        QuatFunc.conjugate(this, q);
+    conjugate(q = this._target) {
+        QuatFunc.conjugate(this._target, q);
         this.onChange();
         return this;
     }
 
     copy(q) {
-        QuatFunc.copy(this, q);
+        QuatFunc.copy(this._target, q);
         this.onChange();
         return this;
     }
 
-    normalize(q = this) {
-        QuatFunc.normalize(this, q);
+    normalize(q = this._target) {
+        QuatFunc.normalize(this._target, q);
         this.onChange();
         return this;
     }
 
     multiply(qA, qB) {
         if (qB) {
-            QuatFunc.multiply(this, qA, qB);
+            QuatFunc.multiply(this._target, qA, qB);
         } else {
-            QuatFunc.multiply(this, this, qA);
+            QuatFunc.multiply(this._target, this._target, qA);
         }
         this.onChange();
         return this;
     }
 
     dot(v) {
-        return QuatFunc.dot(this, v);
+        return QuatFunc.dot(this._target, v);
     }
 
     fromMatrix3(matrix3) {
-        QuatFunc.fromMat3(this, matrix3);
+        QuatFunc.fromMat3(this._target, matrix3);
         this.onChange();
         return this;
     }
 
-    fromEuler(euler) {
-        QuatFunc.fromEuler(this, euler, euler.order);
+    fromEuler(euler, isInternal) {
+        QuatFunc.fromEuler(this._target, euler, euler.order);
+        // Avoid infinite recursion
+        if (!isInternal) this.onChange();
         return this;
     }
 
     fromAxisAngle(axis, a) {
-        QuatFunc.setAxisAngle(this, axis, a);
+        QuatFunc.setAxisAngle(this._target, axis, a);
         this.onChange();
         return this;
     }
 
     slerp(q, t) {
-        QuatFunc.slerp(this, this, q, t);
+        QuatFunc.slerp(this._target, this._target, q, t);
         this.onChange();
         return this;
     }
 
     fromArray(a, o = 0) {
-        this[0] = a[o];
-        this[1] = a[o + 1];
-        this[2] = a[o + 2];
-        this[3] = a[o + 3];
+        this._target[0] = a[o];
+        this._target[1] = a[o + 1];
+        this._target[2] = a[o + 2];
+        this._target[3] = a[o + 3];
         this.onChange();
         return this;
     }
