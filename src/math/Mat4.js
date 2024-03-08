@@ -137,7 +137,12 @@ export class Mat4 extends Array {
     }
 
     compose(q, pos, scale) {
-        Mat4Func.fromRotationTranslationScale(this, q, pos, scale);
+        Mat4Func.compose(this, q, pos, scale);
+        return this;
+    }
+
+    decompose(q, pos, scale) {
+        Mat4Func.decompose(this, q, pos, scale);
         return this;
     }
 

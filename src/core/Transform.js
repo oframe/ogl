@@ -68,9 +68,7 @@ export class Transform {
     }
 
     decompose() {
-        this.matrix.getTranslation(this.position);
-        this.matrix.getRotation(this.quaternion._target);
-        this.matrix.getScaling(this.scale);
+        this.matrix.decompose(this.quaternion._target, this.position, this.scale);
         this.rotation.fromQuaternion(this.quaternion);
     }
 
