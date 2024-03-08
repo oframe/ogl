@@ -58,7 +58,7 @@ export class Renderer {
         this.state.cullFace = false;
         this.state.frontFace = this.gl.CCW;
         this.state.depthMask = true;
-        this.state.depthFunc = this.gl.LESS;
+        this.state.depthFunc = this.gl.LEQUAL;
         this.state.premultiplyAlpha = false;
         this.state.flipY = false;
         this.state.unpackAlignment = 4;
