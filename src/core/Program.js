@@ -20,7 +20,7 @@ export class Program {
             frontFace = gl.CCW,
             depthTest = true,
             depthWrite = true,
-            depthFunc = gl.LESS,
+            depthFunc = gl.LEQUAL,
         } = {}
     ) {
         if (!gl.canvas) console.error('gl not passed as first argument to Program');
