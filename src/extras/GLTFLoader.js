@@ -9,25 +9,13 @@ import { Vec3 } from '../math/Vec3.js';
 import { NormalProgram } from './NormalProgram.js';
 import { InstancedMesh } from './InstancedMesh.js';
 
-// Supports
-// [x] glb
-// [x] Geometry
-// [x] Nodes and Hierarchy
-// [x] Instancing
-// [x] Skins
-// [x] Textures
-// [x] Animation
-// [x] GLB support
-// [x] Basis/ktx2
-// [x] KHR_lights_punctual lights
+// TODO
 // [ ] Morph Targets
 // [ ] Materials
 // [ ] Cameras
-
-// TODO: Sparse accessor packing? For morph targets basically
-// TODO: init accessor missing bufferView with 0s
-// TODO: morph target animations
-// TODO: option to turn off GPU instancing
+// [ ] Sparse accessor packing? For morph targets basically
+// [ ] option to turn off GPU instancing ?
+// [ ] Spot lights
 
 const TYPE_ARRAY = {
     5121: Uint8Array,
