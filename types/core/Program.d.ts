@@ -4,6 +4,7 @@ export interface ProgramOptions {
     vertex: string;
     fragment: string;
     uniforms: Record<string, any>;
+
     transparent: boolean;
     cullFace: GLenum | false | null;
     frontFace: GLenum;
@@ -39,6 +40,8 @@ export class Program {
     blendFunc: BlendFunc;
     blendEquation: BlendEquation;
 
+    vertexShader: WebGLShader;
+    fragmentShader: WebGLShader;
     program: WebGLProgram;
     uniformLocations: Map<UniformInfo, WebGLUniformLocation>;
     attributeLocations: Map<WebGLActiveInfo, GLint>;
@@ -46,7 +49,9 @@ export class Program {
 
     constructor(gl: OGLRenderingContext, options?: Partial<ProgramOptions>);
 
-    setBlendFunc(src: GLenum, dst: GLenum, srcAlpha?: GLenum, dstAlpha?: GLenum): void;
+    setShaders(options: { vertex: string; fragment: string }): void;
+
+    setBlendFunc(src: GLenum, dst: GLenum, srcAlpha: GLenum, dstAlpha: GLenum): void;
 
     setBlendEquation(modeRGB: GLenum, modeAlpha: GLenum): void;
 
