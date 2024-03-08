@@ -59,6 +59,10 @@ export class Geometry {
     isInstanced: boolean;
     bounds: Bounds;
 
+    // Set from gltf loader
+    extras?: object;
+    extensions?: object;
+
     raycast?: GeometryRaycast; // User defined
 
     constructor(gl: OGLRenderingContext, attributes?: AttributeMap);
