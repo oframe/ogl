@@ -102,4 +102,11 @@ export class Skin extends Mesh {
 
         super.draw({ camera });
     }
+
+    dispose() {
+        if (this.boneTexture) {
+            this.boneTexture.dispose();
+            delete this.boneTexture;
+        }
+    }
 }

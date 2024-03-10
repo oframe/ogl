@@ -95,6 +95,20 @@ export class Shadow {
             }
         });
     }
+
+    dispose() {
+        this.target.dispose();
+        delete this.target;
+
+        this.depthProgram.dispose();
+        delete this.depthProgram;
+
+        for (const mesh of this.castMeshes) {
+            mesh.depthProgram.dispose();
+            delete mesh.depthProgram;
+        }
+        this.castMeshes = [];
+    }
 }
 
 const defaultVertex = /* glsl */ `

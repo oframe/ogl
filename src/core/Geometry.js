@@ -281,12 +281,12 @@ export class Geometry {
         this.bounds.radius = Math.sqrt(maxRadiusSq);
     }
 
-    remove() {
-        for (let key in this.VAOs) {
+    dispose() {
+        for (const key in this.VAOs) {
             this.gl.renderer.deleteVertexArray(this.VAOs[key]);
             delete this.VAOs[key];
         }
-        for (let key in this.attributes) {
+        for (const key in this.attributes) {
             this.gl.deleteBuffer(this.attributes[key].buffer);
             delete this.attributes[key];
         }

@@ -116,6 +116,11 @@ export class Polyline {
         if (this.resolution) this.resolution.value.set(this.gl.canvas.width, this.gl.canvas.height);
         if (this.dpr) this.dpr.value = this.gl.renderer.dpr;
     }
+
+    dispose() {
+        this.mesh.program.dispose();
+        this.mesh.geometry.dispose();
+    }
 }
 
 const defaultVertex = /* glsl */ `

@@ -41,6 +41,11 @@ export class AxesHelper extends Mesh {
 
         super(gl, { ...meshProps, mode: gl.LINES, geometry, program });
     }
+
+    dispose() {
+        this.geometry.dispose();
+        this.program.dispose();
+    }
 }
 
 const vertex = /* glsl */ `

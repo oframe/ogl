@@ -1,4 +1,3 @@
-// TODO: delete texture
 // TODO: use texSubImage2D for updates (video or when loaded)
 // TODO: need? encoding = linearEncoding
 // TODO: support non-compressed mipmaps uploads
@@ -213,5 +212,10 @@ export class Texture {
             }
         }
         this.store.image = this.image;
+    }
+
+    dispose() {
+        gl.deleteTexture(this.texture);
+        delete this.texture;
     }
 }

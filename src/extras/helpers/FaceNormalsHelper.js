@@ -75,6 +75,11 @@ export class FaceNormalsHelper extends Mesh {
         this.program.uniforms.worldNormalMatrix.value.getNormalMatrix(this.object.worldMatrix);
         super.draw(arg);
     }
+
+    dispose() {
+        this.geometry.dispose();
+        this.program.dispose();
+    }
 }
 
 const vertex = /* glsl */ `
