@@ -2,6 +2,7 @@ import type { Euler } from '../math/Euler.js';
 import type { Mat4 } from '../math/Mat4.js';
 import type { Quat } from '../math/Quat.js';
 import type { Vec3, Vec3Tuple } from '../math/Vec3.js';
+import type { GLTFLoader } from '../extras/GLTFLoader.d.js';
 
 /**
  * The base class for most objects and provides a set of properties and methods for manipulating
@@ -75,6 +76,13 @@ export class Transform {
      * @defaultValue `new Vec3(0, 1, 0)`
      */
     up: Vec3;
+
+    /**
+     * Set from {@link GLTFLoader | GLTF Loader}.
+     */
+    name?: string;
+    extras?: object;
+    extensions?: object;
 
     /**
      * Creates a new transform object.

@@ -137,7 +137,7 @@ export class GLTFLoader {
         gl: OGLRenderingContext,
         desc: GLTFDescription,
         images: (HTMLImageElement | ImageBitmap)[],
-        options: { sample: any; source: any; name: any; extensions: any; extras: any },
+        options: { sample: number; source: number; name: string; extensions: object; extras: object },
     ): Texture;
 
     static parseMaterials(gl: OGLRenderingContext, desc: GLTFDescription, textures: Texture[]): GLTFMaterial[] | null;
