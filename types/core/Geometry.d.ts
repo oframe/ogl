@@ -67,7 +67,7 @@ export class Geometry {
 
     updateAttribute(attr: Partial<Attribute>): void;
 
-    setIndex(value: Attribute): void;
+    setIndex(attr: Partial<Attribute>): void;
 
     setDrawRange(start: number, count: number): void;
 
