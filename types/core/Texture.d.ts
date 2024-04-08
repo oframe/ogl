@@ -10,9 +10,9 @@ export type CompressedImage = {
 export type ImageRepresentation =
     | HTMLImageElement
     | HTMLCanvasElement
-    | HTMLCanvasElement[]
     | HTMLVideoElement
     | HTMLImageElement[]
+    | HTMLCanvasElement[]
     | ArrayBufferView
     | CompressedImage;
 
