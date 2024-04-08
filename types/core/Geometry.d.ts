@@ -81,7 +81,7 @@ export class Geometry {
 
     getPosition(): Partial<Attribute>;
 
-    computeBoundingBox(attr: Partial<Attribute>): void;
+    computeBoundingBox(attr?: Partial<Attribute>): void;
 
     computeBoundingSphere(attr?: Partial<Attribute>): void;
 
