@@ -60,6 +60,14 @@ export class Camera extends Transform {
         return this;
     }
 
+    updateProjectionMatrix() {
+        if (this.type === 'perspective') {
+            this.perspective()
+        } else {
+            this.orthographic();
+        }
+    }
+
     lookAt(target) {
         super.lookAt(target, true);
         return this;
