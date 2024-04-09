@@ -61,7 +61,7 @@
                     varying vec4 vMVPos;
 
                     #ifdef SKINNING
-                        mat4 getBoneMatrix(const in float i) ${`{`}
+                        mat4 getBoneMatrix(const in float i) {
                             float j = i * 4.0;
                             float x = mod(j, float(boneTextureSize));
                             float y = floor(j / float(boneTextureSize));
@@ -79,7 +79,7 @@
                             return mat4(v1, v2, v3, v4);
                         }
 
-                        void skin(inout vec4 pos, inout vec3 nml) ${`{`}
+                        void skin(inout vec4 pos, inout vec3 nml) {
                             mat4 boneMatX = getBoneMatrix(skinIndex.x);
                             mat4 boneMatY = getBoneMatrix(skinIndex.y);
                             mat4 boneMatZ = getBoneMatrix(skinIndex.z);
@@ -103,7 +103,7 @@
                         }
                     #endif
 
-                    void main() ${`{`}
+                    void main() {
                         vec4 pos = vec4(position, 1);
                         vec3 nml = normal;
 
@@ -173,21 +173,21 @@
 
                     const float ENV_LODS = 6.0;
 
-                    vec4 SRGBtoLinear(vec4 srgb) ${`{`}
+                    vec4 SRGBtoLinear(vec4 srgb) {
                         vec3 linOut = pow(srgb.xyz, vec3(2.2));
                         return vec4(linOut, srgb.w);
                     }
 
-                    vec4 RGBMToLinear(in vec4 value) ${`{`}
+                    vec4 RGBMToLinear(in vec4 value) {
                         float maxRange = 6.0;
                         return vec4(value.xyz * value.w * maxRange, 1.0);
                     }
 
-                    vec3 linearToSRGB(vec3 color) ${`{`}
+                    vec3 linearToSRGB(vec3 color) {
                         return pow(color, vec3(1.0 / 2.2));
                     }
 
-                    vec3 getNormal() ${`{`}
+                    vec3 getNormal() {
                         #ifdef NORMAL_MAP
                             vec3 pos_dx = dFdx(vMPos.xyz);
                             vec3 pos_dy = dFdy(vMPos.xyz);
@@ -211,11 +211,11 @@
                         #endif
                     }
 
-                    vec3 specularReflection(vec3 specularEnvR0, vec3 specularEnvR90, float VdH) ${`{`}
+                    vec3 specularReflection(vec3 specularEnvR0, vec3 specularEnvR90, float VdH) {
                         return specularEnvR0 + (specularEnvR90 - specularEnvR0) * pow(clamp(1.0 - VdH, 0.0, 1.0), 5.0);
                     }
 
-                    float geometricOcclusion(float NdL, float NdV, float roughness) ${`{`}
+                    float geometricOcclusion(float NdL, float NdV, float roughness) {
                         float r = roughness;
 
                         float attenuationL = 2.0 * NdL / (NdL + sqrt(r * r + (1.0 - r * r) * (NdL * NdL)));
@@ -223,20 +223,20 @@
                         return attenuationL * attenuationV;
                     }
 
-                    float microfacetDistribution(float roughness, float NdH) ${`{`}
+                    float microfacetDistribution(float roughness, float NdH) {
                         float roughnessSq = roughness * roughness;
                         float f = (NdH * roughnessSq - NdH) * NdH + 1.0;
                         return roughnessSq / (PI * f * f);
                     }
 
-                    vec2 cartesianToPolar(vec3 n) ${`{`}
+                    vec2 cartesianToPolar(vec3 n) {
                         vec2 uv;
                         uv.x = atan(n.z, n.x) * RECIPROCAL_PI2 + 0.5;
                         uv.y = asin(n.y) * RECIPROCAL_PI + 0.5;
                         return uv;
                     }
 
-                    void getIBLContribution(inout vec3 diffuse, inout vec3 specular, float NdV, float roughness, vec3 n, vec3 reflection, vec3 diffuseColor, vec3 specularColor) ${`{`}
+                    void getIBLContribution(inout vec3 diffuse, inout vec3 specular, float NdV, float roughness, vec3 n, vec3 reflection, vec3 diffuseColor, vec3 specularColor) {
                         vec3 brdf = SRGBtoLinear(texture2D(tLUT, vec2(NdV, roughness))).rgb;
 
                         vec3 diffuseLight = RGBMToLinear(texture2D(tEnvDiffuse, cartesianToPolar(n))).rgb;
@@ -273,7 +273,7 @@
                         specular *= uEnvSpecular;
                     }
 
-                    void main() ${`{`}
+                    void main() {
                         vec4 baseColor = uBaseColorFactor;
                         #ifdef COLOR_MAP
                             baseColor *= SRGBtoLinear(texture2D(tBaseColor, vUv));
