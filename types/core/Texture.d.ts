@@ -12,6 +12,7 @@ export type ImageRepresentation =
     | HTMLCanvasElement
     | HTMLVideoElement
     | HTMLImageElement[]
+    | HTMLCanvasElement[]
     | ArrayBufferView
     | CompressedImage;
 
