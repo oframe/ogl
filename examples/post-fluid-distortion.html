@@ -432,7 +432,7 @@
                             aspectRatio: { value: 1 },
                             color: { value: new Color() },
                             point: { value: new Vec2() },
-                            radius: { value: 1 },
+                            radius: { value: radius / 100 },
                         },
                         depthTest: false,
                         depthWrite: false,
@@ -446,11 +446,11 @@
                         fragment: supportLinearFiltering ? advectionShader : advectionManualFilteringShader,
                         uniforms: {
                             texelSize,
-                            dyeTexelSize: { value: new Vec2(1 / dyeRes, 1 / dyeRes) },
+                            dyeTexelSize: { value: new Vec2(1 / dyeRes) },
                             uVelocity: { value: null },
                             uSource: { value: null },
                             dt: { value: 0.016 },
-                            dissipation: { value: 1.0 },
+                            dissipation: { value: 1 },
                         },
                         depthTest: false,
                         depthWrite: false,
@@ -517,7 +517,7 @@
                     }),
                 });
 
-                const gradienSubtractProgram = new Mesh(gl, {
+                const gradientSubtractProgram = new Mesh(gl, {
                     geometry: triangle,
                     program: new Program(gl, {
                         vertex: baseVertex,
@@ -571,9 +571,9 @@
                         splats.push({
                             // Get mouse value in 0 to 1 range, with y flipped
                             x: e.x / gl.renderer.width,
-                            y: 1.0 - e.y / gl.renderer.height,
-                            dx: deltaX * 5.0,
-                            dy: deltaY * -5.0,
+                            y: 1 - e.y / gl.renderer.height,
+                            dx: deltaX * 5,
+                            dy: deltaY * -5,
                         });
                     }
                 }
@@ -583,8 +583,7 @@
                     splatProgram.program.uniforms.uTarget.value = velocity.read.texture;
                     splatProgram.program.uniforms.aspectRatio.value = gl.renderer.width / gl.renderer.height;
                     splatProgram.program.uniforms.point.value.set(x, y);
-                    splatProgram.program.uniforms.color.value.set(dx, dy, 1.0);
-                    splatProgram.program.uniforms.radius.value = radius / 100.0;
+                    splatProgram.program.uniforms.color.value.set(dx, dy, 1);
 
                     gl.renderer.render({
                         scene: splatProgram,
@@ -668,7 +667,6 @@
                     });
 
                     clearProgram.program.uniforms.uTexture.value = pressure.read.texture;
-                    clearProgram.program.uniforms.value.value = pressureDissipation;
 
                     gl.renderer.render({
                         scene: clearProgram,
@@ -692,11 +690,11 @@
                         pressure.swap();
                     }
 
-                    gradienSubtractProgram.program.uniforms.uPressure.value = pressure.read.texture;
-                    gradienSubtractProgram.program.uniforms.uVelocity.value = velocity.read.texture;
+                    gradientSubtractProgram.program.uniforms.uPressure.value = pressure.read.texture;
+                    gradientSubtractProgram.program.uniforms.uVelocity.value = velocity.read.texture;
 
                     gl.renderer.render({
-                        scene: gradienSubtractProgram,
+                        scene: gradientSubtractProgram,
                         target: velocity.write,
                         sort: false,
                         update: false,
