@@ -156,8 +156,8 @@
                 for (let i = 0; i < numParticles; i++) {
                     initialPositionData.set(
                         [
-                            (Math.random() - 0.5) * 2.0,
-                            (Math.random() - 0.5) * 2.0,
+                            (Math.random() - 0.5) * 2,
+                            (Math.random() - 0.5) * 2,
                             0, // the Green and Alpha channels go unused in this example, however I set
                             1, // unused Alpha to 1 so that texture is visible in WebGL debuggers
                         ],
@@ -230,7 +230,7 @@
                     }
 
                     // Get mouse value in -1 to 1 range, with y flipped
-                    mouse.value.set((e.x / gl.renderer.width) * 2 - 1, (1.0 - e.y / gl.renderer.height) * 2 - 1);
+                    mouse.value.set((e.x / gl.renderer.width) * 2 - 1, (1 - e.y / gl.renderer.height) * 2 - 1);
                 }
 
                 requestAnimationFrame(update);
