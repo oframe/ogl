@@ -77,7 +77,6 @@
 
                 void main() {
                     vec3 tex = texture2D(tDiffuse, vUv).rgb;
-
                     vec3 normal = getNormal();
 
                     vec3 light = normalize(vec3(sin(uTime), 1.0, cos(uTime)));
