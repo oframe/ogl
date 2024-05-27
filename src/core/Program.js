@@ -244,6 +244,7 @@ function setUniform(gl, type, location, value) {
         case 35670: // BOOL
         case 5124: // INT
         case 35678: // SAMPLER_2D
+        case 36306: // U_SAMPLER_2D
         case 35680:
             return value.length ? gl.uniform1iv(location, value) : gl.uniform1i(location, value); // SAMPLER_CUBE
         case 35671: // BOOL_VEC2
