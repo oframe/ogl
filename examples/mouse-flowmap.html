@@ -53,7 +53,7 @@
                     vec3 tex = texture2D(tWater, uv).rgb;
 
                     // Oscillate between raw values and the affected texture above
-                    tex = mix(tex, flow * 0.5 + 0.5, smoothstep( -0.3, 0.7, sin(uTime)));
+                    tex = mix(tex, flow * 0.5 + 0.5, smoothstep(-0.3, 0.7, sin(uTime)));
 
                     gl_FragColor.rgb = tex;
                     gl_FragColor.a = 1.0;
@@ -125,7 +125,7 @@
                     }
 
                     // Get mouse value in 0 to 1 range, with y flipped
-                    mouse.set(e.x / gl.renderer.width, 1.0 - e.y / gl.renderer.height);
+                    mouse.set(e.x / gl.renderer.width, 1 - e.y / gl.renderer.height);
 
                     // Calculate velocity
                     if (!lastTime) {
