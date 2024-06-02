@@ -18,6 +18,7 @@ export interface PostOptions {
     magFilter: GLenum;
     geometry: Triangle;
     targetOnly: boolean;
+    depth: boolean;
 }
 
 export interface Pass {

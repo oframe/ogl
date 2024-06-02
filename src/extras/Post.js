@@ -16,6 +16,7 @@ export class Post {
             magFilter = gl.LINEAR,
             geometry = new Triangle(gl),
             targetOnly = null,
+            depth = true,
         } = {}
     ) {
         this.gl = gl;
@@ -43,6 +44,7 @@ export class Post {
             wrapT,
             minFilter,
             magFilter,
+            depth,
         };
 
         const fbo = (this.fbo = {
