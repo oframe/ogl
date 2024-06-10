@@ -22,7 +22,7 @@ export class Texture {
             internalFormat = format,
             wrapS = gl.CLAMP_TO_EDGE,
             wrapT = gl.CLAMP_TO_EDGE,
-            generateMipmaps = true,
+            generateMipmaps = target === (gl.TEXTURE_2D || gl.TEXTURE_CUBE_MAP),
             minFilter = generateMipmaps ? gl.NEAREST_MIPMAP_LINEAR : gl.LINEAR,
             magFilter = gl.LINEAR,
             premultiplyAlpha = false,
@@ -32,6 +32,7 @@ export class Texture {
             level = 0,
             width, // used for RenderTargets or Data Textures
             height = width,
+            length = 1,
         } = {}
     ) {
         this.gl = gl;
@@ -54,6 +55,7 @@ export class Texture {
         this.level = level;
         this.width = width;
         this.height = height;
+        this.length = length;
         this.texture = this.gl.createTexture();
 
         this.store = {
@@ -156,7 +158,12 @@ export class Texture {
                 }
             } else if (ArrayBuffer.isView(this.image)) {
                 // Data texture
-                this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, this.image);
+                if(this.target === this.gl.TEXTURE_2D) {
+                    this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, this.image);   
+                }
+                else if(this.target === this.gl.TEXTURE_2D_ARRAY) {
+                    this.gl.texImage3D(this.target, this.level, this.internalFormat, this.width, this.height, this.length, 0, this.format, this.type, this.image);
+                }
             } else if (this.image.isCompressedTexture) {
                 // Compressed texture
                 for (let level = 0; level < this.image.length; level++) {
@@ -172,7 +179,12 @@ export class Texture {
                 }
             } else {
                 // Regular texture
-                this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image);
+                if(this.target === this.gl.TEXTURE_2D) {
+                    this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image);
+                }
+                else{
+                    this.gl.texImage3D(this.target, this.level, this.internalFormat, this.width, this.height, this.length, 0, this.format, this.type, this.image);
+                }
             }
 
             if (this.generateMipmaps) {
@@ -206,7 +218,12 @@ export class Texture {
                 }
             } else if (this.width) {
                 // image intentionally left null for RenderTarget
-                this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, null);
+                if(this.target === this.gl.TEXTURE_2D) {
+                    this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, null);
+                }
+                else if(this.target === this.gl.TEXTURE_2D_ARRAY) {
+                    this.gl.texImage3D(this.target, this.level, this.internalFormat, this.width, this.height, this.length, 0, this.format, this.type, null);
+                }
             } else {
                 // Upload empty pixel if no image to avoid errors while image or video loading
                 this.gl.texImage2D(this.target, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
