@@ -34,6 +34,7 @@ export interface TextureOptions {
     level: number;
     width: number;
     height: number;
+    length: number;
 }
 
 /**
