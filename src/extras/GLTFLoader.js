@@ -2,6 +2,7 @@ import { Geometry } from '../core/Geometry.js';
 import { Transform } from '../core/Transform.js';
 import { Texture } from '../core/Texture.js';
 import { Mesh } from '../core/Mesh.js';
+import { Camera } from '../core/Camera.js';
 import { GLTFAnimation } from './GLTFAnimation.js';
 import { GLTFSkin } from './GLTFSkin.js';
 import { Mat4 } from '../math/Mat4.js';
@@ -12,7 +13,6 @@ import { InstancedMesh } from './InstancedMesh.js';
 // TODO
 // [ ] Morph Targets
 // [ ] Materials
-// [ ] Cameras
 // [ ] Sparse accessor packing? For morph targets basically
 // [ ] option to turn off GPU instancing ?
 // [ ] Spot lights
@@ -98,7 +98,7 @@ export class GLTFLoader {
         const meshes = this.parseMeshes(gl, desc, bufferViews, materials, skins);
 
         // Create transforms, meshes and hierarchy
-        const nodes = this.parseNodes(gl, desc, meshes, skins, images);
+        const [nodes, cameras] = this.parseNodes(gl, desc, meshes, skins, images);
 
         // Place nodes in skeletons
         this.populateSkins(skins, nodes);
@@ -120,6 +120,7 @@ export class GLTFLoader {
             json: desc,
             buffers,
             bufferViews,
+            cameras,
             images,
             textures,
             materials,
@@ -658,6 +659,7 @@ export class GLTFLoader {
 
     static parseNodes(gl, desc, meshes, skins, images) {
         if (!desc.nodes) return null;
+        const cameras = [];
         const nodes = desc.nodes.map(
             ({
                 camera, // optional
@@ -673,7 +675,23 @@ export class GLTFLoader {
                 extensions, // optional
                 extras, // optional
             }) => {
-                const node = new Transform();
+                const isCamera = camera !== undefined;
+
+                const node = isCamera ? new Camera(gl) : new Transform();
+
+                if (isCamera) {
+                    // ?NOTE: chose to use node's name and extras/extensions over camera.
+                    const cameraOpts = desc.cameras[camera];
+                    if (cameraOpts.type === 'perspective') {
+                        const { yfov: fov, znear: near, zfar: far } = cameraOpts.perspective;
+                        node.perspective({ fov: fov * (180 / Math.PI), near, far });
+                    } else {
+                        const { xmag, ymag, znear: near, zfar: far } = cameraOpts.orthographic;
+                        node.orthographic({ near, far, left: -xmag, right: xmag, top: -ymag, bottom: ymag });
+                    }
+                    cameras.push(node);
+                }
+
                 if (name) node.name = name;
                 if (extras) node.extras = extras;
                 if (extensions) node.extensions = extensions;
@@ -788,7 +806,7 @@ export class GLTFLoader {
             });
         });
 
-        return nodes;
+        return [nodes, cameras];
     }
 
     static populateSkins(skins, nodes) {
