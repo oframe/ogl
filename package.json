@@ -1,6 +1,6 @@
 {
     "name": "ogl",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "description": "WebGL Library",
     "type": "module",
     "main": "./src/index.js",
