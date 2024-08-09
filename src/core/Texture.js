@@ -27,7 +27,7 @@ export class Texture {
             magFilter = gl.LINEAR,
             premultiplyAlpha = false,
             unpackAlignment = 4,
-            flipY = target == gl.TEXTURE_2D ? true : false,
+            flipY = target == (gl.TEXTURE_2D || gl.TEXTURE_3D) ? true : false,
             anisotropy = 0,
             level = 0,
             width, // used for RenderTargets or Data Textures
@@ -130,11 +130,7 @@ export class Texture {
         }
 
         if (this.anisotropy && this.anisotropy !== this.state.anisotropy) {
-            this.gl.texParameterf(
-                this.target,
-                this.gl.renderer.getExtension('EXT_texture_filter_anisotropic').TEXTURE_MAX_ANISOTROPY_EXT,
-                this.anisotropy
-            );
+            this.gl.texParameterf(this.target, this.gl.renderer.getExtension('EXT_texture_filter_anisotropic').TEXTURE_MAX_ANISOTROPY_EXT, this.anisotropy);
             this.state.anisotropy = this.anisotropy;
         }
 
@@ -147,42 +143,25 @@ export class Texture {
             if (this.target === this.gl.TEXTURE_CUBE_MAP) {
                 // For cube maps
                 for (let i = 0; i < 6; i++) {
-                    this.gl.texImage2D(
-                        this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                        this.level,
-                        this.internalFormat,
-                        this.format,
-                        this.type,
-                        this.image[i]
-                    );
+                    this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, this.level, this.internalFormat, this.format, this.type, this.image[i]);
                 }
             } else if (ArrayBuffer.isView(this.image)) {
                 // Data texture
-                if(this.target === this.gl.TEXTURE_2D) {
-                    this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, this.image);   
-                }
-                else if(this.target === this.gl.TEXTURE_2D_ARRAY) {
+                if (this.target === this.gl.TEXTURE_2D) {
+                    this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, this.image);
+                } else if (this.target === this.gl.TEXTURE_2D_ARRAY || this.target === this.gl.TEXTURE_3D) {
                     this.gl.texImage3D(this.target, this.level, this.internalFormat, this.width, this.height, this.length, 0, this.format, this.type, this.image);
                 }
             } else if (this.image.isCompressedTexture) {
                 // Compressed texture
                 for (let level = 0; level < this.image.length; level++) {
-                    this.gl.compressedTexImage2D(
-                        this.target,
-                        level,
-                        this.internalFormat,
-                        this.image[level].width,
-                        this.image[level].height,
-                        0,
-                        this.image[level].data
-                    );
+                    this.gl.compressedTexImage2D(this.target, level, this.internalFormat, this.image[level].width, this.image[level].height, 0, this.image[level].data);
                 }
             } else {
                 // Regular texture
-                if(this.target === this.gl.TEXTURE_2D) {
+                if (this.target === this.gl.TEXTURE_2D) {
                     this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image);
-                }
-                else{
+                } else {
                     this.gl.texImage3D(this.target, this.level, this.internalFormat, this.width, this.height, this.length, 0, this.format, this.type, this.image);
                 }
             }
@@ -204,24 +183,13 @@ export class Texture {
             if (this.target === this.gl.TEXTURE_CUBE_MAP) {
                 // Upload empty pixel for each side while no image to avoid errors while image or video loading
                 for (let i = 0; i < 6; i++) {
-                    this.gl.texImage2D(
-                        this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                        0,
-                        this.gl.RGBA,
-                        1,
-                        1,
-                        0,
-                        this.gl.RGBA,
-                        this.gl.UNSIGNED_BYTE,
-                        emptyPixel
-                    );
+                    this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
                 }
             } else if (this.width) {
                 // image intentionally left null for RenderTarget
-                if(this.target === this.gl.TEXTURE_2D) {
+                if (this.target === this.gl.TEXTURE_2D) {
                     this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, null);
-                }
-                else if(this.target === this.gl.TEXTURE_2D_ARRAY) {
+                } else {
                     this.gl.texImage3D(this.target, this.level, this.internalFormat, this.width, this.height, this.length, 0, this.format, this.type, null);
                 }
             } else {
