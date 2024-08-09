@@ -139,8 +139,7 @@ export class Program {
         this.gl.renderer.setFrontFace(this.frontFace);
         this.gl.renderer.setDepthMask(this.depthWrite);
         this.gl.renderer.setDepthFunc(this.depthFunc);
-        if (this.blendFunc.src)
-            this.gl.renderer.setBlendFunc(this.blendFunc.src, this.blendFunc.dst, this.blendFunc.srcAlpha, this.blendFunc.dstAlpha);
+        if (this.blendFunc.src) this.gl.renderer.setBlendFunc(this.blendFunc.src, this.blendFunc.dst, this.blendFunc.srcAlpha, this.blendFunc.dstAlpha);
         this.gl.renderer.setBlendEquation(this.blendEquation.modeRGB, this.blendEquation.modeAlpha);
     }
 
