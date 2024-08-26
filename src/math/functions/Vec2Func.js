@@ -234,6 +234,26 @@ export function lerp(out, a, b, t) {
 }
 
 /**
+ * Performs a frame rate independant, linear interpolation between two vec2's
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @param {Number} decay decay constant for interpolation
+ * @param {Number} dt delta time
+ * @returns {vec2} out
+ */
+export function smoothLerp(out, a, b, decay, dt) {
+    const exp = Math.exp(-decay * dt);
+    let ax = a[0];
+    let ay = a[1];
+
+    out[0] = b[0] + (ax - b[0]) * exp;
+    out[1] = b[1] + (ay - b[1]) * exp;
+    return out;
+}
+
+/**
  * Transforms the vec2 with a mat2
  *
  * @param {vec2} out the receiving vector

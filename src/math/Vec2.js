@@ -124,6 +124,11 @@ export class Vec2 extends Array {
         return this;
     }
 
+    smoothLerp(v a, decay, dt) {
+        Vec2Func.smoothLerp(this, this, v, a, decay, dt);
+        return this
+    }
+
     clone() {
         return new Vec2(this[0], this[1]);
     }
