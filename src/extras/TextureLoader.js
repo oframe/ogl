@@ -59,20 +59,7 @@ export class TextureLoader {
         }
 
         // Stringify props
-        const cacheID =
-            src +
-            wrapS +
-            wrapT +
-            anisotropy +
-            format +
-            internalFormat +
-            generateMipmaps +
-            minFilter +
-            magFilter +
-            premultiplyAlpha +
-            unpackAlignment +
-            flipY +
-            gl.renderer.id;
+        const cacheID = src + wrapS + wrapT + anisotropy + format + internalFormat + generateMipmaps + minFilter + magFilter + premultiplyAlpha + unpackAlignment + flipY + gl.renderer.id;
 
         // Check cache for existing texture
         if (cache[cacheID]) return cache[cacheID];
@@ -183,17 +170,19 @@ function powerOfTwo(value) {
 }
 
 function decodeImage(src, flipY) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         if (isCreateImageBitmap()) {
             fetch(src, { mode: 'cors' })
                 .then((r) => r.blob())
                 .then((b) => createImageBitmap(b, { imageOrientation: flipY ? 'flipY' : 'none', premultiplyAlpha: 'none' }))
-                .then(resolve);
+                .then(resolve)
+                .catch((err) => reject(err));
         } else {
             const img = new Image();
 
             img.crossOrigin = '';
             img.src = src;
+            img.onerror = ({ type }) => reject(`${type}: Loading image`);
             img.onload = () => resolve(img);
         }
     });
