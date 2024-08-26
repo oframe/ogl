@@ -147,6 +147,11 @@ export class Vec3 extends Array {
         return this;
     }
 
+    smoothLerp(v, decay, dt) {
+        Vec3Func.smoothLerp(this, this, v, decay, dt);
+        return this;
+    }
+
     clone() {
         return new Vec3(this[0], this[1], this[2]);
     }
