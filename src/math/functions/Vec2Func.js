@@ -239,7 +239,7 @@ export function lerp(out, a, b, t) {
  * @param {vec2} out the receiving vector
  * @param {vec2} a the first operand
  * @param {vec2} b the second operand
- * @param {Number} decay decay constant for interpolation
+ * @param {Number} decay decay constant for interpolation. useful range between 1 and 25, from slow to fast.
  * @param {Number} dt delta time
  * @returns {vec2} out
  */
