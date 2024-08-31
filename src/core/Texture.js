@@ -22,6 +22,7 @@ export class Texture {
             internalFormat = format,
             wrapS = gl.CLAMP_TO_EDGE,
             wrapT = gl.CLAMP_TO_EDGE,
+            wrapR = gl.CLAMP_TO_EDGE,
             generateMipmaps = target === (gl.TEXTURE_2D || gl.TEXTURE_CUBE_MAP),
             minFilter = generateMipmaps ? gl.NEAREST_MIPMAP_LINEAR : gl.LINEAR,
             magFilter = gl.LINEAR,
@@ -47,6 +48,7 @@ export class Texture {
         this.magFilter = magFilter;
         this.wrapS = wrapS;
         this.wrapT = wrapT;
+        this.wrapR = wrapR;
         this.generateMipmaps = generateMipmaps;
         this.premultiplyAlpha = premultiplyAlpha;
         this.unpackAlignment = unpackAlignment;
@@ -127,6 +129,11 @@ export class Texture {
         if (this.wrapT !== this.state.wrapT) {
             this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.wrapT);
             this.state.wrapT = this.wrapT;
+        }
+
+        if (this.wrapR !== this.state.wrapR) {
+            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_R, this.wrapR);
+            this.state.wrapR = this.wrapR;
         }
 
         if (this.anisotropy && this.anisotropy !== this.state.anisotropy) {
