@@ -1,4 +1,4 @@
-import { Texture } from "./Texture";
+import { Texture } from "../core/Texture.js";
 
 export class Texture3D extends Texture {
     constructor(gl, args) {
