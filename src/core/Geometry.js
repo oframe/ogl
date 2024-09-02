@@ -5,6 +5,7 @@
 //     instanced - default null. Pass divisor amount
 //     type - gl enum default gl.UNSIGNED_SHORT for 'index', gl.FLOAT for others
 //     normalized - boolean default false
+//     integer - boolean default false
 
 //     buffer - gl buffer, if buffer exists, don't need to provide data - although needs position data for bounds calculation
 //     stride - default 0 - for when passing in buffer
@@ -65,6 +66,7 @@ export class Geometry {
                 : attr.data.constructor === Uint16Array
                 ? this.gl.UNSIGNED_SHORT
                 : this.gl.UNSIGNED_INT); // Uint32Array
+        attr.integer = attr.integer || false;
         attr.target = key === 'index' ? this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER;
         attr.normalized = attr.normalized || false;
         attr.stride = attr.stride || 0;
@@ -153,7 +155,12 @@ export class Geometry {
             const offset = numLoc === 1 ? 0 : numLoc * 4;
 
             for (let i = 0; i < numLoc; i++) {
-                this.gl.vertexAttribPointer(location + i, size, attr.type, attr.normalized, attr.stride + stride, attr.offset + i * offset);
+                if(attr.integer && this.gl.renderer.isWebgl2){
+                    this.gl.vertexAttribIPointer(location + i, size, attr.type, attr.stride + stride, attr.offset + i * offset);
+                }
+                else{
+                    this.gl.vertexAttribPointer(location + i, size, attr.type, attr.normalized, attr.stride + stride, attr.offset + i * offset);
+                }
                 this.gl.enableVertexAttribArray(location + i);
 
                 // For instanced attributes, divisor needs to be set.

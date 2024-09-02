@@ -13,6 +13,7 @@ export interface Attribute {
     instanced: null | number | boolean;
     type: GLenum;
     normalized: boolean;
+    integer: boolean;
 
     buffer: WebGLBuffer;
     stride: number;
