@@ -9,6 +9,7 @@ import { NormalProgram } from './NormalProgram.js';
 import { InstancedMesh } from './InstancedMesh.js';
 
 import type { OGLRenderingContext } from '../core/Renderer.js';
+import type { Camera } from '../core/Camera.js';
 import type { Color } from '../math/Color.js';
 import type { BasisManager } from './BasisManager.js';
 import type { GLTFSkinSkeleton } from './GLTFSkin.js';
@@ -170,7 +171,7 @@ export class GLTFLoader {
         meshes: GLTFMesh[],
         skins: GLTFSkinReference[],
         images: (HTMLImageElement | ImageBitmap)[],
-    ): (InstancedMesh | Mesh)[] | null;
+    ): [(InstancedMesh | Mesh)[], (Camera | Transform)[]] | null;
 
     static populateSkins(skins: GLTFSkinReference[], nodes: (InstancedMesh | Mesh)[]): void;
 
