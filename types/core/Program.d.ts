@@ -51,7 +51,7 @@ export class Program {
 
     setShaders(options: { vertex: string; fragment: string }): void;
 
-    setBlendFunc(src: GLenum, dst: GLenum, srcAlpha: GLenum, dstAlpha: GLenum): void;
+    setBlendFunc(src: GLenum, dst: GLenum, srcAlpha?: GLenum, dstAlpha?: GLenum): void;
 
     setBlendEquation(modeRGB: GLenum, modeAlpha: GLenum): void;
 
