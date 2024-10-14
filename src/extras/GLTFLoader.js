@@ -480,35 +480,31 @@ export class GLTFLoader {
                 // For skins, return array of skin meshes to account for multiple instances
                 if (isSkin) {
                     primitives = skinIndices.map((skinIndex) => {
-                        return this.parsePrimitives(gl, primitives, desc, bufferViews, materials, 1, isLightmap).map(
-                            ({ geometry, program, mode }) => {
-                                const mesh = new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode });
-                                mesh.name = name;
-                                mesh.extras = extras;
-                                if (extensions) mesh.extensions = extensions;
-                                // TODO: support skin frustum culling
-                                mesh.frustumCulled = false;
-                                return mesh;
-                            }
-                        );
+                        return this.parsePrimitives(gl, primitives, desc, bufferViews, materials, 1, isLightmap).map(({ geometry, program, mode }) => {
+                            const mesh = new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode });
+                            mesh.name = name;
+                            mesh.extras = extras;
+                            if (extensions) mesh.extensions = extensions;
+                            // TODO: support skin frustum culling
+                            mesh.frustumCulled = false;
+                            return mesh;
+                        });
                     });
                     // For retrieval to add to node
                     primitives.instanceCount = 0;
                     primitives.numInstances = numInstances;
                 } else {
-                    primitives = this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap).map(
-                        ({ geometry, program, mode }) => {
-                            // InstancedMesh class has custom frustum culling for instances
-                            const meshConstructor = geometry.attributes.instanceMatrix ? InstancedMesh : Mesh;
-                            const mesh = new meshConstructor(gl, { geometry, program, mode });
-                            mesh.name = name;
-                            mesh.extras = extras;
-                            if (extensions) mesh.extensions = extensions;
-                            // Tag mesh so that nodes can add their transforms to the instance attribute
-                            mesh.numInstances = numInstances;
-                            return mesh;
-                        }
-                    );
+                    primitives = this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap).map(({ geometry, program, mode }) => {
+                        // InstancedMesh class has custom frustum culling for instances
+                        const meshConstructor = geometry.attributes.instanceMatrix ? InstancedMesh : Mesh;
+                        const mesh = new meshConstructor(gl, { geometry, program, mode });
+                        mesh.name = name;
+                        mesh.extras = extras;
+                        if (extensions) mesh.extensions = extensions;
+                        // Tag mesh so that nodes can add their transforms to the instance attribute
+                        mesh.numInstances = numInstances;
+                        return mesh;
+                    });
                 }
 
                 return {

@@ -18,9 +18,9 @@ export interface CameraOptions {
     zoom: number;
 }
 
-export interface PerspectiveOptions extends Pick<CameraOptions, 'near' | 'far' | 'fov' | 'aspect'> { }
+export interface PerspectiveOptions extends Pick<CameraOptions, 'near' | 'far' | 'fov' | 'aspect'> {}
 
-export interface OrthographicOptions extends Pick<CameraOptions, 'near' | 'far' | 'left' | 'right' | 'bottom' | 'top' | 'zoom'> { }
+export interface OrthographicOptions extends Pick<CameraOptions, 'near' | 'far' | 'left' | 'right' | 'bottom' | 'top' | 'zoom'> {}
 
 export type CameraType = 'perspective' | 'orthographic';
 

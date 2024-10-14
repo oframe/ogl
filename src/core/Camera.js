@@ -62,7 +62,7 @@ export class Camera extends Transform {
 
     updateProjectionMatrix() {
         if (this.type === 'perspective') {
-            return this.perspective()
+            return this.perspective();
         } else {
             return this.orthographic();
         }
