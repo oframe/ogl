@@ -59,6 +59,8 @@ export class Vec2 extends Array<number> {
 
     lerp(v: Vec2, a: number): this;
 
+    smoothLerp(v: Vec2, decay: number, dt: number): this;
+
     clone(): Vec2;
 
     fromArray(a: number[] | AttributeData, o?: number): this;

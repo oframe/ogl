@@ -70,6 +70,8 @@ export class Vec3 extends Array<number> {
 
     lerp(v: Vec3, t: number): this;
 
+    smoothLerp(v: Vec3, decay: number, dt: number): this;
+
     clone(): Vec3;
 
     fromArray(a: number[] | AttributeData, o?: number): this;
