@@ -24,6 +24,7 @@ export interface TextureOptions {
     internalFormat: number;
     wrapS: number;
     wrapT: number;
+    wrapR: number;
     generateMipmaps: boolean;
     minFilter: number;
     magFilter: number;
@@ -54,6 +55,7 @@ export class Texture {
     magFilter: number;
     wrapS: number;
     wrapT: number;
+    wrapR: number;
     generateMipmaps: boolean;
     premultiplyAlpha: boolean;
     unpackAlignment: number;
@@ -62,6 +64,7 @@ export class Texture {
     level: number;
     width: number;
     height: number;
+    length: number;
     texture: WebGLTexture;
 
     store: {
@@ -79,9 +82,9 @@ export class Texture {
     };
 
     needsUpdate: boolean;
-    onUpdate?: () => void;
 
     // Set from texture loader
+    onUpdate?: () => void | null;
     ext?: string;
     name?: string;
     loaded?: Promise<Texture>;
