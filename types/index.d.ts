@@ -58,3 +58,4 @@ export * from './extras/helpers/GridHelper';
 export * from './extras/helpers/VertexNormalsHelper';
 export * from './extras/helpers/FaceNormalsHelper';
 export * from './extras/InstancedMesh';
+export * from './extras/Texture3D.js';
