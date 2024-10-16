@@ -325,8 +325,9 @@ export function Orbit(
         }
     };
 
-    const onTouchEnd = () => {
+    const onTouchEnd = (e) => {
         if (!this.enabled) return;
+        if (e.touches.length === 1) rotateStart.set(e.touches[0].pageX, e.touches[0].pageY);
         state = STATE.NONE;
     };
 
