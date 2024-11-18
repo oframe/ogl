@@ -11,6 +11,8 @@ export interface ProgramOptions {
     depthTest: boolean;
     depthWrite: boolean;
     depthFunc: GLenum;
+    blendFunc: BlendFunc | (BlendFunc | null)[];
+    blendEquation: BlendEquation | (BlendEquation | null)[];
 }
 
 export interface UniformInfo extends WebGLActiveInfo {
@@ -37,8 +39,8 @@ export class Program {
     depthTest: boolean;
     depthWrite: boolean;
     depthFunc: GLenum;
-    blendFunc: BlendFunc;
-    blendEquation: BlendEquation;
+    blendFunc: BlendFunc | (BlendFunc | null)[];
+    blendEquation: BlendEquation | (BlendEquation | null)[];
 
     vertexShader: WebGLShader;
     fragmentShader: WebGLShader;
@@ -54,6 +56,10 @@ export class Program {
     setBlendFunc(src: GLenum, dst: GLenum, srcAlpha?: GLenum, dstAlpha?: GLenum): void;
 
     setBlendEquation(modeRGB: GLenum, modeAlpha: GLenum): void;
+
+    setBlendFuncArray(blendFuncs: BlendFunc[]): void;
+
+    setBlendEquationArray(blendEquations: BlendEquation[]): void;
 
     applyState(): void;
 
