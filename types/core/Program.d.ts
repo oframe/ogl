@@ -11,8 +11,8 @@ export interface ProgramOptions {
     depthTest: boolean;
     depthWrite: boolean;
     depthFunc: GLenum;
-    blendFunc: BlendFunc | BlendFunc[];
-    blendEquation: BlendEquation | BlendEquation[];
+    blendFunc: BlendFunc | (BlendFunc | null)[];
+    blendEquation: BlendEquation | (BlendEquation | null)[];
 }
 
 export interface UniformInfo extends WebGLActiveInfo {
