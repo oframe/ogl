@@ -118,7 +118,7 @@ export class Renderer {
 
     disable(id: GLenum): void;
 
-    setBlendFunc(src: GLenum, dst: GLenum, srcAlpha: GLenum, dstAlpha: GLenum): void;
+    setBlendFunc(src: GLenum, dst: GLenum, srcAlpha?: GLenum, dstAlpha?: GLenum): void;
 
     setBlendEquation(modeRGB: GLenum, modeAlpha: GLenum): void;
 
