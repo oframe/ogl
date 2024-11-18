@@ -49,8 +49,8 @@ export interface Viewport {
 }
 
 export interface RenderState {
-    blendFunc: BlendFunc;
-    blendEquation: BlendEquation;
+    blendFunc: BlendFunc | (BlendFunc | null)[];
+    blendEquation: BlendEquation | (BlendEquation | null)[];
     cullFace: GLenum | false | null;
     frontFace: number;
     depthMask: boolean;
@@ -98,6 +98,7 @@ export class Renderer {
     bindVertexArray: Function;
     deleteVertexArray: Function;
     drawBuffers: Function;
+    drawBuffersIndexed: OES_draw_buffers_indexed
 
     parameters: DeviceParameters;
 
@@ -121,6 +122,10 @@ export class Renderer {
     setBlendFunc(src: GLenum, dst: GLenum, srcAlpha?: GLenum, dstAlpha?: GLenum): void;
 
     setBlendEquation(modeRGB: GLenum, modeAlpha: GLenum): void;
+
+    setBlendFuncArray(blendFuncs: (BlendFunc | null)[]): void;
+
+    setBlendEquationArray(blendEquations: (BlendEquation | null)[]): void;
 
     setCullFace(value: GLenum): void;
 

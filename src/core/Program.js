@@ -21,6 +21,8 @@ export class Program {
             depthTest = true,
             depthWrite = true,
             depthFunc = gl.LEQUAL,
+            blendFunc = {},
+            blendEquation = {},
         } = {}
     ) {
         if (!gl.canvas) console.error('gl not passed as first argument to Program');
@@ -38,8 +40,8 @@ export class Program {
         this.depthTest = depthTest;
         this.depthWrite = depthWrite;
         this.depthFunc = depthFunc;
-        this.blendFunc = {};
-        this.blendEquation = {};
+        this.blendFunc = blendFunc;
+        this.blendEquation = blendEquation;
 
         // set default blendFunc if transparent flagged
         if (this.transparent && !this.blendFunc.src) {
@@ -113,16 +115,21 @@ export class Program {
     }
 
     setBlendFunc(src, dst, srcAlpha, dstAlpha) {
-        this.blendFunc.src = src;
-        this.blendFunc.dst = dst;
-        this.blendFunc.srcAlpha = srcAlpha;
-        this.blendFunc.dstAlpha = dstAlpha;
+        this.blendFunc = { src, dst, srcAlpha, dstAlpha };
         if (src) this.transparent = true;
     }
 
     setBlendEquation(modeRGB, modeAlpha) {
-        this.blendEquation.modeRGB = modeRGB;
-        this.blendEquation.modeAlpha = modeAlpha;
+        this.blendEquation = { modeRGB, modeAlpha };
+    }
+
+    setBlendFuncArray(blendFuncs) {
+        this.blendFunc = blendFuncs.map(({ src, dst, srcAlpha, dstAlpha }) => ({ src, dst, srcAlpha, dstAlpha }));
+        this.transparent = true;
+    }
+
+    setBlendEquationArray(blendEquations) {
+        this.blendEquation = blendEquations.map(({ modeRGB, modeAlpha }) => ({ modeRGB, modeAlpha }));
     }
 
     applyState() {
@@ -132,15 +139,39 @@ export class Program {
         if (this.cullFace) this.gl.renderer.enable(this.gl.CULL_FACE);
         else this.gl.renderer.disable(this.gl.CULL_FACE);
 
-        if (this.blendFunc.src) this.gl.renderer.enable(this.gl.BLEND);
-        else this.gl.renderer.disable(this.gl.BLEND);
+        // if (this.blendFunc.src) this.gl.renderer.enable(this.gl.BLEND);
+        // else this.gl.renderer.disable(this.gl.BLEND);
 
         if (this.cullFace) this.gl.renderer.setCullFace(this.cullFace);
         this.gl.renderer.setFrontFace(this.frontFace);
         this.gl.renderer.setDepthMask(this.depthWrite);
         this.gl.renderer.setDepthFunc(this.depthFunc);
-        if (this.blendFunc.src) this.gl.renderer.setBlendFunc(this.blendFunc.src, this.blendFunc.dst, this.blendFunc.srcAlpha, this.blendFunc.dstAlpha);
-        this.gl.renderer.setBlendEquation(this.blendEquation.modeRGB, this.blendEquation.modeAlpha);
+
+        if (Array.isArray(this.blendFunc)) {
+            if (this.blendFunc.length) {
+                this.blendFunc.forEach((blendFunc, i) => {
+                    if (blendFunc?.src) {
+                        this.gl.renderer.drawBuffersIndexed.enableiOES(this.gl.BLEND, i);
+                    } else {
+                        this.gl.renderer.drawBuffersIndexed.disableiOES(this.gl.BLEND, i);
+                    }
+                });
+                this.gl.renderer.setBlendFuncArray(this.blendFunc);
+            } else {
+                this.gl.renderer.disable(this.gl.BLEND);
+            }
+        } else if (this.blendFunc.src) {
+            this.gl.renderer.enable(this.gl.BLEND);
+            this.gl.renderer.setBlendFunc(this.blendFunc.src, this.blendFunc.dst, this.blendFunc.srcAlpha, this.blendFunc.dstAlpha);
+        } else {
+            this.gl.renderer.disable(this.gl.BLEND);
+        }
+
+        if (Array.isArray(this.blendEquation)) {
+            this.gl.renderer.setBlendEquationArray(this.blendEquation);
+        } else {
+            this.gl.renderer.setBlendEquation(this.blendEquation.modeRGB, this.blendEquation.modeAlpha);
+        }
     }
 
     use({ flipFaces = false } = {}) {

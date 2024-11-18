@@ -103,6 +103,7 @@ export class Renderer {
         this.bindVertexArray = this.getExtension('OES_vertex_array_object', 'bindVertexArray', 'bindVertexArrayOES');
         this.deleteVertexArray = this.getExtension('OES_vertex_array_object', 'deleteVertexArray', 'deleteVertexArrayOES');
         this.drawBuffers = this.getExtension('WEBGL_draw_buffers', 'drawBuffers', 'drawBuffersWEBGL');
+        this.drawBuffersIndexed = this.getExtension('OES_draw_buffers_indexed');
 
         // Store device parameters
         this.parameters = {};
@@ -153,27 +154,83 @@ export class Renderer {
 
     setBlendFunc(src, dst, srcAlpha, dstAlpha) {
         if (
+            !Array.isArray(this.state.blendFunc) &&
             this.state.blendFunc.src === src &&
             this.state.blendFunc.dst === dst &&
             this.state.blendFunc.srcAlpha === srcAlpha &&
             this.state.blendFunc.dstAlpha === dstAlpha
         )
             return;
-        this.state.blendFunc.src = src;
-        this.state.blendFunc.dst = dst;
-        this.state.blendFunc.srcAlpha = srcAlpha;
-        this.state.blendFunc.dstAlpha = dstAlpha;
+        this.state.blendFunc = { src, dst, srcAlpha, dstAlpha };
         if (srcAlpha !== undefined) this.gl.blendFuncSeparate(src, dst, srcAlpha, dstAlpha);
         else this.gl.blendFunc(src, dst);
     }
 
     setBlendEquation(modeRGB, modeAlpha) {
         modeRGB = modeRGB || this.gl.FUNC_ADD;
-        if (this.state.blendEquation.modeRGB === modeRGB && this.state.blendEquation.modeAlpha === modeAlpha) return;
-        this.state.blendEquation.modeRGB = modeRGB;
-        this.state.blendEquation.modeAlpha = modeAlpha;
+        if (!Array.isArray(this.state.blendEquation) && this.state.blendEquation.modeRGB === modeRGB && this.state.blendEquation.modeAlpha === modeAlpha) return;
+        this.state.blendEquation = { modeRGB, modeAlpha };
         if (modeAlpha !== undefined) this.gl.blendEquationSeparate(modeRGB, modeAlpha);
         else this.gl.blendEquation(modeRGB);
+    }
+
+    setBlendFuncArray(blendFuncs) {
+        if (
+            Array.isArray(this.state.blendFunc) &&
+            this.state.blendFunc.length === blendFuncs.length &&
+            this.state.blendFunc.every((blendFunc, i) => {
+                const newBlendFunc = blendFuncs[i];
+                if (blendFunc === null && newBlendFunc === null) {
+                    return true;
+                }
+                return blendFunc.src === newBlendFunc.src && blendFunc.dst === newBlendFunc.dst && blendFunc.srcAlpha === newBlendFunc.srcAlpha && blendFunc.dstAlpha === newBlendFunc.dstAlpha;
+            })
+        )
+            return;
+        this.state.blendFunc = blendFuncs.map((blendFunc) => {
+            if (blendFunc) {
+                return { src: blendFunc.src, dst: blendFunc.dst, srcAlpha: blendFunc.srcAlpha, dstAlpha: blendFunc.dstAlpha };
+            }
+            return null;
+        });
+
+        blendFuncs.forEach((blendFunc, i) => {
+            if (blendFunc === null) {
+                return;
+            }
+            if (blendFunc.srcAlpha !== undefined) {
+                this.drawBuffersIndexed.blendFuncSeparateiOES(i, blendFunc.src, blendFunc.dst, blendFunc.srcAlpha, blendFunc.dstAlpha);
+            } else {
+                this.drawBuffersIndexed.blendFunciOES(i, blendFunc.src, blendFunc.dst);
+            }
+        });
+    }
+
+    setBlendEquationArray(blendEquations) {
+        if (
+            Array.isArray(this.state.blendEquation) &&
+            this.state.blendEquation.length === blendEquations.length &&
+            this.state.blendEquation.every((blendEquation, i) => {
+                const newBlendEquation = blendEquations[i];
+                if (blendEquation === null && newBlendEquation === null) {
+                    return true;
+                }
+                return blendEquation.modeRGB === newBlendEquation.modeRGB && blendEquation.modeAlpha === newBlendEquation.modeAlpha;
+            })
+        )
+            return;
+        this.state.blendEquation = blendEquations.map(({ modeRGB, modeAlpha }) => ({ modeRGB, modeAlpha }));
+
+        blendEquations.forEach((blendEquation, i) => {
+            if (blendEquation === null) {
+                return;
+            }
+            if (blendEquation.modeAlpha !== undefined) {
+                this.drawBuffersIndexed.blendEquationSeparateiOES(i, blendEquation.modeRGB, blendEquation.modeAlpha);
+            } else {
+                this.drawBuffersIndexed.blendEquationiOES(i, blendEquation.modeRGB);
+            }
+        });
     }
 
     setCullFace(value) {
@@ -334,11 +391,7 @@ export class Renderer {
                 this.enable(this.gl.DEPTH_TEST);
                 this.setDepthMask(true);
             }
-            this.gl.clear(
-                (this.color ? this.gl.COLOR_BUFFER_BIT : 0) |
-                    (this.depth ? this.gl.DEPTH_BUFFER_BIT : 0) |
-                    (this.stencil ? this.gl.STENCIL_BUFFER_BIT : 0)
-            );
+            this.gl.clear((this.color ? this.gl.COLOR_BUFFER_BIT : 0) | (this.depth ? this.gl.DEPTH_BUFFER_BIT : 0) | (this.stencil ? this.gl.STENCIL_BUFFER_BIT : 0));
         }
 
         // updates all scene graph matrices
