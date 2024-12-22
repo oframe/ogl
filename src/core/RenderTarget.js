@@ -75,7 +75,7 @@ export class RenderTarget {
                 magFilter: this.gl.NEAREST,
                 format: this.stencil ? this.gl.DEPTH_STENCIL : this.DEPTH_COMPONENT,
                 internalFormat: gl.renderer.isWebgl2 ? (this.stencil ? this.gl.DEPTH24_STENCIL8 : this.DEPTH_COMPONENT16) : this.gl.DEPTH_COMPONENT,
-                type: this.gl.UNSIGNED_INT_24_8,
+                type: this.stencil ? this.gl.UNSIGNED_INT_24_8 : this.gl.UNSIGNED_INT,
             });
             this.depthTexture.update();
             this.gl.framebufferTexture2D(this.target, this.stencil ? this.gl.DEPTH_STENCIL_ATTACHMENT : this.DEPTH_ATTACHMENT, this.gl.TEXTURE_2D, this.depthTexture.texture, 0 /* level */);
