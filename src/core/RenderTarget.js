@@ -1,4 +1,4 @@
-import { Texture } from "ogl";
+import { Texture } from './Texture'
 
 export class RenderTarget {
     constructor(

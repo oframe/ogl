@@ -1,4 +1,4 @@
-import { Vec3 } from "ogl";
+import { Vec3 } from '../math/Vec3.js';
 
 // TODO: Handle context loss https://www.khronos.org/webgl/wiki/HandlingContextLost
 
