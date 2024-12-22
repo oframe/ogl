@@ -40,6 +40,8 @@ export class Program {
         this.depthFunc = depthFunc;
         this.blendFunc = {};
         this.blendEquation = {};
+        this.stencilFunc = {};
+        this.stencilOp = {}
 
         // set default blendFunc if transparent flagged
         if (this.transparent && !this.blendFunc.src) {
@@ -125,6 +127,19 @@ export class Program {
         this.blendEquation.modeAlpha = modeAlpha;
     }
 
+    setStencilFunc(func, ref, mask) {
+        this.stencilRef = ref;
+        this.stencilFunc.func = func;
+        this.stencilFunc.ref = ref;
+        this.stencilFunc.mask = mask;
+    }
+
+    setStencilOp(stencilFail, depthFail, depthPass) {
+        this.stencilOp.stencilFail = stencilFail;
+        this.stencilOp.depthFail = depthFail;
+        this.stencilOp.depthPass = depthPass;
+    }
+
     applyState() {
         if (this.depthTest) this.gl.renderer.enable(this.gl.DEPTH_TEST);
         else this.gl.renderer.disable(this.gl.DEPTH_TEST);
@@ -141,6 +156,13 @@ export class Program {
         this.gl.renderer.setDepthFunc(this.depthFunc);
         if (this.blendFunc.src) this.gl.renderer.setBlendFunc(this.blendFunc.src, this.blendFunc.dst, this.blendFunc.srcAlpha, this.blendFunc.dstAlpha);
         this.gl.renderer.setBlendEquation(this.blendEquation.modeRGB, this.blendEquation.modeAlpha);
+
+        if(this.stencilFunc.func || this.stencilOp.stencilFail) this.gl.renderer.enable(this.gl.STENCIL_TEST)
+            else this.gl.renderer.disable(this.gl.STENCIL_TEST)
+
+        this.gl.renderer.setStencilFunc(this.stencilFunc.func, this.stencilFunc.ref, this.stencilFunc.mask)
+        this.gl.renderer.setStencilOp(this.stencilOp.stencilFail, this.stencilOp.depthFail, this.stencilOp.depthPass)
+
     }
 
     use({ flipFaces = false } = {}) {
