@@ -379,8 +379,7 @@ export class Renderer {
             this.gl.clear(
                 (this.color ? this.gl.COLOR_BUFFER_BIT : 0) |
                     (this.depth ? this.gl.DEPTH_BUFFER_BIT : 0) |
-                    (this.stencil ? this.gl.STENCIL_BUFFER_BIT : 0) |
-                    ((this.stencil && this.depth) ? this.gl.STENCIL_BUFFER_BIT : this.gl.DEPTH_BUFFER_BIT)
+                    (this.stencil ? this.gl.STENCIL_BUFFER_BIT : 0)
             );
         }
 
