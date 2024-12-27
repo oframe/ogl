@@ -135,13 +135,16 @@ export class GLTFLoader {
     }
 
     static parseDesc(src) {
-        if (!src.match(/\.glb/)) {
-            return fetch(src).then((res) => res.json());
-        } else {
-            return fetch(src)
-                .then((res) => res.arrayBuffer())
-                .then((glb) => this.unpackGLB(glb));
-        }
+        return fetch(src)
+            .then((res) => res.arrayBuffer())
+            .then((data) => {
+                const textDecoder = new TextDecoder();
+                if (textDecoder.decode(new Uint8Array(data, 0, 4)) === 'glTF') {
+                    return this.unpackGLB(data);
+                } else {
+                    return JSON.parse(textDecoder.decode(data));
+                }
+            });
     }
 
     // From https://github.com/donmccurdy/glTF-Transform/blob/e4108cc/packages/core/src/io/io.ts#L32

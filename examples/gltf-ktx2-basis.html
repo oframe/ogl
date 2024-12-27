@@ -423,20 +423,14 @@
                     e.preventDefault();
                     const file = e.dataTransfer.files[0];
                     const reader = new FileReader();
-                    const isGLB = file.name.match(/\.glb$/);
-
-                    if (isGLB) {
-                        reader.readAsArrayBuffer(file);
-                    } else {
-                        reader.readAsText(file);
-                    }
-
+                    reader.readAsArrayBuffer(file);
                     reader.onload = async function (e) {
                         let desc;
-                        if (isGLB) {
+                        const textDecoder = new TextDecoder();
+                        if (textDecoder.decode(new Uint8Array(e.target.result, 0, 4)) === 'glTF') {
                             desc = GLTFLoader.unpackGLB(e.target.result);
                         } else {
-                            desc = JSON.parse(e.target.result);
+                            desc = JSON.parse(textDecoder.decode(e.target.result));
                         }
                         const dir = '';
                         gltf = await GLTFLoader.parse(gl, desc, dir);
