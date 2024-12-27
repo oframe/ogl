@@ -18,6 +18,7 @@ import { InstancedMesh } from './InstancedMesh.js';
 // [ ] Spot lights
 
 const TYPE_ARRAY = {
+    5120: Int8Array,
     5121: Uint8Array,
     5122: Int16Array,
     5123: Uint16Array,
