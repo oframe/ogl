@@ -125,12 +125,7 @@ export class GLTFLoader {
 
     static parseBufferViews(gl: OGLRenderingContext, desc: GLTFDescription, buffers: ArrayBuffer[]): ArrayBufferView[] | null;
 
-    static parseImages(
-        gl: OGLRenderingContext,
-        desc: GLTFDescription,
-        dir: string,
-        bufferViews: ArrayBufferView[],
-    ): Promise<(HTMLImageElement | ImageBitmap)[]> | null;
+    static parseImages(gl: OGLRenderingContext, desc: GLTFDescription, dir: string, bufferViews: ArrayBufferView[]): Promise<(HTMLImageElement | ImageBitmap)[]> | null;
 
     static parseTextures(gl: OGLRenderingContext, desc: GLTFDescription, images: (HTMLImageElement | ImageBitmap)[]): Texture[] | null;
 
@@ -145,13 +140,7 @@ export class GLTFLoader {
 
     static parseSkins(gl: OGLRenderingContext, desc: GLTFDescription, bufferViews: ArrayBufferView[]): GLTFSkinReference[] | null;
 
-    static parseMeshes(
-        gl: OGLRenderingContext,
-        desc: GLTFDescription,
-        bufferViews: ArrayBufferView[],
-        materials: GLTFMaterial[],
-        skins: GLTFSkinReference[],
-    ): GLTFMesh[] | null;
+    static parseMeshes(gl: OGLRenderingContext, desc: GLTFDescription, bufferViews: ArrayBufferView[], materials: GLTFMaterial[], skins: GLTFSkinReference[]): GLTFMesh[] | null;
 
     static parsePrimitives(
         gl: OGLRenderingContext,
@@ -175,12 +164,7 @@ export class GLTFLoader {
 
     static populateSkins(skins: GLTFSkinReference[], nodes: (InstancedMesh | Mesh)[]): void;
 
-    static parseAnimations(
-        gl: OGLRenderingContext,
-        desc: GLTFDescription,
-        nodes: (InstancedMesh | Mesh)[],
-        bufferViews: ArrayBufferView[],
-    ): GLTFAnimationReference[] | null;
+    static parseAnimations(gl: OGLRenderingContext, desc: GLTFDescription, nodes: (InstancedMesh | Mesh)[], bufferViews: ArrayBufferView[]): GLTFAnimationReference[] | null;
 
     static parseScenes(desc: GLTFDescription, nodes: (InstancedMesh | Mesh)[]): Transform[] | null;
 
