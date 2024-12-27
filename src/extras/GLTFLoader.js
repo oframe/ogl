@@ -14,7 +14,7 @@ import { InstancedMesh } from './InstancedMesh.js';
 // [ ] Morph Targets
 // [ ] Materials
 // [ ] Sparse accessor packing? For morph targets basically
-// [ ] option to turn off GPU instancing ?
+// [ ] Option to turn off GPU instancing?
 // [ ] Spot lights
 
 const TYPE_ARRAY = {
@@ -62,7 +62,7 @@ export class GLTFLoader {
     static async load(gl, src) {
         const dir = src.split('/').slice(0, -1).join('/') + '/';
 
-        // load main description json
+        // Load main description json
         const desc = await this.parseDesc(src);
 
         return this.parse(gl, desc, dir);
@@ -145,14 +145,14 @@ export class GLTFLoader {
 
     // From https://github.com/donmccurdy/glTF-Transform/blob/e4108cc/packages/core/src/io/io.ts#L32
     static unpackGLB(glb) {
-        // Decode and verify GLB header.
+        // Decode and verify GLB header
         const header = new Uint32Array(glb, 0, 3);
         if (header[0] !== 0x46546c67) {
             throw new Error('Invalid glTF asset.');
         } else if (header[1] !== 2) {
             throw new Error(`Unsupported glTF binary version, "${header[1]}".`);
         }
-        // Decode and verify chunk headers.
+        // Decode and verify chunk headers
         const jsonChunkHeader = new Uint32Array(glb, 12, 2);
         const jsonByteOffset = 20;
         const jsonByteLength = jsonChunkHeader[0];
@@ -160,7 +160,7 @@ export class GLTFLoader {
             throw new Error('Unexpected GLB layout.');
         }
 
-        // Decode JSON.
+        // Decode JSON
         const jsonText = new TextDecoder().decode(glb.slice(jsonByteOffset, jsonByteOffset + jsonByteLength));
         const json = JSON.parse(jsonText);
         // JSON only
@@ -170,7 +170,7 @@ export class GLTFLoader {
         if (binaryChunkHeader[1] !== 0x004e4942) {
             throw new Error('Unexpected GLB layout.');
         }
-        // Decode content.
+        // Decode content
         const binaryByteOffset = jsonByteOffset + jsonByteLength + 8;
         const binaryByteLength = binaryChunkHeader[0];
         const binary = glb.slice(binaryByteOffset, binaryByteOffset + binaryByteLength);
@@ -179,7 +179,7 @@ export class GLTFLoader {
         return json;
     }
 
-    // Threejs GLTF Loader https://github.com/mrdoob/three.js/blob/master/examples/js/loaders/GLTFLoader.js#L1085
+    // ThreeJS GLTF Loader https://github.com/mrdoob/three.js/blob/master/examples/js/loaders/GLTFLoader.js#L1085
     static resolveURI(uri, dir) {
         // Invalid URI
         if (typeof uri !== 'string' || uri === '') return '';
@@ -460,9 +460,8 @@ export class GLTFLoader {
                 },
                 meshIndex
             ) => {
-                // TODO: weights stuff ?
-                // Parse through nodes to see how many instances there are
-                // and if there is a skin attached
+                // TODO: weights stuff?
+                // Parse through nodes to see how many instances there are and if there is a skin attached
                 // If multiple instances of a skin, need to create each
                 let numInstances = 0;
                 let skinIndices = [];
@@ -676,7 +675,7 @@ export class GLTFLoader {
                 const node = isCamera ? new Camera(gl) : new Transform();
 
                 if (isCamera) {
-                    // ?NOTE: chose to use node's name and extras/extensions over camera.
+                    // NOTE: chose to use node's name and extras/extensions over camera
                     const cameraOpts = desc.cameras[camera];
                     if (cameraOpts.type === 'perspective') {
                         const { yfov: fov, znear: near, zfar: far } = cameraOpts.perspective;
@@ -714,7 +713,7 @@ export class GLTFLoader {
                 let isInstancedMatrix = false;
                 let isSkin = skinIndex !== undefined;
 
-                // add mesh if included
+                // Add mesh if included
                 if (meshIndex !== undefined) {
                     if (isSkin) {
                         meshes[meshIndex].primitives[meshes[meshIndex].primitives.instanceCount].forEach((mesh) => {
@@ -731,7 +730,7 @@ export class GLTFLoader {
                         meshes[meshIndex].primitives.forEach((mesh) => {
                             if (extras) Object.assign(mesh.extras, extras);
 
-                            // instanced mesh might only have 1
+                            // Instanced mesh might only have 1
                             if (mesh.geometry.isInstanced) {
                                 isInstanced = true;
                                 if (!mesh.instanceCount) {
@@ -910,7 +909,7 @@ export class GLTFLoader {
         // Update matrices on root nodes
         scenes.forEach((scene) => scene.forEach((node) => node.updateMatrixWorld()));
 
-        // uses KHR_lights_punctual extension
+        // Uses KHR_lights_punctual extension
         const lightsDescArray = desc.extensions?.KHR_lights_punctual?.lights || [];
 
         // Need nodes for transforms
