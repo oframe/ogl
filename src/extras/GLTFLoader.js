@@ -611,7 +611,7 @@ export class GLTFLoader {
 
                         const attributeResult = decodeAttribute(this.draco, this.decoder, dracoGeometry, attributeName, attributeType, attribute);
 
-                        // Create gl buffers for the bufferView, pushing it to the GPU
+                        // Create gl buffers for the attribute data, pushing it to the GPU
                         const buffer = gl.createBuffer();
                         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
                         gl.renderer.state.boundBuffer = buffer;
@@ -652,7 +652,7 @@ export class GLTFLoader {
 
                         const index = decodeIndex(this.draco, this.decoder, dracoGeometry);
 
-                        // Create gl buffers for the bufferView, pushing it to the GPU
+                        // Create gl buffers for the attribute data, pushing it to the GPU
                         const buffer = gl.createBuffer();
                         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
                         gl.renderer.state.boundBuffer = buffer;
