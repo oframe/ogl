@@ -11,7 +11,7 @@ import { NormalProgram } from './NormalProgram.js';
 import { InstancedMesh } from './InstancedMesh.js';
 
 // TODO
-// [ ] Morph Targets
+// [ ] Morph targets
 // [ ] Materials
 // [ ] Sparse accessor packing? For morph targets basically
 // [ ] Option to turn off GPU instancing?

@@ -82,7 +82,7 @@
                             mat4 boneMatZ = getBoneMatrix(skinIndex.z);
                             mat4 boneMatW = getBoneMatrix(skinIndex.w);
 
-                            // update normal
+                            // Update normal
                             mat4 skinMatrix = mat4(0.0);
                             skinMatrix += skinWeight.x * boneMatX;
                             skinMatrix += skinWeight.y * boneMatY;
