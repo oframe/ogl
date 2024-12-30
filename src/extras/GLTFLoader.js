@@ -17,6 +17,10 @@ import { InstancedMesh } from './InstancedMesh.js';
 // [ ] Option to turn off GPU instancing?
 // [ ] Spot lights
 
+// TODO
+// [ ] Draco worker
+// [ ] Point clouds
+
 const TYPE_ARRAY = {
     5120: Int8Array,
     5121: Uint8Array,
@@ -26,6 +30,7 @@ const TYPE_ARRAY = {
     5126: Float32Array,
     'image/jpeg': Uint8Array,
     'image/png': Uint8Array,
+    'image/webp': Uint8Array,
 };
 
 const TYPE_SIZE = {
@@ -56,6 +61,11 @@ const TRANSFORMS = {
 };
 
 export class GLTFLoader {
+    static setDracoDecoderModule(draco) {
+        this.draco = draco;
+        this.decoder = new draco.Decoder();
+    }
+
     static setBasisManager(manager) {
         this.basisManager = manager;
     }
@@ -72,6 +82,9 @@ export class GLTFLoader {
     static async parse(gl, desc, dir) {
         if (desc.asset === undefined || desc.asset.version[0] < 2)
             console.warn('Only GLTF >=2.0 supported. Attempting to parse.');
+
+        if (desc.extensionsRequired?.includes('KHR_draco_mesh_compression') && !this.draco)
+            console.warn('KHR_draco_mesh_compression extension required but no decoder module supplied. Use .setDracoDecoderModule()');
 
         if (desc.extensionsRequired?.includes('KHR_texture_basisu') && !this.basisManager)
             console.warn('KHR_texture_basisu extension required but no manager supplied. Use .setBasisManager()');
@@ -221,20 +234,38 @@ export class GLTFLoader {
 
     static parseBufferViews(gl, desc, buffers) {
         if (!desc.bufferViews) return null;
-        // Clone to leave description pure
-        const bufferViews = desc.bufferViews.map((o) => Object.assign({}, o));
+        const bufferViews = desc.bufferViews;
 
         desc.meshes &&
             desc.meshes.forEach(({ primitives }) => {
-                primitives.forEach(({ attributes, indices }) => {
+                primitives.forEach(({ attributes, indices, extensions }) => {
                     // Flag bufferView as an attribute, so it knows to create a gl buffer
-                    for (let attr in attributes) bufferViews[desc.accessors[attributes[attr]].bufferView].isAttribute = true;
+                    for (const attr in attributes) {
+                        const accessor = desc.accessors[attributes[attr]];
+                        if (accessor.bufferView === undefined && !!extensions) {
+                            // Draco extension buffer view
+                            if (extensions.KHR_draco_mesh_compression) {
+                                accessor.bufferView = extensions.KHR_draco_mesh_compression.bufferView;
+                                bufferViews[accessor.bufferView].isDraco = true;
+                            }
+                        }
+                        bufferViews[accessor.bufferView].isAttribute = true;
+                    }
 
-                    if (indices === undefined) return;
-                    bufferViews[desc.accessors[indices].bufferView].isAttribute = true;
+                    if (indices !== undefined) {
+                        const accessor = desc.accessors[indices];
+                        if (accessor.bufferView === undefined && !!extensions) {
+                            // Draco extension buffer view
+                            if (extensions.KHR_draco_mesh_compression) {
+                                accessor.bufferView = extensions.KHR_draco_mesh_compression.bufferView;
+                                bufferViews[accessor.bufferView].isDraco = true;
+                            }
+                        }
+                        bufferViews[accessor.bufferView].isAttribute = true;
 
-                    // Make sure indices bufferView have a target property for gl buffer binding
-                    bufferViews[desc.accessors[indices].bufferView].target = gl.ELEMENT_ARRAY_BUFFER;
+                        // Make sure indices bufferView have a target property for gl buffer binding
+                        bufferViews[accessor.bufferView].target = gl.ELEMENT_ARRAY_BUFFER;
+                    }
                 });
             });
 
@@ -266,12 +297,13 @@ export class GLTFLoader {
                     componentType, // optional, added from accessor above
                     mimeType, // optional, added from images above
                     isAttribute,
+                    isDraco,
                 },
                 i
             ) => {
                 bufferViews[i].data = buffers[bufferIndex].slice(byteOffset, byteOffset + byteLength);
 
-                if (!isAttribute) return;
+                if (!isAttribute || isDraco) return;
                 // Create gl buffers for the bufferView, pushing it to the GPU
                 const buffer = gl.createBuffer();
                 gl.bindBuffer(target, buffer);
@@ -294,7 +326,7 @@ export class GLTFLoader {
                     return image;
                 }
 
-                // jpg / png
+                // jpg / png / webp
                 const image = new Image();
                 image.name = name;
                 if (uri) {
@@ -319,6 +351,9 @@ export class GLTFLoader {
 
     static createTexture(gl, desc, images, { sampler: samplerIndex, source: sourceIndex, name, extensions, extras }) {
         if (sourceIndex === undefined && !!extensions) {
+            // WebP extension source index
+            if (extensions.EXT_texture_webp) sourceIndex = extensions.EXT_texture_webp.source;
+
             // Basis extension source index
             if (extensions.KHR_texture_basisu) sourceIndex = extensions.KHR_texture_basisu.source;
         }
@@ -541,14 +576,118 @@ export class GLTFLoader {
                 if (extras) geometry.extras = extras;
                 if (extensions) geometry.extensions = extensions;
 
-                // Add each attribute found in primitive
-                for (let attr in attributes) {
-                    geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
-                }
+                // For compressed geometry data
+                if (extensions.KHR_draco_mesh_compression) {
+                    const data = bufferViews[extensions.KHR_draco_mesh_compression.bufferView].data;
+                    const array = new Int8Array(data);
+                    const dracoGeometry = new this.draco.Mesh();
+                    const decodingStatus = this.decoder.DecodeArrayToMesh(array, array.byteLength, dracoGeometry);
 
-                // Add index attribute if found
-                if (indices !== undefined) {
-                    geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews));
+                    if (!decodingStatus.ok() || dracoGeometry.ptr === 0)
+                        throw new Error(`Decoding failed: ${decodingStatus.error_msg()}`);
+
+                    // Add each attribute found in primitive
+                    for (const attr in attributes) {
+                        const {
+                            bufferView: bufferViewIndex, // optional
+                            byteOffset = 0, // optional
+                            componentType, // required
+                            normalized = false, // optional
+                            count, // required
+                            type, // required
+                            min, // optional
+                            max, // optional
+                            sparse, // optional
+                            // name, // optional
+                            // extensions, // optional
+                            // extras, // optional
+                        } = desc.accessors[attributes[attr]];
+
+                        const size = TYPE_SIZE[type];
+
+                        const attributeName = ATTRIBUTES[attr];
+                        const attributeType = TYPE_ARRAY[componentType];
+                        const attribute = this.decoder.GetAttributeByUniqueId(dracoGeometry, extensions.KHR_draco_mesh_compression.attributes[attr]);
+
+                        const attributeResult = decodeAttribute(
+                            this.draco,
+                            this.decoder,
+                            dracoGeometry,
+                            attributeName,
+                            attributeType,
+                            attribute
+                        );
+
+                        // Create gl buffers for the bufferView, pushing it to the GPU
+                        const buffer = gl.createBuffer();
+                        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+                        gl.renderer.state.boundBuffer = buffer;
+                        gl.bufferData(gl.ARRAY_BUFFER, attributeResult.array, gl.STATIC_DRAW);
+
+                        geometry.addAttribute(attributeName, {
+                            data: attributeResult.array,
+                            size,
+                            type: componentType,
+                            normalized,
+                            buffer,
+                            stride: 0,
+                            offset: byteOffset,
+                            count,
+                            min,
+                            max,
+                        });
+                    }
+
+                    // Add index attribute if found
+                    if (indices !== undefined) {
+                        const {
+                            bufferView: bufferViewIndex, // optional
+                            byteOffset = 0, // optional
+                            componentType, // required
+                            normalized = false, // optional
+                            count, // required
+                            type, // required
+                            min, // optional
+                            max, // optional
+                            sparse, // optional
+                            // name, // optional
+                            // extensions, // optional
+                            // extras, // optional
+                        } = desc.accessors[indices];
+
+                        const size = TYPE_SIZE[type];
+
+                        const index = decodeIndex(this.draco, this.decoder, dracoGeometry);
+
+                        // Create gl buffers for the bufferView, pushing it to the GPU
+                        const buffer = gl.createBuffer();
+                        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+                        gl.renderer.state.boundBuffer = buffer;
+                        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, index.array, gl.STATIC_DRAW);
+
+                        geometry.addAttribute('index', {
+                            data: index.array,
+                            size,
+                            type: componentType,
+                            normalized,
+                            buffer,
+                            stride: 0,
+                            offset: byteOffset,
+                            count,
+                            min,
+                            max,
+                        });
+                    }
+                } else {
+                    // Add each attribute found in primitive
+                    for (const attr in attributes) {
+                        geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
+                    }
+
+                    // Add index attribute if found
+                    if (indices !== undefined) {
+                        geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews));
+                    }
                 }
 
                 // Add instanced transform attribute if multiple instances
@@ -948,5 +1087,65 @@ export class GLTFLoader {
         });
 
         return lights;
+    }
+}
+
+// https://github.com/mrdoob/three.js/blob/dev/examples/jsm/loaders/DRACOLoader.js
+
+function decodeIndex(draco, decoder, dracoGeometry) {
+    const numFaces = dracoGeometry.num_faces();
+    const numIndices = numFaces * 3;
+    const byteLength = numIndices * 4;
+
+    const ptr = draco._malloc(byteLength);
+    decoder.GetTrianglesUInt32Array(dracoGeometry, byteLength, ptr);
+    const index = new Uint32Array(draco.HEAPF32.buffer, ptr, numIndices).slice();
+    draco._free(ptr);
+
+    return { array: index, itemSize: 1 };
+}
+
+function decodeAttribute(
+    draco,
+    decoder,
+    dracoGeometry,
+    attributeName,
+    attributeType,
+    attribute
+) {
+    const numComponents = attribute.num_components();
+    const numPoints = dracoGeometry.num_points();
+    const numValues = numPoints * numComponents;
+    const byteLength = numValues * attributeType.BYTES_PER_ELEMENT;
+    const dataType = getDracoDataType(draco, attributeType);
+
+    const ptr = draco._malloc(byteLength);
+    decoder.GetAttributeDataArrayForAllPoints(dracoGeometry, attribute, dataType, byteLength, ptr);
+    const array = new attributeType(draco.HEAPF32.buffer, ptr, numValues).slice();
+    draco._free(ptr);
+
+    return {
+        name: attributeName,
+        array: array,
+        itemSize: numComponents,
+    };
+}
+
+function getDracoDataType(draco, attributeType) {
+    switch (attributeType) {
+        case Float32Array:
+            return draco.DT_FLOAT32;
+        case Int8Array:
+            return draco.DT_INT8;
+        case Int16Array:
+            return draco.DT_INT16;
+        case Int32Array:
+            return draco.DT_INT32;
+        case Uint8Array:
+            return draco.DT_UINT8;
+        case Uint16Array:
+            return draco.DT_UINT16;
+        case Uint32Array:
+            return draco.DT_UINT32;
     }
 }

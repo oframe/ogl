@@ -109,6 +109,8 @@ export interface GLTF {
  * @see {@link https://github.com/oframe/ogl/blob/master/src/extras/GLTFLoader.js | Source}
  */
 export class GLTFLoader {
+    static setDracoDecoderModule(draco: object): void;
+
     static setBasisManager(manager: BasisManager): void;
 
     static load(gl: OGLRenderingContext, src: string): Promise<GLTF>;
