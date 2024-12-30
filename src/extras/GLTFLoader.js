@@ -609,14 +609,7 @@ export class GLTFLoader {
                         const attributeType = TYPE_ARRAY[componentType];
                         const attribute = this.decoder.GetAttributeByUniqueId(dracoGeometry, extensions.KHR_draco_mesh_compression.attributes[attr]);
 
-                        const attributeResult = decodeAttribute(
-                            this.draco,
-                            this.decoder,
-                            dracoGeometry,
-                            attributeName,
-                            attributeType,
-                            attribute
-                        );
+                        const attributeResult = decodeAttribute(this.draco, this.decoder, dracoGeometry, attributeName, attributeType, attribute);
 
                         // Create gl buffers for the bufferView, pushing it to the GPU
                         const buffer = gl.createBuffer();
@@ -1105,14 +1098,7 @@ function decodeIndex(draco, decoder, dracoGeometry) {
     return { array: index, itemSize: 1 };
 }
 
-function decodeAttribute(
-    draco,
-    decoder,
-    dracoGeometry,
-    attributeName,
-    attributeType,
-    attribute
-) {
+function decodeAttribute(draco, decoder, dracoGeometry, attributeName, attributeType, attribute) {
     const numComponents = attribute.num_components();
     const numPoints = dracoGeometry.num_points();
     const numValues = numPoints * numComponents;
