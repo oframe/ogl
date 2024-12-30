@@ -661,7 +661,7 @@ export class GLTFLoader {
                         geometry.addAttribute('index', {
                             data: index.array,
                             size,
-                            type: componentType,
+                            type: 5125, // Uint32Array
                             normalized,
                             buffer,
                             stride: 0,
