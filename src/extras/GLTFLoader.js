@@ -577,7 +577,7 @@ export class GLTFLoader {
                 if (extensions) geometry.extensions = extensions;
 
                 // For compressed geometry data
-                if (extensions.KHR_draco_mesh_compression) {
+                if (extensions && extensions.KHR_draco_mesh_compression) {
                     const data = bufferViews[extensions.KHR_draco_mesh_compression.bufferView].data;
                     const array = new Int8Array(data);
                     const dracoGeometry = new this.draco.Mesh();
