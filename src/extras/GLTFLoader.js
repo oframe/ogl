@@ -149,7 +149,7 @@ export class GLTFLoader {
     }
 
     static parseDesc(src) {
-        return fetch(src)
+        return fetch(src, { mode: 'cors' })
             .then((res) => res.arrayBuffer())
             .then((data) => {
                 const textDecoder = new TextDecoder();
