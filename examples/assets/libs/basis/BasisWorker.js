@@ -1,4 +1,7 @@
-// https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/basis
+// TODO
+// [ ] WASM support
+
+// https://github.com/mrdoob/three.js/tree/master/examples/jsm/libs/basis
 importScripts('basis_transcoder.js');
 
 let KTX2File, moduleReadyResolve;
