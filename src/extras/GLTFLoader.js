@@ -265,15 +265,16 @@ export class GLTFLoader {
             });
 
         // Get componentType of each bufferView from the accessors
-        desc.accessors.forEach(({ bufferView: i, componentType }) => {
-            bufferViews[i].componentType = componentType;
+        desc.accessors.forEach(({ bufferView: bufferViewIndex, componentType }) => {
+            if (bufferViewIndex === undefined) return;
+            bufferViews[bufferViewIndex].componentType = componentType;
         });
 
         // Get mimetype of bufferView from images
         desc.images &&
-            desc.images.forEach(({ uri, bufferView: i, mimeType }) => {
-                if (i === undefined) return;
-                bufferViews[i].mimeType = mimeType;
+            desc.images.forEach(({ uri, bufferView: bufferViewIndex, mimeType }) => {
+                if (bufferViewIndex === undefined) return;
+                bufferViews[bufferViewIndex].mimeType = mimeType;
             });
 
         // Push each bufferView to the GPU as a separate buffer
