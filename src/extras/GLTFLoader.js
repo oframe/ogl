@@ -17,10 +17,6 @@ import { InstancedMesh } from './InstancedMesh.js';
 // [ ] Option to turn off GPU instancing?
 // [ ] Spot lights
 
-// TODO
-// [ ] Draco worker
-// [ ] Point clouds
-
 const TYPE_ARRAY = {
     5120: Int8Array,
     5121: Uint8Array,
@@ -61,9 +57,8 @@ const TRANSFORMS = {
 };
 
 export class GLTFLoader {
-    static setDracoDecoderModule(draco) {
-        this.draco = draco;
-        this.decoder = new draco.Decoder();
+    static setDracoManager(manager) {
+        this.dracoManager = manager;
     }
 
     static setBasisManager(manager) {
@@ -83,8 +78,8 @@ export class GLTFLoader {
         if (desc.asset === undefined || desc.asset.version[0] < 2)
             console.warn('Only GLTF >=2.0 supported. Attempting to parse.');
 
-        if (desc.extensionsRequired?.includes('KHR_draco_mesh_compression') && !this.draco)
-            console.warn('KHR_draco_mesh_compression extension required but no decoder module supplied. Use .setDracoDecoderModule()');
+        if (desc.extensionsRequired?.includes('KHR_draco_mesh_compression') && !this.dracoManager)
+            console.warn('KHR_draco_mesh_compression extension required but no manager supplied. Use .setDracoManager()');
 
         if (desc.extensionsRequired?.includes('KHR_texture_basisu') && !this.basisManager)
             console.warn('KHR_texture_basisu extension required but no manager supplied. Use .setBasisManager()');
@@ -110,7 +105,7 @@ export class GLTFLoader {
         const skins = this.parseSkins(gl, desc, bufferViews);
 
         // Create geometries for each mesh primitive
-        const meshes = this.parseMeshes(gl, desc, bufferViews, materials, skins);
+        const meshes = await this.parseMeshes(gl, desc, bufferViews, materials, skins);
 
         // Create transforms, meshes and hierarchy
         const [nodes, cameras] = this.parseNodes(gl, desc, meshes, skins, images);
@@ -489,17 +484,14 @@ export class GLTFLoader {
 
     static parseMeshes(gl, desc, bufferViews, materials, skins) {
         if (!desc.meshes) return null;
-        return desc.meshes.map(
-            (
-                {
-                    primitives, // required
-                    weights, // optional
-                    name, // optional
-                    extensions, // optional
-                    extras = {}, // optional - will get merged with node extras
-                },
-                meshIndex
-            ) => {
+        return Promise.all(
+            desc.meshes.map(async ({
+                primitives, // required
+                weights, // optional
+                name, // optional
+                extensions, // optional
+                extras = {}, // optional - will get merged with node extras
+            }, meshIndex) => {
                 // TODO: weights stuff?
                 // Parse through nodes to see how many instances there are and if there is a skin attached
                 // If multiple instances of a skin, need to create each
@@ -518,22 +510,24 @@ export class GLTFLoader {
 
                 // For skins, return array of skin meshes to account for multiple instances
                 if (isSkin) {
-                    primitives = skinIndices.map((skinIndex) => {
-                        return this.parsePrimitives(gl, primitives, desc, bufferViews, materials, 1, isLightmap).map(({ geometry, program, mode }) => {
-                            const mesh = new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode });
-                            mesh.name = name;
-                            mesh.extras = extras;
-                            if (extensions) mesh.extensions = extensions;
-                            // TODO: support skin frustum culling
-                            mesh.frustumCulled = false;
-                            return mesh;
-                        });
-                    });
+                    primitives = Promise.all(
+                        skinIndices.map(async (skinIndex) => {
+                            return (await this.parsePrimitives(gl, primitives, desc, bufferViews, materials, 1, isLightmap)).map(({ geometry, program, mode }) => {
+                                const mesh = new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode });
+                                mesh.name = name;
+                                mesh.extras = extras;
+                                if (extensions) mesh.extensions = extensions;
+                                // TODO: support skin frustum culling
+                                mesh.frustumCulled = false;
+                                return mesh;
+                            });
+                        })
+                    );
                     // For retrieval to add to node
                     primitives.instanceCount = 0;
                     primitives.numInstances = numInstances;
                 } else {
-                    primitives = this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap).map(({ geometry, program, mode }) => {
+                    primitives = (await this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap)).map(({ geometry, program, mode }) => {
                         // InstancedMesh class has custom frustum culling for instances
                         const meshConstructor = geometry.attributes.instanceMatrix ? InstancedMesh : Mesh;
                         const mesh = new meshConstructor(gl, { geometry, program, mode });
@@ -551,13 +545,13 @@ export class GLTFLoader {
                     weights,
                     name,
                 };
-            }
+            })
         );
     }
 
     static parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap) {
-        return primitives.map(
-            ({
+        return Promise.all(
+            primitives.map(async ({
                 attributes, // required
                 indices, // optional
                 material: materialIndex, // optional
@@ -578,97 +572,69 @@ export class GLTFLoader {
 
                 // For compressed geometry data
                 if (extensions && extensions.KHR_draco_mesh_compression) {
-                    const data = bufferViews[extensions.KHR_draco_mesh_compression.bufferView].data;
-                    const array = new Int8Array(data);
-                    const dracoGeometry = new this.draco.Mesh();
-                    const decodingStatus = this.decoder.DecodeArrayToMesh(array, array.byteLength, dracoGeometry);
+                    const bufferViewIndex = extensions.KHR_draco_mesh_compression.bufferView;
+                    const gltfAttributeMap = extensions.KHR_draco_mesh_compression.attributes;
+                    const attributeMap = {};
+                    const attributeTypeMap = {};
+                    const attributeTypeNameMap = {};
+                    const attributeNormalizedMap = {};
 
-                    if (!decodingStatus.ok() || dracoGeometry.ptr === 0)
-                        throw new Error(`Decoding failed: ${decodingStatus.error_msg()}`);
-
-                    // Add each attribute found in primitive
                     for (const attr in attributes) {
-                        const {
-                            bufferView: bufferViewIndex, // optional
-                            byteOffset = 0, // optional
-                            componentType, // required
-                            normalized = false, // optional
-                            count, // required
-                            type, // required
-                            min, // optional
-                            max, // optional
-                            sparse, // optional
-                            // name, // optional
-                            // extensions, // optional
-                            // extras, // optional
-                        } = desc.accessors[attributes[attr]];
-
-                        const size = TYPE_SIZE[type];
-
+                        const accessor = desc.accessors[attributes[attr]];
                         const attributeName = ATTRIBUTES[attr];
-                        const attributeType = TYPE_ARRAY[componentType];
-                        const attribute = this.decoder.GetAttributeByUniqueId(dracoGeometry, extensions.KHR_draco_mesh_compression.attributes[attr]);
+                        attributeMap[attributeName] = gltfAttributeMap[attr];
+                        attributeTypeMap[attributeName] = accessor.componentType;
+                        attributeTypeNameMap[attributeName] = TYPE_ARRAY[accessor.componentType].name;
+                        attributeNormalizedMap[attributeName] = accessor.normalized === true;
+                    }
 
-                        const attributeResult = decodeAttribute(this.draco, this.decoder, dracoGeometry, attributeName, attributeType, attribute);
+                    const { data } = bufferViews[bufferViewIndex];
+                    const geometryData = await this.dracoManager.decodeGeometry(data, {
+                        attributeIds: attributeMap,
+                        attributeTypes: attributeTypeNameMap
+                    });
+
+                    // Add each attribute result
+                    for (let i = 0; i < geometryData.attributes.length; i++) {
+                        const result = geometryData.attributes[i];
+                        const name = result.name;
+                        const data = result.array;
+                        const size = result.itemSize;
+                        const type = attributeTypeMap[name];
+                        const normalized = attributeNormalizedMap[name];
 
                         // Create gl buffers for the attribute data, pushing it to the GPU
                         const buffer = gl.createBuffer();
                         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
                         gl.renderer.state.boundBuffer = buffer;
-                        gl.bufferData(gl.ARRAY_BUFFER, attributeResult.array, gl.STATIC_DRAW);
+                        gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
 
-                        geometry.addAttribute(attributeName, {
-                            data: attributeResult.array,
+                        geometry.addAttribute(name, {
+                            data,
                             size,
-                            type: componentType,
+                            type,
                             normalized,
                             buffer,
-                            stride: 0,
-                            offset: byteOffset,
-                            count,
-                            min,
-                            max,
                         });
                     }
 
                     // Add index attribute if found
-                    if (indices !== undefined) {
-                        const {
-                            bufferView: bufferViewIndex, // optional
-                            byteOffset = 0, // optional
-                            componentType, // required
-                            normalized = false, // optional
-                            count, // required
-                            type, // required
-                            min, // optional
-                            max, // optional
-                            sparse, // optional
-                            // name, // optional
-                            // extensions, // optional
-                            // extras, // optional
-                        } = desc.accessors[indices];
+                    if (geometryData.index) {
+                        const data = geometryData.index.array;
+                        const size = geometryData.index.itemSize;
 
-                        const size = TYPE_SIZE[type];
-
-                        const index = decodeIndex(this.draco, this.decoder, dracoGeometry);
-
-                        // Create gl buffers for the indices attribute data, pushing it to the GPU
+                        // Create gl buffers for the index attribute data, pushing it to the GPU
                         const buffer = gl.createBuffer();
                         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
                         gl.renderer.state.boundBuffer = buffer;
-                        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, index.array, gl.STATIC_DRAW);
+                        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
 
                         geometry.addAttribute('index', {
-                            data: index.array,
+                            data,
                             size,
                             type: 5125, // Uint32Array
-                            normalized,
+                            normalized: false,
                             buffer,
-                            stride: 0,
-                            offset: byteOffset,
-                            count,
-                            min,
-                            max,
                         });
                     }
                 } else {
@@ -708,7 +674,7 @@ export class GLTFLoader {
                     program,
                     mode,
                 };
-            }
+            })
         );
     }
 
@@ -1080,58 +1046,5 @@ export class GLTFLoader {
         });
 
         return lights;
-    }
-}
-
-// https://github.com/mrdoob/three.js/blob/dev/examples/jsm/loaders/DRACOLoader.js
-
-function decodeIndex(draco, decoder, dracoGeometry) {
-    const numFaces = dracoGeometry.num_faces();
-    const numIndices = numFaces * 3;
-    const byteLength = numIndices * 4;
-
-    const ptr = draco._malloc(byteLength);
-    decoder.GetTrianglesUInt32Array(dracoGeometry, byteLength, ptr);
-    const index = new Uint32Array(draco.HEAPF32.buffer, ptr, numIndices).slice();
-    draco._free(ptr);
-
-    return { array: index, itemSize: 1 };
-}
-
-function decodeAttribute(draco, decoder, dracoGeometry, attributeName, attributeType, attribute) {
-    const numComponents = attribute.num_components();
-    const numPoints = dracoGeometry.num_points();
-    const numValues = numPoints * numComponents;
-    const byteLength = numValues * attributeType.BYTES_PER_ELEMENT;
-    const dataType = getDracoDataType(draco, attributeType);
-
-    const ptr = draco._malloc(byteLength);
-    decoder.GetAttributeDataArrayForAllPoints(dracoGeometry, attribute, dataType, byteLength, ptr);
-    const array = new attributeType(draco.HEAPF32.buffer, ptr, numValues).slice();
-    draco._free(ptr);
-
-    return {
-        name: attributeName,
-        array: array,
-        itemSize: numComponents,
-    };
-}
-
-function getDracoDataType(draco, attributeType) {
-    switch (attributeType) {
-        case Float32Array:
-            return draco.DT_FLOAT32;
-        case Int8Array:
-            return draco.DT_INT8;
-        case Int16Array:
-            return draco.DT_INT16;
-        case Int32Array:
-            return draco.DT_INT32;
-        case Uint8Array:
-            return draco.DT_UINT8;
-        case Uint16Array:
-            return draco.DT_UINT16;
-        case Uint32Array:
-            return draco.DT_UINT32;
     }
 }

@@ -11,6 +11,7 @@ import { InstancedMesh } from './InstancedMesh.js';
 import type { OGLRenderingContext } from '../core/Renderer.js';
 import type { Camera } from '../core/Camera.js';
 import type { Color } from '../math/Color.js';
+import type { DracoManager } from './DracoManager.js';
 import type { BasisManager } from './BasisManager.js';
 import type { GLTFSkinSkeleton } from './GLTFSkin.js';
 
@@ -109,7 +110,7 @@ export interface GLTF {
  * @see {@link https://github.com/oframe/ogl/blob/master/src/extras/GLTFLoader.js | Source}
  */
 export class GLTFLoader {
-    static setDracoDecoderModule(draco: object): void;
+    static setDracoManager(manager: DracoManager): void;
 
     static setBasisManager(manager: BasisManager): void;
 
