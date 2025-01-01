@@ -15,7 +15,7 @@
             <a href="https://sketchfab.com/3d-models/hershel-little-america-f4d7a0ed8af2453e9adc632278c9aa50" target="_blank">VRModelFactory</a>
         </div>
         <script type="module">
-            // npx @gltf-transform/cli draco hershel.glb hershel-draco.glb
+            // npx @gltf-transform/cli optimize hershel.glb hershel-draco.glb --compress draco --texture-compress webp
 
             import { Renderer, Camera, Transform, Orbit, Program, DracoManager, GLTFLoader, Vec3, TextureLoader } from '../src/index.js';
 
