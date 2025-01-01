@@ -6,17 +6,18 @@
         <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
         <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-        <title>OGL • Load GLTF</title>
+        <title>OGL • GLTF KTX2 Basis and Draco Extensions</title>
         <link href="assets/main.css" rel="stylesheet" />
     </head>
     <body>
         <div class="Info" style="color: #fff">
-            Load GLTF (Graphics Language Transmission Format). Model by
-            <a href="https://sketchfab.com/3d-models/hershel-little-america-f4d7a0ed8af2453e9adc632278c9aa50" target="_blank">VRModelFactory</a>
-            <br><a href="/examples/?src=gltf-draco.html" target="_top">Draco Compressed Version</a>
+            GLTF KTX2 Basis and Draco Extensions. Model by
+            <a href="https://sketchfab.com/3d-models/painterly-cottage-0772aec70d584c60a27000af5f6c1ef4" target="_blank">Glenatron</a>
         </div>
         <script type="module">
-            import { Renderer, Camera, Transform, Orbit, Program, GLTFLoader, Vec3, TextureLoader } from '../src/index.js';
+            // npx @gltf-transform/cli draco cottage-basis.glb cottage-basis-draco.glb
+
+            import { Renderer, Camera, Transform, Orbit, Program, BasisManager, DracoManager, GLTFLoader, Vec3, TextureLoader } from '../src/index.js';
 
             const shader = {
                 vertex: /* glsl */ `
@@ -358,7 +359,7 @@
                 const renderer = new Renderer({ dpr: 2 });
                 const gl = renderer.gl;
                 document.body.appendChild(gl.canvas);
-                gl.clearColor(0.1, 0.1, 0.1, 1);
+                gl.clearColor(0.401, 0.701, 0.586, 1);
 
                 const camera = new Camera(gl, { near: 1, far: 1000 });
                 // camera.position.set(60, 25, -60);
@@ -394,7 +395,11 @@
                 }
 
                 async function loadInitial() {
-                    gltf = await GLTFLoader.load(gl, `assets/gltf/hershel.glb`);
+                    // Note: these are the only added lines from the load-gltf example
+                    GLTFLoader.setBasisManager(new BasisManager(`assets/libs/basis/BasisWorker.js`));
+                    GLTFLoader.setDracoManager(new DracoManager(`assets/libs/draco/DracoWorker.js`));
+
+                    gltf = await GLTFLoader.load(gl, `assets/gltf/cottage-basis-draco.glb`);
                     addGLTF(gltf);
                 }
 
