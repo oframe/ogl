@@ -1,4 +1,5 @@
 // TODO
+// [ ] Cleanup decoder
 // [ ] Point clouds
 // [ ] WASM support
 
