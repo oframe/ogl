@@ -5,7 +5,13 @@ import type { Program } from './Program.js';
 
 export type AttributeMap = Record<string, Partial<Attribute>>;
 
-export type AttributeData = Float32Array | Uint32Array | Uint16Array;
+export type AttributeData =
+    | Float32Array
+    | Uint32Array
+    | Uint16Array
+    | Int16Array
+    | Uint8Array
+    | Int8Array;
 
 export interface Attribute {
     data: AttributeData;

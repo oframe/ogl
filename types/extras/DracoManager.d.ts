@@ -5,7 +5,13 @@ export type AttributeIds = {
 };
 
 export type AttributeTypes = {
-    [key: string]: 'Float32Array' | 'Uint32Array' | 'Uint16Array';
+    [key: string]:
+        | 'Float32Array'
+        | 'Uint32Array'
+        | 'Uint16Array'
+        | 'Int16Array'
+        | 'Uint8Array'
+        | 'Int8Array';
 };
 
 export interface DecodeGeometryConfig {
