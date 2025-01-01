@@ -106,7 +106,7 @@ export interface GLTF {
 }
 
 /**
- * The {@link https://www.khronos.org/gltf/ | glTF (GL Transmission Format)} loader.
+ * The {@link https://www.khronos.org/gltf/ | glTF (Graphics Language Transmission Format)} loader.
  * @see {@link https://github.com/oframe/ogl/blob/master/src/extras/GLTFLoader.js | Source}
  */
 export class GLTFLoader {
