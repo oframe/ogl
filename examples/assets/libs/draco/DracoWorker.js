@@ -12,12 +12,12 @@ let moduleReadyResolve;
 const moduleReady = new Promise((res) => (moduleReadyResolve = res));
 
 // Create the Draco decoder
-const initStartTime = performance.now();
+// const initStartTime = performance.now();
 DracoDecoderModule().then((module) => {
     draco = module;
     decoder = new draco.Decoder();
-    const elapsed = performance.now() - initStartTime;
-    console.log('worker init time', `${elapsed.toFixed(2)}ms`);
+    // const elapsed = performance.now() - initStartTime;
+    // console.log('worker init time', `${elapsed.toFixed(2)}ms`);
     moduleReadyResolve();
 });
 
@@ -28,7 +28,7 @@ addEventListener('message', ({ data }) => {
 async function decodeGeometry({ id, buffer, config }) {
     await moduleReady;
 
-    const startTime = performance.now();
+    // const startTime = performance.now();
     const array = new Int8Array(buffer);
     const { attributeIds, attributeTypes } = config;
 
@@ -55,8 +55,8 @@ async function decodeGeometry({ id, buffer, config }) {
     draco.destroy(dracoGeometry);
     // draco.destroy(decoder);
 
-    const elapsed = performance.now() - startTime;
-    console.log('decodeGeometry time', `${elapsed.toFixed(2)}ms`);
+    // const elapsed = performance.now() - startTime;
+    // console.log('decodeGeometry time', `${elapsed.toFixed(2)}ms`);
 
     // Transfer buffers
     const buffers = geometry.attributes.map((attr) => attr.array.buffer);
