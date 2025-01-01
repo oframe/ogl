@@ -485,196 +485,203 @@ export class GLTFLoader {
     static parseMeshes(gl, desc, bufferViews, materials, skins) {
         if (!desc.meshes) return null;
         return Promise.all(
-            desc.meshes.map(async ({
-                primitives, // required
-                weights, // optional
-                name, // optional
-                extensions, // optional
-                extras = {}, // optional - will get merged with node extras
-            }, meshIndex) => {
-                // TODO: weights stuff?
-                // Parse through nodes to see how many instances there are and if there is a skin attached
-                // If multiple instances of a skin, need to create each
-                let numInstances = 0;
-                let skinIndices = [];
-                let isLightmap = false;
-                desc.nodes &&
-                    desc.nodes.forEach(({ mesh, skin, extras }) => {
-                        if (mesh === meshIndex) {
-                            numInstances++;
-                            if (skin !== undefined) skinIndices.push(skin);
-                            if (extras && extras.lightmap_scale_offset) isLightmap = true;
-                        }
-                    });
-                let isSkin = !!skinIndices.length;
+            desc.meshes.map(
+                async (
+                    {
+                        primitives, // required
+                        weights, // optional
+                        name, // optional
+                        extensions, // optional
+                        extras = {}, // optional - will get merged with node extras
+                    },
+                    meshIndex
+                ) => {
+                    // TODO: weights stuff?
+                    // Parse through nodes to see how many instances there are and if there is a skin attached
+                    // If multiple instances of a skin, need to create each
+                    let numInstances = 0;
+                    let skinIndices = [];
+                    let isLightmap = false;
+                    desc.nodes &&
+                        desc.nodes.forEach(({ mesh, skin, extras }) => {
+                            if (mesh === meshIndex) {
+                                numInstances++;
+                                if (skin !== undefined) skinIndices.push(skin);
+                                if (extras && extras.lightmap_scale_offset) isLightmap = true;
+                            }
+                        });
+                    let isSkin = !!skinIndices.length;
 
-                // For skins, return array of skin meshes to account for multiple instances
-                if (isSkin) {
-                    primitives = Promise.all(
-                        skinIndices.map(async (skinIndex) => {
-                            return (await this.parsePrimitives(gl, primitives, desc, bufferViews, materials, 1, isLightmap)).map(({ geometry, program, mode }) => {
-                                const mesh = new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode });
-                                mesh.name = name;
-                                mesh.extras = extras;
-                                if (extensions) mesh.extensions = extensions;
-                                // TODO: support skin frustum culling
-                                mesh.frustumCulled = false;
-                                return mesh;
-                            });
-                        })
-                    );
-                    // For retrieval to add to node
-                    primitives.instanceCount = 0;
-                    primitives.numInstances = numInstances;
-                } else {
-                    primitives = (await this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap)).map(({ geometry, program, mode }) => {
-                        // InstancedMesh class has custom frustum culling for instances
-                        const meshConstructor = geometry.attributes.instanceMatrix ? InstancedMesh : Mesh;
-                        const mesh = new meshConstructor(gl, { geometry, program, mode });
-                        mesh.name = name;
-                        mesh.extras = extras;
-                        if (extensions) mesh.extensions = extensions;
-                        // Tag mesh so that nodes can add their transforms to the instance attribute
-                        mesh.numInstances = numInstances;
-                        return mesh;
-                    });
+                    // For skins, return array of skin meshes to account for multiple instances
+                    if (isSkin) {
+                        primitives = Promise.all(
+                            skinIndices.map(async (skinIndex) => {
+                                return (await this.parsePrimitives(gl, primitives, desc, bufferViews, materials, 1, isLightmap)).map(({ geometry, program, mode }) => {
+                                    const mesh = new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode });
+                                    mesh.name = name;
+                                    mesh.extras = extras;
+                                    if (extensions) mesh.extensions = extensions;
+                                    // TODO: support skin frustum culling
+                                    mesh.frustumCulled = false;
+                                    return mesh;
+                                });
+                            })
+                        );
+                        // For retrieval to add to node
+                        primitives.instanceCount = 0;
+                        primitives.numInstances = numInstances;
+                    } else {
+                        primitives = (await this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap)).map(({ geometry, program, mode }) => {
+                            // InstancedMesh class has custom frustum culling for instances
+                            const meshConstructor = geometry.attributes.instanceMatrix ? InstancedMesh : Mesh;
+                            const mesh = new meshConstructor(gl, { geometry, program, mode });
+                            mesh.name = name;
+                            mesh.extras = extras;
+                            if (extensions) mesh.extensions = extensions;
+                            // Tag mesh so that nodes can add their transforms to the instance attribute
+                            mesh.numInstances = numInstances;
+                            return mesh;
+                        });
+                    }
+
+                    return {
+                        primitives,
+                        weights,
+                        name,
+                    };
                 }
-
-                return {
-                    primitives,
-                    weights,
-                    name,
-                };
-            })
+            )
         );
     }
 
     static parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap) {
         return Promise.all(
-            primitives.map(async ({
-                attributes, // required
-                indices, // optional
-                material: materialIndex, // optional
-                mode = 4, // optional
-                targets, // optional
-                extensions, // optional
-                extras, // optional
-            }) => {
-                // TODO: materials
-                const program = new NormalProgram(gl);
-                if (materialIndex !== undefined) {
-                    program.gltfMaterial = materials[materialIndex];
-                }
-
-                const geometry = new Geometry(gl);
-                if (extras) geometry.extras = extras;
-                if (extensions) geometry.extensions = extensions;
-
-                // For compressed geometry data
-                if (extensions && extensions.KHR_draco_mesh_compression) {
-                    const bufferViewIndex = extensions.KHR_draco_mesh_compression.bufferView;
-                    const gltfAttributeMap = extensions.KHR_draco_mesh_compression.attributes;
-                    const attributeMap = {};
-                    const attributeTypeMap = {};
-                    const attributeTypeNameMap = {};
-                    const attributeNormalizedMap = {};
-
-                    for (const attr in attributes) {
-                        const accessor = desc.accessors[attributes[attr]];
-                        const attributeName = ATTRIBUTES[attr];
-                        attributeMap[attributeName] = gltfAttributeMap[attr];
-                        attributeTypeMap[attributeName] = accessor.componentType;
-                        attributeTypeNameMap[attributeName] = TYPE_ARRAY[accessor.componentType].name;
-                        attributeNormalizedMap[attributeName] = accessor.normalized === true;
+            primitives.map(
+                async ({
+                    attributes, // required
+                    indices, // optional
+                    material: materialIndex, // optional
+                    mode = 4, // optional
+                    targets, // optional
+                    extensions, // optional
+                    extras, // optional
+                }) => {
+                    // TODO: materials
+                    const program = new NormalProgram(gl);
+                    if (materialIndex !== undefined) {
+                        program.gltfMaterial = materials[materialIndex];
                     }
 
-                    const { data } = bufferViews[bufferViewIndex];
-                    const geometryData = await this.dracoManager.decodeGeometry(data, {
-                        attributeIds: attributeMap,
-                        attributeTypes: attributeTypeNameMap
-                    });
+                    const geometry = new Geometry(gl);
+                    if (extras) geometry.extras = extras;
+                    if (extensions) geometry.extensions = extensions;
 
-                    // Add each attribute result
-                    for (let i = 0; i < geometryData.attributes.length; i++) {
-                        const result = geometryData.attributes[i];
-                        const name = result.name;
-                        const data = result.array;
-                        const size = result.itemSize;
-                        const type = attributeTypeMap[name];
-                        const normalized = attributeNormalizedMap[name];
+                    // For compressed geometry data
+                    if (extensions && extensions.KHR_draco_mesh_compression) {
+                        const bufferViewIndex = extensions.KHR_draco_mesh_compression.bufferView;
+                        const gltfAttributeMap = extensions.KHR_draco_mesh_compression.attributes;
+                        const attributeMap = {};
+                        const attributeTypeMap = {};
+                        const attributeTypeNameMap = {};
+                        const attributeNormalizedMap = {};
 
-                        // Create gl buffers for the attribute data, pushing it to the GPU
-                        const buffer = gl.createBuffer();
-                        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-                        gl.renderer.state.boundBuffer = buffer;
-                        gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+                        for (const attr in attributes) {
+                            const accessor = desc.accessors[attributes[attr]];
+                            const attributeName = ATTRIBUTES[attr];
+                            attributeMap[attributeName] = gltfAttributeMap[attr];
+                            attributeTypeMap[attributeName] = accessor.componentType;
+                            attributeTypeNameMap[attributeName] = TYPE_ARRAY[accessor.componentType].name;
+                            attributeNormalizedMap[attributeName] = accessor.normalized === true;
+                        }
 
-                        geometry.addAttribute(name, {
-                            data,
-                            size,
-                            type,
-                            normalized,
-                            buffer,
+                        const { data } = bufferViews[bufferViewIndex];
+                        const geometryData = await this.dracoManager.decodeGeometry(data, {
+                            attributeIds: attributeMap,
+                            attributeTypes: attributeTypeNameMap,
+                        });
+
+                        // Add each attribute result
+                        for (let i = 0; i < geometryData.attributes.length; i++) {
+                            const result = geometryData.attributes[i];
+                            const name = result.name;
+                            const data = result.array;
+                            const size = result.itemSize;
+                            const type = attributeTypeMap[name];
+                            const normalized = attributeNormalizedMap[name];
+
+                            // Create gl buffers for the attribute data, pushing it to the GPU
+                            const buffer = gl.createBuffer();
+                            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+                            gl.renderer.state.boundBuffer = buffer;
+                            gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+
+                            geometry.addAttribute(name, {
+                                data,
+                                size,
+                                type,
+                                normalized,
+                                buffer,
+                            });
+                        }
+
+                        // Add index attribute if found
+                        if (geometryData.index) {
+                            const data = geometryData.index.array;
+                            const size = geometryData.index.itemSize;
+
+                            // Create gl buffers for the index attribute data, pushing it to the GPU
+                            const buffer = gl.createBuffer();
+                            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+                            gl.renderer.state.boundBuffer = buffer;
+                            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
+
+                            geometry.addAttribute('index', {
+                                data,
+                                size,
+                                type: 5125, // Uint32Array
+                                normalized: false,
+                                buffer,
+                            });
+                        }
+                    } else {
+                        // Add each attribute found in primitive
+                        for (const attr in attributes) {
+                            geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
+                        }
+
+                        // Add index attribute if found
+                        if (indices !== undefined) {
+                            geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews));
+                        }
+                    }
+
+                    // Add instanced transform attribute if multiple instances
+                    // Ignore if skin as we don't support instanced skins out of the box
+                    if (numInstances > 1) {
+                        geometry.addAttribute('instanceMatrix', {
+                            instanced: 1,
+                            size: 16,
+                            data: new Float32Array(numInstances * 16),
                         });
                     }
 
-                    // Add index attribute if found
-                    if (geometryData.index) {
-                        const data = geometryData.index.array;
-                        const size = geometryData.index.itemSize;
-
-                        // Create gl buffers for the index attribute data, pushing it to the GPU
-                        const buffer = gl.createBuffer();
-                        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-                        gl.renderer.state.boundBuffer = buffer;
-                        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
-
-                        geometry.addAttribute('index', {
-                            data,
-                            size,
-                            type: 5125, // Uint32Array
-                            normalized: false,
-                            buffer,
+                    // Always supply lightmapScaleOffset as an instanced attribute
+                    // Instanced skin lightmaps not supported
+                    if (isLightmap) {
+                        geometry.addAttribute('lightmapScaleOffset', {
+                            instanced: 1,
+                            size: 4,
+                            data: new Float32Array(numInstances * 4),
                         });
                     }
-                } else {
-                    // Add each attribute found in primitive
-                    for (const attr in attributes) {
-                        geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
-                    }
 
-                    // Add index attribute if found
-                    if (indices !== undefined) {
-                        geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews));
-                    }
+                    return {
+                        geometry,
+                        program,
+                        mode,
+                    };
                 }
-
-                // Add instanced transform attribute if multiple instances
-                // Ignore if skin as we don't support instanced skins out of the box
-                if (numInstances > 1) {
-                    geometry.addAttribute('instanceMatrix', {
-                        instanced: 1,
-                        size: 16,
-                        data: new Float32Array(numInstances * 16),
-                    });
-                }
-
-                // Always supply lightmapScaleOffset as an instanced attribute
-                // Instanced skin lightmaps not supported
-                if (isLightmap) {
-                    geometry.addAttribute('lightmapScaleOffset', {
-                        instanced: 1,
-                        size: 4,
-                        data: new Float32Array(numInstances * 4),
-                    });
-                }
-
-                return {
-                    geometry,
-                    program,
-                    mode,
-                };
-            })
+            )
         );
     }
 

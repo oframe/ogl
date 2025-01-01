@@ -7,7 +7,7 @@ importScripts('basis_transcoder.js');
 let KTX2File;
 
 let moduleReadyResolve;
-const moduleReady = new Promise((res) => {(moduleReadyResolve = res)});
+const moduleReady = new Promise((res) => (moduleReadyResolve = res));
 
 // CONSTS
 const BASIS_FORMAT = {

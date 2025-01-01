@@ -9,7 +9,7 @@ let draco;
 let decoder;
 
 let moduleReadyResolve;
-const moduleReady = new Promise((res) => {(moduleReadyResolve = res)});
+const moduleReady = new Promise((res) => (moduleReadyResolve = res));
 
 // Create the Draco decoder
 const initStartTime = performance.now();
@@ -62,10 +62,13 @@ async function decodeGeometry({ id, buffer, config }) {
     const buffers = geometry.attributes.map((attr) => attr.array.buffer);
     if (geometry.index) buffers.push(geometry.index.array.buffer);
 
-    postMessage({
-        id,
-        geometry,
-    }, buffers);
+    postMessage(
+        {
+            id,
+            geometry,
+        },
+        buffers
+    );
 }
 
 // https://github.com/mrdoob/three.js/blob/master/examples/jsm/loaders/DRACOLoader.js

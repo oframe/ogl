@@ -54,7 +54,7 @@ export class BasisManager {
             supportedFormat,
         });
         let textureResolve;
-        const promise = new Promise((res) => {(textureResolve = res)});
+        const promise = new Promise((res) => (textureResolve = res));
         this.queue.set(id, textureResolve);
         return promise;
     }

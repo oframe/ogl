@@ -31,7 +31,7 @@ export class DracoManager {
             config,
         });
         let geometryResolve;
-        const promise = new Promise((res) => {(geometryResolve = res)});
+        const promise = new Promise((res) => (geometryResolve = res));
         this.queue.set(id, geometryResolve);
         return promise;
     }

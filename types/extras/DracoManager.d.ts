@@ -1,33 +1,33 @@
 import type { AttributeData } from '../core/Geometry.js';
 
 export type AttributeIds = {
-    [key: string]: number
-}
+    [key: string]: number;
+};
 
 export type AttributeTypes = {
-    [key: string]: 'Float32Array' | 'Uint32Array' | 'Uint16Array'
-}
+    [key: string]: 'Float32Array' | 'Uint32Array' | 'Uint16Array';
+};
 
 export interface DecodeGeometryConfig {
-    attributeIds: AttributeIds
-    attributeTypes: AttributeTypes
+    attributeIds: AttributeIds;
+    attributeTypes: AttributeTypes;
 }
 
 export interface IndexResult {
-    array: Uint32Array
-    itemSize: number
+    array: Uint32Array;
+    itemSize: number;
 }
 
 export interface AttributeResult {
-    name: string
-    array: AttributeData
-    itemSize: number
-    normalized?: boolean
+    name: string;
+    array: AttributeData;
+    itemSize: number;
+    normalized?: boolean;
 }
 
 export interface GeometryData {
-    index: IndexResult
-    attributes: AttributeResult[]
+    index: IndexResult;
+    attributes: AttributeResult[];
 }
 
 /**
