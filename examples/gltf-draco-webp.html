@@ -6,16 +6,16 @@
         <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
         <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-        <title>OGL • GLTF Draco Extension</title>
+        <title>OGL • GLTF Draco and WebP Extensions</title>
         <link href="assets/main.css" rel="stylesheet" />
     </head>
     <body>
         <div class="Info" style="color: #fff">
-            GLTF Draco Extension. Model by
+            GLTF Draco and WebP Extensions. Model by
             <a href="https://sketchfab.com/3d-models/hershel-little-america-f4d7a0ed8af2453e9adc632278c9aa50" target="_blank">VRModelFactory</a>
         </div>
         <script type="module">
-            // npx @gltf-transform/cli optimize hershel.glb hershel-draco.glb --compress draco --texture-compress webp
+            // npx @gltf-transform/cli optimize hershel.glb hershel-optimized.glb --compress draco --texture-compress webp
 
             import { Renderer, Camera, Transform, Orbit, Program, DracoManager, GLTFLoader, Vec3, TextureLoader } from '../src/index.js';
 
@@ -399,7 +399,7 @@
                     // Note: this is the only added line from the load-gltf example
                     GLTFLoader.setDracoManager(new DracoManager(`assets/libs/draco/DracoWorker.js`));
 
-                    gltf = await GLTFLoader.load(gl, `assets/gltf/hershel-draco.glb`);
+                    gltf = await GLTFLoader.load(gl, `assets/gltf/hershel-optimized.glb`);
                     addGLTF(gltf);
                 }
 
