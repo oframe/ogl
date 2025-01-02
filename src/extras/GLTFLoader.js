@@ -222,7 +222,7 @@ export class GLTFLoader {
                 // For GLB, binary buffer ready to go
                 if (buffer.binary) return buffer.binary;
                 const uri = this.resolveURI(buffer.uri, dir);
-                return fetch(uri).then((res) => res.arrayBuffer());
+                return fetch(uri, { mode: 'cors' }).then((res) => res.arrayBuffer());
             })
         );
     }
