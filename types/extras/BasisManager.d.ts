@@ -11,7 +11,7 @@ export type BasisImage = (Uint8Array | Uint16Array) & {
 };
 
 /**
- * A {@link https://github.com/binomialLLC/basis_universal | Basis Universal GPU Texture} loader.
+ * A {@link https://github.com/BinomialLLC/basis_universal | Basis Universal GPU Texture} loader.
  * @see {@link https://github.com/oframe/ogl/blob/master/src/extras/BasisManager.js | Source}
  */
 export class BasisManager {

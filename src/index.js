@@ -44,6 +44,7 @@ export { TextureLoader } from './extras/TextureLoader.js';
 export { GLTFLoader } from './extras/GLTFLoader.js';
 export { GLTFSkin } from './extras/GLTFSkin.js';
 export { GLTFAnimation } from './extras/GLTFAnimation.js';
+export { DracoManager } from './extras/DracoManager.js';
 export { BasisManager } from './extras/BasisManager.js';
 export { WireMesh } from './extras/WireMesh.js';
 export { AxesHelper } from './extras/helpers/AxesHelper.js';

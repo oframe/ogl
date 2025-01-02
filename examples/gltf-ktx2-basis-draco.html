@@ -6,26 +6,18 @@
         <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
         <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-        <title>OGL • GLTF KTX2 Basis Extension</title>
+        <title>OGL • GLTF KTX2 Basis and Draco Extensions</title>
         <link href="assets/main.css" rel="stylesheet" />
     </head>
     <body>
         <div class="Info" style="color: #fff">
-            GLTF KTX2 Basis Extension. Model by
+            GLTF KTX2 Basis and Draco Extensions. Model by
             <a href="https://sketchfab.com/3d-models/painterly-cottage-0772aec70d584c60a27000af5f6c1ef4" target="_blank">Glenatron</a>
-            <br /><a href="/examples/?src=gltf-ktx2-basis-draco.html" target="_top">Draco Compressed Version</a>
         </div>
         <script type="module">
-            // I use GLTF-Transform to compress GLTF files' textures with Basis compression
-            // https://gltf-transform.dev/cli
+            // npx @gltf-transform/cli draco cottage-basis.glb cottage-basis-draco.glb
 
-            // Simply install the tool:
-            // npm install --global @gltf-transform/cli
-
-            // and then use it to compress the textures
-            // gltf-transform etc1s scene.glb scene-compressed.glb
-
-            import { Renderer, Camera, Transform, Orbit, Program, BasisManager, GLTFLoader, Vec3, TextureLoader } from '../src/index.js';
+            import { Renderer, Camera, Transform, Orbit, Program, BasisManager, DracoManager, GLTFLoader, Vec3, TextureLoader } from '../src/index.js';
 
             const shader = {
                 vertex: /* glsl */ `
@@ -403,11 +395,11 @@
                 }
 
                 async function loadInitial() {
-                    // Set basis manager and pass in basis worker script location
-                    // Note: this is the only added line from the load-gltf example
+                    // Note: these are the only added lines from the load-gltf example
                     GLTFLoader.setBasisManager(new BasisManager(`assets/libs/basis/BasisWorker.js`));
+                    GLTFLoader.setDracoManager(new DracoManager(`assets/libs/draco/DracoWorker.js`));
 
-                    gltf = await GLTFLoader.load(gl, `assets/gltf/cottage-basis.glb`);
+                    gltf = await GLTFLoader.load(gl, `assets/gltf/cottage-basis-draco.glb`);
                     addGLTF(gltf);
                 }
 
