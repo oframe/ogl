@@ -515,7 +515,7 @@ export class GLTFLoader {
 
                     // For skins, return array of skin meshes to account for multiple instances
                     if (isSkin) {
-                        primitives = Promise.all(
+                        primitives = await Promise.all(
                             skinIndices.map(async (skinIndex) => {
                                 return (await this.parsePrimitives(gl, primitives, desc, bufferViews, materials, 1, isLightmap)).map(({ geometry, program, mode }) => {
                                     const mesh = new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode });
