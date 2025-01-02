@@ -1,5 +1,4 @@
-// TODO: test stencil and depth
-import { Texture } from './Texture.js';
+import { Texture } from './Texture.js'
 
 export class RenderTarget {
     constructor(
@@ -11,9 +10,10 @@ export class RenderTarget {
             color = 1, // number of color attachments
             depth = true,
             stencil = false,
-            depthTexture = false, // note - stencil breaks
+            depthTexture = false,
             wrapS = gl.CLAMP_TO_EDGE,
             wrapT = gl.CLAMP_TO_EDGE,
+            wrapR = gl.CLAMP_TO_EDGE,
             minFilter = gl.LINEAR,
             magFilter = minFilter,
             type = gl.UNSIGNED_BYTE,
@@ -27,6 +27,7 @@ export class RenderTarget {
         this.width = width;
         this.height = height;
         this.depth = depth;
+        this.stencil = stencil;
         this.buffer = this.gl.createFramebuffer();
         this.target = target;
         this.gl.renderer.bindFramebuffer(this);
@@ -42,6 +43,7 @@ export class RenderTarget {
                     height,
                     wrapS,
                     wrapT,
+                    wrapR,
                     minFilter,
                     magFilter,
                     type,
@@ -71,12 +73,12 @@ export class RenderTarget {
                 height,
                 minFilter: this.gl.NEAREST,
                 magFilter: this.gl.NEAREST,
-                format: this.gl.DEPTH_COMPONENT,
-                internalFormat: gl.renderer.isWebgl2 ? this.gl.DEPTH_COMPONENT16 : this.gl.DEPTH_COMPONENT,
-                type: this.gl.UNSIGNED_INT,
+                format: this.stencil ? this.gl.DEPTH_STENCIL : this.gl.DEPTH_COMPONENT,
+                internalFormat: gl.renderer.isWebgl2 ? (this.stencil ? this.gl.DEPTH24_STENCIL8 : this.gl.DEPTH_COMPONENT16) : this.gl.DEPTH_COMPONENT,
+                type: this.stencil ? this.gl.UNSIGNED_INT_24_8 : this.gl.UNSIGNED_INT,
             });
             this.depthTexture.update();
-            this.gl.framebufferTexture2D(this.target, this.gl.DEPTH_ATTACHMENT, this.gl.TEXTURE_2D, this.depthTexture.texture, 0 /* level */);
+            this.gl.framebufferTexture2D(this.target, this.stencil ? this.gl.DEPTH_STENCIL_ATTACHMENT : this.gl.DEPTH_ATTACHMENT, this.gl.TEXTURE_2D, this.depthTexture.texture, 0 /* level */);
         } else {
             // Render buffers
             if (depth && !stencil) {

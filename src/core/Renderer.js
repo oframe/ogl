@@ -200,6 +200,41 @@ export class Renderer {
         this.gl.depthFunc(value);
     }
 
+    setStencilMask(value) {
+        if(this.state.stencilMask === value) return;
+        this.state.stencilMask = value;
+        this.gl.stencilMask(value)
+    }
+
+    setStencilFunc(func, ref, mask) {
+
+        if((this.state.stencilFunc === func) &&
+            (this.state.stencilRef === ref) &&
+            (this.state.stencilFuncMask === mask)
+        ) return;
+
+        this.state.stencilFunc = func || this.gl.ALWAYS;
+        this.state.stencilRef = ref || 0;
+        this.state.stencilFuncMask = mask || 0;
+
+        this.gl.stencilFunc(func || this.gl.ALWAYS, ref || 0, mask || 0);
+    }
+
+    setStencilOp(stencilFail, depthFail, depthPass) {
+
+        if(this.state.stencilFail === stencilFail &&
+            this.state.stencilDepthFail === depthFail &&
+            this.state.stencilDepthPass === depthPass
+        ) return;
+
+        this.state.stencilFail = stencilFail;
+        this.state.stencilDepthFail = depthFail;
+        this.state.stencilDepthPass = depthPass;
+        
+        this.gl.stencilOp(stencilFail, depthFail, depthPass);
+        
+    }
+
     activeTexture(value) {
         if (this.state.activeTextureUnit === value) return;
         this.state.activeTextureUnit = value;
@@ -334,6 +369,13 @@ export class Renderer {
                 this.enable(this.gl.DEPTH_TEST);
                 this.setDepthMask(true);
             }
+
+            // Same for stencil
+            if(this.stencil || (!target || target.stencil)) {
+                this.enable(this.gl.STENCIL_TEST);
+                this.setStencilMask(0xff)
+            }
+
             this.gl.clear(
                 (this.color ? this.gl.COLOR_BUFFER_BIT : 0) |
                     (this.depth ? this.gl.DEPTH_BUFFER_BIT : 0) |
