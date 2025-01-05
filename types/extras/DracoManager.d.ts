@@ -1,18 +1,15 @@
 import type { AttributeData } from '../core/Geometry.js';
 
-export type AttributeIds = {
-    [key: string]: number;
-};
+export type AttributeIds = Record<string, number>;
 
-export type AttributeTypes = {
-    [key: string]:
-        | 'Float32Array'
-        | 'Uint32Array'
-        | 'Uint16Array'
-        | 'Int16Array'
-        | 'Uint8Array'
-        | 'Int8Array';
-};
+export type AttributeTypes = Record<string,
+    | 'Float32Array'
+    | 'Uint32Array'
+    | 'Uint16Array'
+    | 'Int16Array'
+    | 'Uint8Array'
+    | 'Int8Array'
+>;
 
 export interface DecodeGeometryConfig {
     attributeIds: AttributeIds;
