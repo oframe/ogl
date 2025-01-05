@@ -66,8 +66,8 @@ export class Geometry {
     bounds: Bounds;
 
     // Set from gltf loader
-    extras?: object;
-    extensions?: object;
+    extras?: Record<string, any>;
+    extensions?: Record<string, any>;
 
     raycast?: GeometryRaycast; // User defined
 

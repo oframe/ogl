@@ -56,8 +56,8 @@ export interface GLTFSkinReference {
 
 export interface GLTFMaterial {
     name: string;
-    extensions: object;
-    extras: object;
+    extensions: Record<string, any>;
+    extras: Record<string, any>;
     baseColorFactor: [number, number, number, number];
     baseColorTexture: { texture: Texture; scale: number };
     metallicFactor: number;
@@ -136,7 +136,7 @@ export class GLTFLoader {
         gl: OGLRenderingContext,
         desc: GLTFDescription,
         images: (HTMLImageElement | ImageBitmap)[],
-        options: { sample: number; source: number; name: string; extensions: object; extras: object },
+        options: { sample: number; source: number; name: string; extensions: Record<string, any>; extras: Record<string, any> },
     ): Texture;
 
     static parseMaterials(gl: OGLRenderingContext, desc: GLTFDescription, textures: Texture[]): GLTFMaterial[] | null;
