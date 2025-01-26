@@ -81,8 +81,8 @@ export class Transform {
      * Set from {@link GLTFLoader | GLTF Loader}.
      */
     name?: string;
-    extras?: object;
-    extensions?: object;
+    extras?: Record<string, any>;
+    extensions?: Record<string, any>;
 
     /**
      * Creates a new transform object.

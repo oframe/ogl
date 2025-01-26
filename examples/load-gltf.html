@@ -13,6 +13,7 @@
         <div class="Info" style="color: #fff">
             Load GLTF (Graphics Language Transmission Format). Model by
             <a href="https://sketchfab.com/3d-models/hershel-little-america-f4d7a0ed8af2453e9adc632278c9aa50" target="_blank">VRModelFactory</a>
+            <br /><a href="/examples/?src=gltf-draco-webp.html" target="_top">Draco and WebP Compressed Version</a>
         </div>
         <script type="module">
             import { Renderer, Camera, Transform, Orbit, Program, GLTFLoader, Vec3, TextureLoader } from '../src/index.js';
@@ -82,7 +83,7 @@
                             mat4 boneMatZ = getBoneMatrix(skinIndex.z);
                             mat4 boneMatW = getBoneMatrix(skinIndex.w);
 
-                            // update normal
+                            // Update normal
                             mat4 skinMatrix = mat4(0.0);
                             skinMatrix += skinWeight.x * boneMatX;
                             skinMatrix += skinWeight.y * boneMatY;
@@ -410,20 +411,14 @@
                     e.preventDefault();
                     const file = e.dataTransfer.files[0];
                     const reader = new FileReader();
-                    const isGLB = file.name.match(/\.glb$/);
-
-                    if (isGLB) {
-                        reader.readAsArrayBuffer(file);
-                    } else {
-                        reader.readAsText(file);
-                    }
-
+                    reader.readAsArrayBuffer(file);
                     reader.onload = async function (e) {
                         let desc;
-                        if (isGLB) {
+                        const textDecoder = new TextDecoder();
+                        if (textDecoder.decode(new Uint8Array(e.target.result, 0, 4)) === 'glTF') {
                             desc = GLTFLoader.unpackGLB(e.target.result);
                         } else {
-                            desc = JSON.parse(e.target.result);
+                            desc = JSON.parse(textDecoder.decode(e.target.result));
                         }
                         const dir = '';
                         gltf = await GLTFLoader.parse(gl, desc, dir);

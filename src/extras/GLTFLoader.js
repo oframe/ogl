@@ -11,13 +11,14 @@ import { NormalProgram } from './NormalProgram.js';
 import { InstancedMesh } from './InstancedMesh.js';
 
 // TODO
-// [ ] Morph Targets
+// [ ] Morph targets
 // [ ] Materials
 // [ ] Sparse accessor packing? For morph targets basically
-// [ ] option to turn off GPU instancing ?
+// [ ] Option to turn off GPU instancing?
 // [ ] Spot lights
 
 const TYPE_ARRAY = {
+    5120: Int8Array,
     5121: Uint8Array,
     5122: Int16Array,
     5123: Uint16Array,
@@ -25,6 +26,7 @@ const TYPE_ARRAY = {
     5126: Float32Array,
     'image/jpeg': Uint8Array,
     'image/png': Uint8Array,
+    'image/webp': Uint8Array,
 };
 
 const TYPE_SIZE = {
@@ -55,6 +57,10 @@ const TRANSFORMS = {
 };
 
 export class GLTFLoader {
+    static setDracoManager(manager) {
+        this.dracoManager = manager;
+    }
+
     static setBasisManager(manager) {
         this.basisManager = manager;
     }
@@ -62,14 +68,18 @@ export class GLTFLoader {
     static async load(gl, src) {
         const dir = src.split('/').slice(0, -1).join('/') + '/';
 
-        // load main description json
+        // Load main description json
         const desc = await this.parseDesc(src);
 
         return this.parse(gl, desc, dir);
     }
 
     static async parse(gl, desc, dir) {
-        if (desc.asset === undefined || desc.asset.version[0] < 2) console.warn('Only GLTF >=2.0 supported. Attempting to parse.');
+        if (desc.asset === undefined || desc.asset.version[0] < 2)
+            console.warn('Only GLTF >=2.0 supported. Attempting to parse.');
+
+        if (desc.extensionsRequired?.includes('KHR_draco_mesh_compression') && !this.dracoManager)
+            console.warn('KHR_draco_mesh_compression extension required but no manager supplied. Use .setDracoManager()');
 
         if (desc.extensionsRequired?.includes('KHR_texture_basisu') && !this.basisManager)
             console.warn('KHR_texture_basisu extension required but no manager supplied. Use .setBasisManager()');
@@ -95,7 +105,7 @@ export class GLTFLoader {
         const skins = this.parseSkins(gl, desc, bufferViews);
 
         // Create geometries for each mesh primitive
-        const meshes = this.parseMeshes(gl, desc, bufferViews, materials, skins);
+        const meshes = await this.parseMeshes(gl, desc, bufferViews, materials, skins);
 
         // Create transforms, meshes and hierarchy
         const [nodes, cameras] = this.parseNodes(gl, desc, meshes, skins, images);
@@ -134,25 +144,28 @@ export class GLTFLoader {
     }
 
     static parseDesc(src) {
-        if (!src.match(/\.glb/)) {
-            return fetch(src).then((res) => res.json());
-        } else {
-            return fetch(src)
-                .then((res) => res.arrayBuffer())
-                .then((glb) => this.unpackGLB(glb));
-        }
+        return fetch(src, { mode: 'cors' })
+            .then((res) => res.arrayBuffer())
+            .then((data) => {
+                const textDecoder = new TextDecoder();
+                if (textDecoder.decode(new Uint8Array(data, 0, 4)) === 'glTF') {
+                    return this.unpackGLB(data);
+                } else {
+                    return JSON.parse(textDecoder.decode(data));
+                }
+            });
     }
 
     // From https://github.com/donmccurdy/glTF-Transform/blob/e4108cc/packages/core/src/io/io.ts#L32
     static unpackGLB(glb) {
-        // Decode and verify GLB header.
+        // Decode and verify GLB header
         const header = new Uint32Array(glb, 0, 3);
         if (header[0] !== 0x46546c67) {
             throw new Error('Invalid glTF asset.');
         } else if (header[1] !== 2) {
             throw new Error(`Unsupported glTF binary version, "${header[1]}".`);
         }
-        // Decode and verify chunk headers.
+        // Decode and verify chunk headers
         const jsonChunkHeader = new Uint32Array(glb, 12, 2);
         const jsonByteOffset = 20;
         const jsonByteLength = jsonChunkHeader[0];
@@ -160,7 +173,7 @@ export class GLTFLoader {
             throw new Error('Unexpected GLB layout.');
         }
 
-        // Decode JSON.
+        // Decode JSON
         const jsonText = new TextDecoder().decode(glb.slice(jsonByteOffset, jsonByteOffset + jsonByteLength));
         const json = JSON.parse(jsonText);
         // JSON only
@@ -170,7 +183,7 @@ export class GLTFLoader {
         if (binaryChunkHeader[1] !== 0x004e4942) {
             throw new Error('Unexpected GLB layout.');
         }
-        // Decode content.
+        // Decode content
         const binaryByteOffset = jsonByteOffset + jsonByteLength + 8;
         const binaryByteLength = binaryChunkHeader[0];
         const binary = glb.slice(binaryByteOffset, binaryByteOffset + binaryByteLength);
@@ -179,7 +192,7 @@ export class GLTFLoader {
         return json;
     }
 
-    // Threejs GLTF Loader https://github.com/mrdoob/three.js/blob/master/examples/js/loaders/GLTFLoader.js#L1085
+    // ThreeJS GLTF Loader https://github.com/mrdoob/three.js/blob/master/examples/js/loaders/GLTFLoader.js#L1085
     static resolveURI(uri, dir) {
         // Invalid URI
         if (typeof uri !== 'string' || uri === '') return '';
@@ -209,40 +222,59 @@ export class GLTFLoader {
                 // For GLB, binary buffer ready to go
                 if (buffer.binary) return buffer.binary;
                 const uri = this.resolveURI(buffer.uri, dir);
-                return fetch(uri).then((res) => res.arrayBuffer());
+                return fetch(uri, { mode: 'cors' }).then((res) => res.arrayBuffer());
             })
         );
     }
 
     static parseBufferViews(gl, desc, buffers) {
         if (!desc.bufferViews) return null;
-        // Clone to leave description pure
-        const bufferViews = desc.bufferViews.map((o) => Object.assign({}, o));
+        const bufferViews = desc.bufferViews;
 
         desc.meshes &&
             desc.meshes.forEach(({ primitives }) => {
-                primitives.forEach(({ attributes, indices }) => {
+                primitives.forEach(({ attributes, indices, extensions }) => {
                     // Flag bufferView as an attribute, so it knows to create a gl buffer
-                    for (let attr in attributes) bufferViews[desc.accessors[attributes[attr]].bufferView].isAttribute = true;
+                    for (const attr in attributes) {
+                        const accessor = desc.accessors[attributes[attr]];
+                        if (accessor.bufferView === undefined && !!extensions) {
+                            // Draco extension buffer view
+                            if (extensions.KHR_draco_mesh_compression) {
+                                accessor.bufferView = extensions.KHR_draco_mesh_compression.bufferView;
+                                bufferViews[accessor.bufferView].isDraco = true;
+                            }
+                        }
+                        bufferViews[accessor.bufferView].isAttribute = true;
+                    }
 
-                    if (indices === undefined) return;
-                    bufferViews[desc.accessors[indices].bufferView].isAttribute = true;
+                    if (indices !== undefined) {
+                        const accessor = desc.accessors[indices];
+                        if (accessor.bufferView === undefined && !!extensions) {
+                            // Draco extension buffer view
+                            if (extensions.KHR_draco_mesh_compression) {
+                                accessor.bufferView = extensions.KHR_draco_mesh_compression.bufferView;
+                                bufferViews[accessor.bufferView].isDraco = true;
+                            }
+                        }
+                        bufferViews[accessor.bufferView].isAttribute = true;
 
-                    // Make sure indices bufferView have a target property for gl buffer binding
-                    bufferViews[desc.accessors[indices].bufferView].target = gl.ELEMENT_ARRAY_BUFFER;
+                        // Make sure indices bufferView have a target property for gl buffer binding
+                        bufferViews[accessor.bufferView].target = gl.ELEMENT_ARRAY_BUFFER;
+                    }
                 });
             });
 
         // Get componentType of each bufferView from the accessors
-        desc.accessors.forEach(({ bufferView: i, componentType }) => {
-            bufferViews[i].componentType = componentType;
+        desc.accessors.forEach(({ bufferView: bufferViewIndex, componentType }) => {
+            if (bufferViewIndex === undefined) return;
+            bufferViews[bufferViewIndex].componentType = componentType;
         });
 
         // Get mimetype of bufferView from images
         desc.images &&
-            desc.images.forEach(({ uri, bufferView: i, mimeType }) => {
-                if (i === undefined) return;
-                bufferViews[i].mimeType = mimeType;
+            desc.images.forEach(({ uri, bufferView: bufferViewIndex, mimeType }) => {
+                if (bufferViewIndex === undefined) return;
+                bufferViews[bufferViewIndex].mimeType = mimeType;
             });
 
         // Push each bufferView to the GPU as a separate buffer
@@ -261,12 +293,13 @@ export class GLTFLoader {
                     componentType, // optional, added from accessor above
                     mimeType, // optional, added from images above
                     isAttribute,
+                    isDraco,
                 },
                 i
             ) => {
                 bufferViews[i].data = buffers[bufferIndex].slice(byteOffset, byteOffset + byteLength);
 
-                if (!isAttribute) return;
+                if (!isAttribute || isDraco) return;
                 // Create gl buffers for the bufferView, pushing it to the GPU
                 const buffer = gl.createBuffer();
                 gl.bindBuffer(target, buffer);
@@ -289,7 +322,7 @@ export class GLTFLoader {
                     return image;
                 }
 
-                // jpg / png
+                // jpg / png / webp
                 const image = new Image();
                 image.name = name;
                 if (uri) {
@@ -314,6 +347,9 @@ export class GLTFLoader {
 
     static createTexture(gl, desc, images, { sampler: samplerIndex, source: sourceIndex, name, extensions, extras }) {
         if (sourceIndex === undefined && !!extensions) {
+            // WebP extension source index
+            if (extensions.EXT_texture_webp) sourceIndex = extensions.EXT_texture_webp.source;
+
             // Basis extension source index
             if (extensions.KHR_texture_basisu) sourceIndex = extensions.KHR_texture_basisu.source;
         }
@@ -449,130 +485,204 @@ export class GLTFLoader {
 
     static parseMeshes(gl, desc, bufferViews, materials, skins) {
         if (!desc.meshes) return null;
-        return desc.meshes.map(
-            (
-                {
-                    primitives, // required
-                    weights, // optional
-                    name, // optional
-                    extensions, // optional
-                    extras = {}, // optional - will get merged with node extras
-                },
-                meshIndex
-            ) => {
-                // TODO: weights stuff ?
-                // Parse through nodes to see how many instances there are
-                // and if there is a skin attached
-                // If multiple instances of a skin, need to create each
-                let numInstances = 0;
-                let skinIndices = [];
-                let isLightmap = false;
-                desc.nodes &&
-                    desc.nodes.forEach(({ mesh, skin, extras }) => {
-                        if (mesh === meshIndex) {
-                            numInstances++;
-                            if (skin !== undefined) skinIndices.push(skin);
-                            if (extras && extras.lightmap_scale_offset) isLightmap = true;
-                        }
-                    });
-                let isSkin = !!skinIndices.length;
+        return Promise.all(
+            desc.meshes.map(
+                async (
+                    {
+                        primitives, // required
+                        weights, // optional
+                        name, // optional
+                        extensions, // optional
+                        extras = {}, // optional - will get merged with node extras
+                    },
+                    meshIndex
+                ) => {
+                    // TODO: weights stuff?
+                    // Parse through nodes to see how many instances there are and if there is a skin attached
+                    // If multiple instances of a skin, need to create each
+                    let numInstances = 0;
+                    let skinIndices = [];
+                    let isLightmap = false;
+                    desc.nodes &&
+                        desc.nodes.forEach(({ mesh, skin, extras }) => {
+                            if (mesh === meshIndex) {
+                                numInstances++;
+                                if (skin !== undefined) skinIndices.push(skin);
+                                if (extras && extras.lightmap_scale_offset) isLightmap = true;
+                            }
+                        });
+                    let isSkin = !!skinIndices.length;
 
-                // For skins, return array of skin meshes to account for multiple instances
-                if (isSkin) {
-                    primitives = skinIndices.map((skinIndex) => {
-                        return this.parsePrimitives(gl, primitives, desc, bufferViews, materials, 1, isLightmap).map(({ geometry, program, mode }) => {
-                            const mesh = new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode });
+                    // For skins, return array of skin meshes to account for multiple instances
+                    if (isSkin) {
+                        primitives = await Promise.all(
+                            skinIndices.map(async (skinIndex) => {
+                                return (await this.parsePrimitives(gl, primitives, desc, bufferViews, materials, 1, isLightmap)).map(({ geometry, program, mode }) => {
+                                    const mesh = new GLTFSkin(gl, { skeleton: skins[skinIndex], geometry, program, mode });
+                                    mesh.name = name;
+                                    mesh.extras = extras;
+                                    if (extensions) mesh.extensions = extensions;
+                                    // TODO: support skin frustum culling
+                                    mesh.frustumCulled = false;
+                                    return mesh;
+                                });
+                            })
+                        );
+                        // For retrieval to add to node
+                        primitives.instanceCount = 0;
+                        primitives.numInstances = numInstances;
+                    } else {
+                        primitives = (await this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap)).map(({ geometry, program, mode }) => {
+                            // InstancedMesh class has custom frustum culling for instances
+                            const meshConstructor = geometry.attributes.instanceMatrix ? InstancedMesh : Mesh;
+                            const mesh = new meshConstructor(gl, { geometry, program, mode });
                             mesh.name = name;
                             mesh.extras = extras;
                             if (extensions) mesh.extensions = extensions;
-                            // TODO: support skin frustum culling
-                            mesh.frustumCulled = false;
+                            // Tag mesh so that nodes can add their transforms to the instance attribute
+                            mesh.numInstances = numInstances;
                             return mesh;
                         });
-                    });
-                    // For retrieval to add to node
-                    primitives.instanceCount = 0;
-                    primitives.numInstances = numInstances;
-                } else {
-                    primitives = this.parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap).map(({ geometry, program, mode }) => {
-                        // InstancedMesh class has custom frustum culling for instances
-                        const meshConstructor = geometry.attributes.instanceMatrix ? InstancedMesh : Mesh;
-                        const mesh = new meshConstructor(gl, { geometry, program, mode });
-                        mesh.name = name;
-                        mesh.extras = extras;
-                        if (extensions) mesh.extensions = extensions;
-                        // Tag mesh so that nodes can add their transforms to the instance attribute
-                        mesh.numInstances = numInstances;
-                        return mesh;
-                    });
-                }
+                    }
 
-                return {
-                    primitives,
-                    weights,
-                    name,
-                };
-            }
+                    return {
+                        primitives,
+                        weights,
+                        name,
+                    };
+                }
+            )
         );
     }
 
     static parsePrimitives(gl, primitives, desc, bufferViews, materials, numInstances, isLightmap) {
-        return primitives.map(
-            ({
-                attributes, // required
-                indices, // optional
-                material: materialIndex, // optional
-                mode = 4, // optional
-                targets, // optional
-                extensions, // optional
-                extras, // optional
-            }) => {
-                // TODO: materials
-                const program = new NormalProgram(gl);
-                if (materialIndex !== undefined) {
-                    program.gltfMaterial = materials[materialIndex];
+        return Promise.all(
+            primitives.map(
+                async ({
+                    attributes, // required
+                    indices, // optional
+                    material: materialIndex, // optional
+                    mode = 4, // optional
+                    targets, // optional
+                    extensions, // optional
+                    extras, // optional
+                }) => {
+                    // TODO: materials
+                    const program = new NormalProgram(gl);
+                    if (materialIndex !== undefined) {
+                        program.gltfMaterial = materials[materialIndex];
+                    }
+
+                    const geometry = new Geometry(gl);
+                    if (extras) geometry.extras = extras;
+                    if (extensions) geometry.extensions = extensions;
+
+                    // For compressed geometry data
+                    if (extensions && extensions.KHR_draco_mesh_compression) {
+                        const bufferViewIndex = extensions.KHR_draco_mesh_compression.bufferView;
+                        const gltfAttributeMap = extensions.KHR_draco_mesh_compression.attributes;
+                        const attributeMap = {};
+                        const attributeTypeMap = {};
+                        const attributeTypeNameMap = {};
+                        const attributeNormalizedMap = {};
+
+                        for (const attr in attributes) {
+                            const accessor = desc.accessors[attributes[attr]];
+                            const attributeName = ATTRIBUTES[attr];
+                            attributeMap[attributeName] = gltfAttributeMap[attr];
+                            attributeTypeMap[attributeName] = accessor.componentType;
+                            attributeTypeNameMap[attributeName] = TYPE_ARRAY[accessor.componentType].name;
+                            attributeNormalizedMap[attributeName] = accessor.normalized === true;
+                        }
+
+                        const { data } = bufferViews[bufferViewIndex];
+                        const geometryData = await this.dracoManager.decodeGeometry(data, {
+                            attributeIds: attributeMap,
+                            attributeTypes: attributeTypeNameMap,
+                        });
+
+                        // Add each attribute result
+                        for (let i = 0; i < geometryData.attributes.length; i++) {
+                            const result = geometryData.attributes[i];
+                            const name = result.name;
+                            const data = result.array;
+                            const size = result.itemSize;
+                            const type = attributeTypeMap[name];
+                            const normalized = attributeNormalizedMap[name];
+
+                            // Create gl buffers for the attribute data, pushing it to the GPU
+                            const buffer = gl.createBuffer();
+                            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+                            gl.renderer.state.boundBuffer = buffer;
+                            gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+
+                            geometry.addAttribute(name, {
+                                data,
+                                size,
+                                type,
+                                normalized,
+                                buffer,
+                            });
+                        }
+
+                        // Add index attribute if found
+                        if (geometryData.index) {
+                            const data = geometryData.index.array;
+                            const size = geometryData.index.itemSize;
+
+                            // Create gl buffers for the index attribute data, pushing it to the GPU
+                            const buffer = gl.createBuffer();
+                            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+                            gl.renderer.state.boundBuffer = buffer;
+                            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
+
+                            geometry.addAttribute('index', {
+                                data,
+                                size,
+                                type: 5125, // Uint32Array
+                                normalized: false,
+                                buffer,
+                            });
+                        }
+                    } else {
+                        // Add each attribute found in primitive
+                        for (const attr in attributes) {
+                            geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
+                        }
+
+                        // Add index attribute if found
+                        if (indices !== undefined) {
+                            geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews));
+                        }
+                    }
+
+                    // Add instanced transform attribute if multiple instances
+                    // Ignore if skin as we don't support instanced skins out of the box
+                    if (numInstances > 1) {
+                        geometry.addAttribute('instanceMatrix', {
+                            instanced: 1,
+                            size: 16,
+                            data: new Float32Array(numInstances * 16),
+                        });
+                    }
+
+                    // Always supply lightmapScaleOffset as an instanced attribute
+                    // Instanced skin lightmaps not supported
+                    if (isLightmap) {
+                        geometry.addAttribute('lightmapScaleOffset', {
+                            instanced: 1,
+                            size: 4,
+                            data: new Float32Array(numInstances * 4),
+                        });
+                    }
+
+                    return {
+                        geometry,
+                        program,
+                        mode,
+                    };
                 }
-
-                const geometry = new Geometry(gl);
-                if (extras) geometry.extras = extras;
-                if (extensions) geometry.extensions = extensions;
-
-                // Add each attribute found in primitive
-                for (let attr in attributes) {
-                    geometry.addAttribute(ATTRIBUTES[attr], this.parseAccessor(attributes[attr], desc, bufferViews));
-                }
-
-                // Add index attribute if found
-                if (indices !== undefined) {
-                    geometry.addAttribute('index', this.parseAccessor(indices, desc, bufferViews));
-                }
-
-                // Add instanced transform attribute if multiple instances
-                // Ignore if skin as we don't support instanced skins out of the box
-                if (numInstances > 1) {
-                    geometry.addAttribute('instanceMatrix', {
-                        instanced: 1,
-                        size: 16,
-                        data: new Float32Array(numInstances * 16),
-                    });
-                }
-
-                // Always supply lightmapScaleOffset as an instanced attribute
-                // Instanced skin lightmaps not supported
-                if (isLightmap) {
-                    geometry.addAttribute('lightmapScaleOffset', {
-                        instanced: 1,
-                        size: 4,
-                        data: new Float32Array(numInstances * 4),
-                    });
-                }
-
-                return {
-                    geometry,
-                    program,
-                    mode,
-                };
-            }
+            )
         );
     }
 
@@ -676,7 +786,7 @@ export class GLTFLoader {
                 const node = isCamera ? new Camera(gl) : new Transform();
 
                 if (isCamera) {
-                    // ?NOTE: chose to use node's name and extras/extensions over camera.
+                    // NOTE: chose to use node's name and extras/extensions over camera
                     const cameraOpts = desc.cameras[camera];
                     if (cameraOpts.type === 'perspective') {
                         const { yfov: fov, znear: near, zfar: far } = cameraOpts.perspective;
@@ -714,7 +824,7 @@ export class GLTFLoader {
                 let isInstancedMatrix = false;
                 let isSkin = skinIndex !== undefined;
 
-                // add mesh if included
+                // Add mesh if included
                 if (meshIndex !== undefined) {
                     if (isSkin) {
                         meshes[meshIndex].primitives[meshes[meshIndex].primitives.instanceCount].forEach((mesh) => {
@@ -731,7 +841,7 @@ export class GLTFLoader {
                         meshes[meshIndex].primitives.forEach((mesh) => {
                             if (extras) Object.assign(mesh.extras, extras);
 
-                            // instanced mesh might only have 1
+                            // Instanced mesh might only have 1
                             if (mesh.geometry.isInstanced) {
                                 isInstanced = true;
                                 if (!mesh.instanceCount) {
@@ -910,7 +1020,7 @@ export class GLTFLoader {
         // Update matrices on root nodes
         scenes.forEach((scene) => scene.forEach((node) => node.updateMatrixWorld()));
 
-        // uses KHR_lights_punctual extension
+        // Uses KHR_lights_punctual extension
         const lightsDescArray = desc.extensions?.KHR_lights_punctual?.lights || [];
 
         // Need nodes for transforms

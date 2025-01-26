@@ -10,9 +10,7 @@
         <link href="assets/main.css" rel="stylesheet" />
     </head>
     <body>
-        <div class="Info">
-            Skinning. Model by <a href="https://artella.lpages.co/artella-lily-snout-giveaway/" target="_blank">Carlos Quintero and Zach Baharov</a>.
-        </div>
+        <div class="Info">Skinning. Model by <a href="https://artella.lpages.co/artella-lily-snout-giveaway/" target="_blank">Carlos Quintero and Zach Baharov</a>.</div>
         <script type="module">
             import { Renderer, Transform, Camera, Geometry, Texture, Program, Mesh, Orbit, Plane, Skin } from '../src/index.js';
 
@@ -61,7 +59,7 @@
                     mat4 boneMatZ = getBoneMatrix(skinIndex.z);
                     mat4 boneMatW = getBoneMatrix(skinIndex.w);
 
-                    // update normal
+                    // Update normal
                     mat4 skinMatrix = mat4(0.0);
                     skinMatrix += skinWeight.x * boneMatX;
                     skinMatrix += skinWeight.y * boneMatY;

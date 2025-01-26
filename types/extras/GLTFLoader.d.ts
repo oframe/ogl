@@ -11,6 +11,7 @@ import { InstancedMesh } from './InstancedMesh.js';
 import type { OGLRenderingContext } from '../core/Renderer.js';
 import type { Camera } from '../core/Camera.js';
 import type { Color } from '../math/Color.js';
+import type { DracoManager } from './DracoManager.js';
 import type { BasisManager } from './BasisManager.js';
 import type { GLTFSkinSkeleton } from './GLTFSkin.js';
 
@@ -55,8 +56,8 @@ export interface GLTFSkinReference {
 
 export interface GLTFMaterial {
     name: string;
-    extensions: object;
-    extras: object;
+    extensions: Record<string, any>;
+    extras: Record<string, any>;
     baseColorFactor: [number, number, number, number];
     baseColorTexture: { texture: Texture; scale: number };
     metallicFactor: number;
@@ -105,10 +106,12 @@ export interface GLTF {
 }
 
 /**
- * The {@link https://www.khronos.org/gltf/ | glTF (GL Transmission Format)} loader.
+ * The {@link https://www.khronos.org/gltf/ | glTF (Graphics Language Transmission Format)} loader.
  * @see {@link https://github.com/oframe/ogl/blob/master/src/extras/GLTFLoader.js | Source}
  */
 export class GLTFLoader {
+    static setDracoManager(manager: DracoManager): void;
+
     static setBasisManager(manager: BasisManager): void;
 
     static load(gl: OGLRenderingContext, src: string): Promise<GLTF>;
@@ -125,12 +128,7 @@ export class GLTFLoader {
 
     static parseBufferViews(gl: OGLRenderingContext, desc: GLTFDescription, buffers: ArrayBuffer[]): ArrayBufferView[] | null;
 
-    static parseImages(
-        gl: OGLRenderingContext,
-        desc: GLTFDescription,
-        dir: string,
-        bufferViews: ArrayBufferView[],
-    ): Promise<(HTMLImageElement | ImageBitmap)[]> | null;
+    static parseImages(gl: OGLRenderingContext, desc: GLTFDescription, dir: string, bufferViews: ArrayBufferView[]): Promise<(HTMLImageElement | ImageBitmap)[]> | null;
 
     static parseTextures(gl: OGLRenderingContext, desc: GLTFDescription, images: (HTMLImageElement | ImageBitmap)[]): Texture[] | null;
 
@@ -138,20 +136,14 @@ export class GLTFLoader {
         gl: OGLRenderingContext,
         desc: GLTFDescription,
         images: (HTMLImageElement | ImageBitmap)[],
-        options: { sample: number; source: number; name: string; extensions: object; extras: object },
+        options: { sample: number; source: number; name: string; extensions: Record<string, any>; extras: Record<string, any> },
     ): Texture;
 
     static parseMaterials(gl: OGLRenderingContext, desc: GLTFDescription, textures: Texture[]): GLTFMaterial[] | null;
 
     static parseSkins(gl: OGLRenderingContext, desc: GLTFDescription, bufferViews: ArrayBufferView[]): GLTFSkinReference[] | null;
 
-    static parseMeshes(
-        gl: OGLRenderingContext,
-        desc: GLTFDescription,
-        bufferViews: ArrayBufferView[],
-        materials: GLTFMaterial[],
-        skins: GLTFSkinReference[],
-    ): GLTFMesh[] | null;
+    static parseMeshes(gl: OGLRenderingContext, desc: GLTFDescription, bufferViews: ArrayBufferView[], materials: GLTFMaterial[], skins: GLTFSkinReference[]): GLTFMesh[] | null;
 
     static parsePrimitives(
         gl: OGLRenderingContext,
@@ -175,12 +167,7 @@ export class GLTFLoader {
 
     static populateSkins(skins: GLTFSkinReference[], nodes: (InstancedMesh | Mesh)[]): void;
 
-    static parseAnimations(
-        gl: OGLRenderingContext,
-        desc: GLTFDescription,
-        nodes: (InstancedMesh | Mesh)[],
-        bufferViews: ArrayBufferView[],
-    ): GLTFAnimationReference[] | null;
+    static parseAnimations(gl: OGLRenderingContext, desc: GLTFDescription, nodes: (InstancedMesh | Mesh)[], bufferViews: ArrayBufferView[]): GLTFAnimationReference[] | null;
 
     static parseScenes(desc: GLTFDescription, nodes: (InstancedMesh | Mesh)[]): Transform[] | null;
 

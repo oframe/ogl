@@ -1,7 +1,12 @@
-// https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/basis
+// TODO
+// [ ] WASM support
+
+// https://github.com/mrdoob/three.js/tree/master/examples/jsm/libs/basis
 importScripts('basis_transcoder.js');
 
-let KTX2File, moduleReadyResolve;
+let KTX2File;
+
+let moduleReadyResolve;
 const moduleReady = new Promise((res) => (moduleReadyResolve = res));
 
 // CONSTS
@@ -78,12 +83,12 @@ const INTERNAL_FORMAT_MAP = {
 };
 
 // Init basis transcoder
-const initStartTime = performance.now();
+// const initStartTime = performance.now();
 BASIS().then((module) => {
     ({ KTX2File } = module);
     module.initializeBasis();
-    const elapsed = performance.now() - initStartTime;
-    // console.log('worker init time', elapsed.toFixed(2) + 'ms');
+    // const elapsed = performance.now() - initStartTime;
+    // console.log('worker init time', `${elapsed.toFixed(2)}ms`);
     moduleReadyResolve();
 });
 
@@ -94,7 +99,7 @@ addEventListener('message', ({ data }) => {
 async function transcode({ id, buffer, supportedFormat }) {
     await moduleReady;
 
-    const startTime = performance.now();
+    // const startTime = performance.now();
     const ktx2File = new KTX2File(new Uint8Array(buffer));
 
     const width = ktx2File.getWidth();
@@ -143,7 +148,7 @@ async function transcode({ id, buffer, supportedFormat }) {
         if (basisFormat === BASIS_FORMAT.RGB565 || basisFormat === BASIS_FORMAT.RGBA4444) {
             // 16 bit formats require Uint16 typed array
             const dst16 = new Uint16Array(dstSize / 2);
-            for (i = 0; i < dstSize / 2; ++i) {
+            for (let i = 0; i < dstSize / 2; ++i) {
                 dst16[i] = dst[i * 2] + dst[i * 2 + 1] * 256;
             }
             dst = dst16;
@@ -169,8 +174,8 @@ async function transcode({ id, buffer, supportedFormat }) {
     ktx2File.close();
     ktx2File.delete();
 
-    const elapsed = performance.now() - startTime;
-    // console.log('transcode time', elapsed.toFixed(2) + 'ms');
+    // const elapsed = performance.now() - startTime;
+    // console.log('transcode time', `${elapsed.toFixed(2)}ms`);
 
     // Needed for texture properties
     image.isCompressedTexture = isCompressed;
