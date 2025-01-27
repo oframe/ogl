@@ -62,6 +62,10 @@ export function Orbit(
 
     this.offset = offset;
 
+    const lastPosition = new Vec3()
+	const lastQuaternion = new Quat()
+	const EPS = 0.000001
+    
     this.update = () => {
         if (autoRotate) {
             handleAutoRotate();
@@ -102,6 +106,13 @@ export function Orbit(
 
         // Reset scale every frame to avoid applying scale multiple times
         sphericalDelta.radius = 1;
+
+        if (lastPosition.squaredDistance(object.position) > EPS || 8 * (1 - lastQuaternion.dot(object.quaternion)) > EPS) {
+			lastPosition.copy(object.position)
+			lastQuaternion.copy(object.quaternion)
+			return true
+		}
+		return false
     };
 
     // Updates internals with new position
