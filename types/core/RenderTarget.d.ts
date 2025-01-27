@@ -12,6 +12,7 @@ export interface RenderTargetOptions {
     depthTexture: boolean;
     wrapS: GLenum;
     wrapT: GLenum;
+    wrapR: GLenum;
     minFilter: GLenum;
     magFilter: GLenum;
     type: GLenum;
@@ -30,6 +31,7 @@ export class RenderTarget {
     width: number;
     height: number;
     depth: boolean;
+    stencil: boolean;
     buffer: WebGLFramebuffer;
     target: number;
 

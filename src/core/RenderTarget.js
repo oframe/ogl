@@ -1,4 +1,4 @@
-import { Texture } from './Texture.js'
+import { Texture } from './Texture.js';
 
 export class RenderTarget {
     constructor(

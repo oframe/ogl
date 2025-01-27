@@ -41,6 +41,18 @@ export interface BlendEquation {
     modeAlpha?: GLenum;
 }
 
+export interface StencilFunc {
+    func: GLenum;
+    ref: GLint;
+    mask: GLuint;
+}
+
+export interface StencilOp {
+    stencilFail: GLenum;
+    depthFail: GLenum;
+    depthPass: GLenum;
+}
+
 export interface Viewport {
     x: number;
     y: number;
@@ -129,6 +141,12 @@ export class Renderer {
     setDepthMask(value: GLboolean): void;
 
     setDepthFunc(value: GLenum): void;
+
+    setStencilMask(value: GLuint): void;
+
+    setStencilFunc(func?: GLenum, ref?: GLint, mask?: GLuint): void;
+
+    setStencilOp(stencilFail: GLenum, depthFail: GLenum, depthPass: GLenum): void;
 
     activeTexture(value: number): void;
 
