@@ -1,4 +1,4 @@
-import type { OGLRenderingContext, BlendFunc, BlendEquation } from './Renderer';
+import type { OGLRenderingContext, BlendFunc, BlendEquation, StencilFunc, StencilOp } from './Renderer';
 
 export interface ProgramOptions {
     vertex: string;
@@ -39,6 +39,9 @@ export class Program {
     depthFunc: GLenum;
     blendFunc: BlendFunc;
     blendEquation: BlendEquation;
+    stencilRef: GLint;
+    stencilFunc: StencilFunc;
+    stencilOp: StencilOp;
 
     vertexShader: WebGLShader;
     fragmentShader: WebGLShader;
@@ -54,6 +57,10 @@ export class Program {
     setBlendFunc(src: GLenum, dst: GLenum, srcAlpha?: GLenum, dstAlpha?: GLenum): void;
 
     setBlendEquation(modeRGB: GLenum, modeAlpha: GLenum): void;
+
+    setStencilFunc(func: GLenum, ref: GLint, mask: GLuint): void;
+
+    setStencilOp(stencilFail: GLenum, depthFail: GLenum, depthPass: GLenum): void;
 
     applyState(): void;
 
