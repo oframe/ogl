@@ -47,10 +47,7 @@ export class Renderer {
 
         // Attach renderer to gl so that all classes have access to internal state functions
         this.gl.renderer = this;
-
-        // initialise size values
-        this.setSize(width, height);
-
+        
         // gl state stores to avoid redundant calls on methods used internally
         this.state = {};
         this.state.blendFunc = { src: this.gl.ONE, dst: this.gl.ZERO };
@@ -69,7 +66,10 @@ export class Renderer {
         this.state.boundBuffer = null;
         this.state.uniformLocations = new Map();
         this.state.currentProgram = null;
-
+       
+        // initialise size values
+        this.setSize(width, height);
+        
         // store requested extensions
         this.extensions = {};
 
@@ -119,6 +119,8 @@ export class Renderer {
         this.gl.canvas.width = width * this.dpr;
         this.gl.canvas.height = height * this.dpr;
 
+        this.setViewport(1,1);
+
         if (!this.gl.canvas.style) return;
         Object.assign(this.gl.canvas.style, {
             width: width + 'px',
@@ -127,12 +129,18 @@ export class Renderer {
     }
 
     setViewport(width, height, x = 0, y = 0) {
-        if (this.state.viewport.width === width && this.state.viewport.height === height) return;
-        this.state.viewport.width = width;
-        this.state.viewport.height = height;
-        this.state.viewport.x = x;
-        this.state.viewport.y = y;
-        this.gl.viewport(x, y, width, height);
+        this.state.viewport.width = this.width * this.dpr * width;
+        this.state.viewport.height = this.height * this.dpr * height;
+        this.state.viewport.x = this.width * this.dpr * x;
+        this.state.viewport.y = this.height * this.dpr * y;
+    }
+
+    updateViewport() {
+        this.gl.viewport(
+            this.state.viewport.x,
+            this.state.viewport.y,
+            this.state.viewport.width,
+            this.state.viewport.height);
     }
 
     setScissor(width, height, x = 0, y = 0) {
@@ -353,7 +361,8 @@ export class Renderer {
         if (target === null) {
             // make sure no render target bound so draws to canvas
             this.bindFramebuffer();
-            this.setViewport(this.width * this.dpr, this.height * this.dpr);
+            this.updateViewport();
+            //this.setViewport(this.width * this.dpr, this.height * this.dpr);
         } else {
             // bind supplied render target and update viewport
             this.bindFramebuffer(target);
