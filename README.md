@@ -8,7 +8,7 @@
     <a href="https://npmjs.org/package/ogl">
         <img src="https://img.shields.io/npm/v/ogl.svg" alt="version" />
     </a>
-    <a href="https://github.com/oframe/ogl/blob/master/LICENSE">
+    <a href="https://unlicense.org/">
         <img src="https://img.shields.io/npm/l/ogl.svg" alt="license" />
     </a>
     <a href="https://bundlephobia.com/result?p=ogl">
