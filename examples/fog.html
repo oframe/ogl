@@ -14,109 +14,139 @@
         <script type="module">
             import { Renderer, Camera, Transform, Texture, Program, Color, Geometry, Mesh } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec2 uv;
-                attribute vec3 position;
-                attribute vec3 offset;
-                attribute vec3 random;
+            const vertex = /* wgsl */ `
+                struct MaterialUniforms {
+                    uTime : f32,
+                    uFogColor : vec3f,
+                    uFogNear : f32,
+                    uFogFar : f32,
+                };
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-                uniform float uTime;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tMap : texture_2d<f32>;
+                @group(0) @binding(2) var tMapSampler : sampler;
 
-                varying vec2 vUv;
-                varying vec4 vMVPos;
-                varying vec3 vPos;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                void rotate2d(inout vec2 v, float a){
-                    mat2 m = mat2(cos(a), -sin(a), sin(a),  cos(a));
-                    v = m * v;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
+
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) uv : vec2f,
+                    @location(2) offset : vec3f,
+                    @location(3) random : vec3f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                    @location(1) vMVPos : vec4f,
+                    @location(2) vPos : vec3f,
+                };
+
+                fn rotate2d(v : vec2f, a : f32) -> vec2f {
+                    let m = mat2x2f(cos(a), -sin(a), sin(a), cos(a));
+                    return m * v;
                 }
 
-                void main() {
-                    vUv = uv;
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
 
                     // copy position so that we can modify the instances
-                    vec3 pos = position;
+                    var pos = input.position;
 
                     // scale first
-                    pos *= 0.8 + random.y * 0.3;
+                    pos *= 0.8 + input.random.y * 0.3;
 
                     // pass scaled object position to fragment to add low-lying fog
-                    vPos = pos;
+                    output.vPos = pos;
 
                     // rotate around Y axis
-                    rotate2d(pos.xz, random.x * 6.28);
+                    let xz = rotate2d(pos.xz, input.random.x * 6.28);
+                    pos.x = xz.x;
+                    pos.z = xz.y;
 
                     // add position offset
-                    pos += offset;
+                    pos += input.offset;
 
                     // add some hilliness to vary the height
                     pos.y += sin(pos.x * 0.5) * sin(pos.z * 0.5) * 0.5;
 
                     // pass model view position to fragment shader to get distance from camera
-                    vMVPos = modelViewMatrix * vec4(pos, 1.0);
+                    output.vMVPos = object.modelViewMatrix * vec4f(pos, 1.0);
 
-                    gl_Position = projectionMatrix * vMVPos;
+                    output.position = object.projectionMatrix * output.vMVPos;
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    uTime : f32,
+                    uFogColor : vec3f,
+                    uFogNear : f32,
+                    uFogFar : f32,
+                };
 
-                uniform float uTime;
-                uniform sampler2D tMap;
-                uniform vec3 uFogColor;
-                uniform float uFogNear;
-                uniform float uFogFar;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tMap : texture_2d<f32>;
+                @group(0) @binding(2) var tMapSampler : sampler;
 
-                varying vec2 vUv;
-                varying vec4 vMVPos;
-                varying vec3 vPos;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vMVPos : vec4f,
+                    @location(2) vPos : vec3f,
+                };
 
-                void main() {
-                    vec3 tex = texture2D(tMap, vUv).rgb;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    var tex = textureSample(tMap, tMapSampler, input.vUv).rgb;
 
                     // add the fog relative to the distance from the camera
-                    float dist = length(vMVPos);
-                    float fog = smoothstep(uFogNear, uFogFar, dist);
-                    tex = mix(tex, uFogColor, fog);
+                    let dist = length(input.vMVPos.xyz);
+                    let fog = smoothstep(material.uFogNear, material.uFogFar, dist);
+                    tex = mix(tex, material.uFogColor, fog);
 
                     // add some fog along the height of each tree to simulate low-lying fog
-                    tex = mix(tex, uFogColor, smoothstep(1.0, 0.0, vPos.y));
+                    tex = mix(tex, material.uFogColor, smoothstep(1.0, 0.0, input.vPos.y));
 
-                    gl_FragColor.rgb = tex;
-                    gl_FragColor.a = 1.0;
+                    return vec4f(tex, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 45 });
+                const camera = new Camera(renderer, { fov: 45 });
                 camera.position.set(0, 4, 8);
                 camera.lookAt([0, 0, 0]);
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
                 const scene = new Transform();
 
-                const texture = new Texture(gl);
+                const texture = new Texture(renderer);
                 const img = new Image();
                 img.onload = () => (texture.image = img);
                 img.src = 'assets/forest.jpg';
 
-                const program = new Program(gl, {
-                    vertex: vertex,
-                    fragment: fragment,
+                const program = new Program(renderer, {
+                    vertex,
+                    fragment,
                     uniforms: {
                         uTime: { value: 0 },
                         tMap: { value: texture },
@@ -145,14 +175,14 @@
                         random.set([Math.random(), Math.random(), Math.random()], i * 3);
                     }
 
-                    const geometry = new Geometry(gl, {
+                    const geometry = new Geometry(renderer, {
                         position: { size: 3, data: new Float32Array(data.position) },
                         uv: { size: 2, data: new Float32Array(data.uv) },
                         offset: { instanced: true, size: 3, data: offset },
                         random: { instanced: true, size: 3, data: random },
                     });
 
-                    mesh = new Mesh(gl, { geometry, program });
+                    mesh = new Mesh(renderer, { geometry, program });
                     mesh.setParent(scene);
                 }
 

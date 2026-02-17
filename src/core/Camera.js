@@ -7,7 +7,7 @@ const tempVec3a = /* @__PURE__ */ new Vec3();
 const tempVec3b = /* @__PURE__ */ new Vec3();
 
 export class Camera extends Transform {
-    constructor(gl, { near = 0.1, far = 100, fov = 45, aspect = 1, left, right, bottom, top, zoom = 1 } = {}) {
+    constructor(gpu, { near = 0.1, far = 100, fov = 45, aspect = 1, left, right, bottom, top, zoom = 1 } = {}) {
         super();
 
         Object.assign(this, { near, far, fov, aspect, left, right, bottom, top, zoom });
@@ -108,7 +108,6 @@ export class Camera extends Transform {
     }
 
     frustumIntersectsMesh(node, worldMatrix = node.worldMatrix) {
-        // If no position attribute, treat as frustumCulled false
         if (!node.geometry.attributes.position) return true;
 
         if (!node.geometry.bounds || node.geometry.bounds.radius === Infinity) node.geometry.computeBoundingSphere();

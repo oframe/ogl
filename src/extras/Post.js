@@ -5,64 +5,57 @@ import { Triangle } from './Triangle.js';
 
 export class Post {
     constructor(
-        gl,
+        gpu,
         {
             width,
             height,
             dpr,
-            wrapS = gl.CLAMP_TO_EDGE,
-            wrapT = gl.CLAMP_TO_EDGE,
-            minFilter = gl.LINEAR,
-            magFilter = gl.LINEAR,
-            geometry = new Triangle(gl),
+            geometry = new Triangle(gpu),
             targetOnly = null,
             depth = true,
         } = {}
     ) {
-        this.gl = gl;
+        this.renderer = gpu.renderer || gpu;
 
         this.passes = [];
 
         this.geometry = geometry;
 
-        this.uniform = { value: null };
         this.targetOnly = targetOnly;
 
         if (dpr) this.dpr = dpr;
         if (width) this.width = width;
         if (height) this.height = height;
 
-        dpr = this.dpr || this.gl.renderer.dpr;
-        this.resolutionWidth = Math.floor(this.width || this.gl.renderer.width * dpr);
-        this.resolutionHeight = Math.floor(this.height || this.gl.renderer.height * dpr);
+        dpr = this.dpr || this.renderer.dpr;
+        this.resolutionWidth = Math.floor(this.width || this.renderer.width * dpr);
+        this.resolutionHeight = Math.floor(this.height || this.renderer.height * dpr);
 
-        let options = {
-            dpr: this.dpr,
+        const options = {
             width: this.resolutionWidth,
             height: this.resolutionHeight,
-            wrapS,
-            wrapT,
-            minFilter,
-            magFilter,
             depth,
         };
 
         const fbo = (this.fbo = {
-            read: new RenderTarget(this.gl, options),
-            write: new RenderTarget(this.gl, options),
+            read: new RenderTarget(this.renderer, options),
+            write: new RenderTarget(this.renderer, options),
             swap: () => {
                 let temp = fbo.read;
                 fbo.read = fbo.write;
                 fbo.write = temp;
             },
         });
+
+        // Initialize with read texture so it's never null when used as a uniform in other passes
+        this.uniform = { value: this.fbo.read.texture };
     }
 
     addPass({ vertex = defaultVertex, fragment = defaultFragment, uniforms = {}, textureUniform = 'tMap', enabled = true } = {}) {
         uniforms[textureUniform] = { value: this.fbo.read.texture };
 
-        const program = new Program(this.gl, { vertex, fragment, uniforms });
-        const mesh = new Mesh(this.gl, { geometry: this.geometry, program });
+        const program = new Program(this.renderer, { vertex, fragment, uniforms });
+        const mesh = new Mesh(this.renderer, { geometry: this.geometry, program });
 
         const pass = {
             mesh,
@@ -81,9 +74,9 @@ export class Post {
         if (width) this.width = width;
         if (height) this.height = height;
 
-        dpr = this.dpr || this.gl.renderer.dpr;
-        this.resolutionWidth = Math.floor(this.width || this.gl.renderer.width * dpr);
-        this.resolutionHeight = Math.floor(this.height || this.gl.renderer.height * dpr);
+        dpr = this.dpr || this.renderer.dpr;
+        this.resolutionWidth = Math.floor(this.width || this.renderer.width * dpr);
+        this.resolutionHeight = Math.floor(this.height || this.renderer.height * dpr);
 
         this.fbo.read.setSize(this.resolutionWidth, this.resolutionHeight);
         this.fbo.write.setSize(this.resolutionWidth, this.resolutionHeight);
@@ -94,7 +87,7 @@ export class Post {
         const enabledPasses = this.passes.filter((pass) => pass.enabled);
 
         if (!texture) {
-            this.gl.renderer.render({
+            this.renderer.render({
                 scene,
                 camera,
                 target: enabledPasses.length || (!target && this.targetOnly) ? this.fbo.write : target,
@@ -110,7 +103,7 @@ export class Post {
 
         enabledPasses.forEach((pass, i) => {
             pass.mesh.program.uniforms[pass.textureUniform].value = !i && texture ? texture : this.fbo.read.texture;
-            this.gl.renderer.render({
+            this.renderer.render({
                 scene: pass.mesh,
                 target: i === enabledPasses.length - 1 && (target || !this.targetOnly) ? target : this.fbo.write,
                 clear: true,
@@ -122,25 +115,34 @@ export class Post {
     }
 }
 
-const defaultVertex = /* glsl */ `
-    attribute vec2 uv;
-    attribute vec2 position;
+const defaultVertex = /* wgsl */ `
+    struct VertexInput {
+        @location(0) position : vec2f,
+        @location(1) uv : vec2f,
+    };
 
-    varying vec2 vUv;
+    struct VertexOutput {
+        @builtin(position) position : vec4f,
+        @location(0) vUv : vec2f,
+    };
 
-    void main() {
-        vUv = uv;
-        gl_Position = vec4(position, 0, 1);
+    @vertex fn main(input : VertexInput) -> VertexOutput {
+        var output : VertexOutput;
+        output.vUv = vec2f(input.uv.x, 1.0 - input.uv.y);
+        output.position = vec4f(input.position, 0.0, 1.0);
+        return output;
     }
 `;
 
-const defaultFragment = /* glsl */ `
-    precision highp float;
+const defaultFragment = /* wgsl */ `
+    @group(0) @binding(0) var tMapTex : texture_2d<f32>;
+    @group(0) @binding(1) var tMapSampler : sampler;
 
-    uniform sampler2D tMap;
-    varying vec2 vUv;
+    struct FragmentInput {
+        @location(0) vUv : vec2f,
+    };
 
-    void main() {
-        gl_FragColor = texture2D(tMap, vUv);
+    @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+        return textureSample(tMapTex, tMapSampler, input.vUv);
     }
 `;

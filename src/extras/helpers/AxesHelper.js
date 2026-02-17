@@ -5,7 +5,7 @@ import { Vec3 } from '../../math/Vec3.js';
 
 export class AxesHelper extends Mesh {
     constructor(
-        gl,
+        gpu,
         {
             size = 1,
             symmetric = false,
@@ -32,36 +32,53 @@ export class AxesHelper extends Mesh {
 			...zColor,  ...zColor
 		]);
 
-        const geometry = new Geometry(gl, {
+        const geometry = new Geometry(gpu, {
             position: { size: 3, data: vertices },
             color: { size: 3, data: colors },
         });
 
-        const program = new Program(gl, { vertex, fragment });
+        const program = new Program(gpu, { vertex, fragment, topology: 'line-list', cullFace: false });
 
-        super(gl, { ...meshProps, mode: gl.LINES, geometry, program });
+        super(gpu, { ...meshProps, geometry, program });
     }
 }
 
-const vertex = /* glsl */ `
-attribute vec3 position;
-attribute vec3 color;
-uniform mat4 modelViewMatrix;
-uniform mat4 projectionMatrix;
+const vertex = /* wgsl */ `
+struct ObjectUniforms {
+    modelMatrix : mat4x4f,
+    viewMatrix : mat4x4f,
+    modelViewMatrix : mat4x4f,
+    projectionMatrix : mat4x4f,
+    normalMatrix : mat3x3f,
+    cameraPosition : vec3f,
+};
 
-varying vec3 vColor;
+@group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-void main() {    
-    vColor = color;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+struct VertexInput {
+    @location(0) position : vec3f,
+    @location(1) color : vec3f,
+};
+
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+    @location(0) vColor : vec3f,
+};
+
+@vertex fn main(input : VertexInput) -> VertexOutput {
+    var output : VertexOutput;
+    output.vColor = input.color;
+    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+    return output;
 }
 `;
 
-const fragment = /* glsl */ `
-precision highp float;
-varying vec3 vColor;
+const fragment = /* wgsl */ `
+struct FragInput {
+    @location(0) vColor : vec3f,
+};
 
-void main() {    
-    gl_FragColor = vec4(vColor, 1.0);
+@fragment fn main(input : FragInput) -> @location(0) vec4f {
+    return vec4f(input.vColor, 1.0);
 }
 `;

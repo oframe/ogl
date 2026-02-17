@@ -51,7 +51,7 @@ const OPAQUE_MAP = {
     etc1: BASIS_FORMAT.ETC1_RGB,
     pvrtc: BASIS_FORMAT.PVRTC1_4_RGB,
     // atc: BASIS_FORMAT.ATC_RGB,
-    none: BASIS_FORMAT.RGB565,
+    none: BASIS_FORMAT.RGBA32,
 };
 
 const ALPHA_MAP = {
@@ -62,7 +62,7 @@ const ALPHA_MAP = {
     etc1: BASIS_FORMAT.RGBA4444,
     pvrtc: BASIS_FORMAT.PVRTC1_4_RGBA,
     // atc: BASIS_FORMAT.ATC_RGBA_INTERPOLATED_ALPHA,
-    none: BASIS_FORMAT.RGBA4444,
+    none: BASIS_FORMAT.RGBA32,
 };
 
 // Maps BASIS transcode format to compressedTexImage2D internal format
@@ -177,12 +177,13 @@ async function transcode({ id, buffer, supportedFormat }) {
     // const elapsed = performance.now() - startTime;
     // console.log('transcode time', `${elapsed.toFixed(2)}ms`);
 
-    // Needed for texture properties
-    image.isCompressedTexture = isCompressed;
-    image.internalFormat = INTERNAL_FORMAT_MAP[basisFormat];
-
+    // Send metadata separately — structured clone strips custom properties from arrays/TypedArrays
     postMessage({
         id,
         image,
+        isCompressedTexture: isCompressed,
+        internalFormat: INTERNAL_FORMAT_MAP[basisFormat],
+        width,
+        height,
     });
 }

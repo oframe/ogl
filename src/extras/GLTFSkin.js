@@ -6,8 +6,8 @@ const tempMat4 = /* @__PURE__ */ new Mat4();
 const identity = /* @__PURE__ */ new Mat4();
 
 export class GLTFSkin extends Mesh {
-    constructor(gl, { skeleton, geometry, program, mode = gl.TRIANGLES } = {}) {
-        super(gl, { geometry, program, mode });
+    constructor(gpu, { skeleton, geometry, program } = {}) {
+        super(gpu, { geometry, program });
         this.skeleton = skeleton;
         this.program = program;
         this.createBoneTexture();
@@ -18,15 +18,15 @@ export class GLTFSkin extends Mesh {
         const size = Math.max(4, Math.pow(2, Math.ceil(Math.log(Math.sqrt(this.skeleton.joints.length * 4)) / Math.LN2)));
         this.boneMatrices = new Float32Array(size * size * 4);
         this.boneTextureSize = size;
-        this.boneTexture = new Texture(this.gl, {
+        this.boneTexture = new Texture(this.renderer, {
             image: this.boneMatrices,
             generateMipmaps: false,
-            type: this.gl.FLOAT,
-            internalFormat: this.gl.renderer.isWebgl2 ? this.gl.RGBA32F : this.gl.RGBA,
-            minFilter: this.gl.NEAREST,
-            magFilter: this.gl.NEAREST,
+            format: 'rgba32float',
+            minFilter: 'nearest',
+            magFilter: 'nearest',
             flipY: false,
             width: size,
+            height: size,
         });
     }
 
@@ -37,20 +37,18 @@ export class GLTFSkin extends Mesh {
             tempMat4.multiply(bone.worldMatrix, bone.bindInverse);
             this.boneMatrices.set(tempMat4, i * 16);
         });
-        this.boneTexture.needsUpdate = true;
-        // Reset for programs shared between multiple skins
-        this.program.uniforms.boneTexture.value = this.boneTexture;
-        this.program.uniforms.boneTextureSize.value = this.boneTextureSize;
+
+        // Write bone matrices directly to GPU texture
+        const bytesPerRow = this.boneTextureSize * 4 * 4; // rgba32float = 16 bytes per pixel
+        this.device.queue.writeTexture(
+            { texture: this.boneTexture.gpuTexture },
+            this.boneMatrices,
+            { bytesPerRow, rowsPerImage: this.boneTextureSize },
+            [this.boneTextureSize, this.boneTextureSize]
+        );
     }
 
-    draw({ camera } = {}) {
-        if (!this.program.uniforms.boneTexture) {
-            Object.assign(this.program.uniforms, {
-                boneTexture: { value: this.boneTexture },
-                boneTextureSize: { value: this.boneTextureSize },
-            });
-        }
-
+    draw({ camera, passEncoder } = {}) {
         this.updateUniforms();
 
         // Switch the world matrix with identity to ignore any transforms
@@ -58,7 +56,7 @@ export class GLTFSkin extends Mesh {
         const _worldMatrix = this.worldMatrix;
         this.worldMatrix = identity;
 
-        super.draw({ camera });
+        super.draw({ camera, passEncoder });
 
         // Switch back to leave identity untouched
         this.worldMatrix = _worldMatrix;

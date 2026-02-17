@@ -17,290 +17,349 @@
         <script type="module">
             import { Renderer, Camera, RenderTarget, Geometry, Program, Mesh, Color, Vec2, Box, NormalProgram, Post } from '../src/index.js';
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            // Post pass fragment: composites the fluid distortion over the scene
+            // Uniforms: uTime (f32) => binding 0 uniform buffer
+            // Textures (in JS insertion order): tFluid (user-defined), then tMap (appended by Post.addPass)
+            //   tFluid => binding 1 (texture), binding 2 (sampler)
+            //   tMap   => binding 3 (texture), binding 4 (sampler)
+            const fragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    uTime : f32,
+                };
 
-                uniform sampler2D tMap;
-                uniform sampler2D tFluid;
-                uniform float uTime;
-                varying vec2 vUv;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tFluidTex : texture_2d<f32>;
+                @group(0) @binding(2) var tFluidSampler : sampler;
+                @group(0) @binding(3) var tMapTex : texture_2d<f32>;
+                @group(0) @binding(4) var tMapSampler : sampler;
 
-                void main() {
-                    vec3 fluid = texture2D(tFluid, vUv).rgb;
-                    vec2 uv = vUv - fluid.rg * 0.0002;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
 
-                    gl_FragColor = mix( texture2D(tMap, uv), vec4(fluid * 0.1 + 0.5, 1), step(0.5, vUv.x) ) ;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let fluid = textureSample(tFluidTex, tFluidSampler, input.vUv).rgb;
+                    let uv = input.vUv - fluid.rg * 0.0002;
 
-                    // Oscillate between fluid values and the distorted scene
-                    // gl_FragColor = mix(texture2D(tMap, uv), vec4(fluid * 0.1 + 0.5, 1), smoothstep(0.0, 0.7, sin(uTime)));
+                    let sceneColor = textureSample(tMapTex, tMapSampler, uv);
+                    let fluidColor = vec4f(fluid * 0.1 + 0.5, 1.0);
+                    return mix(sceneColor, fluidColor, step(0.5, input.vUv.x));
                 }
             `;
 
-            const baseVertex = /* glsl */ `
-                precision highp float;
-                attribute vec2 position;
-                attribute vec2 uv;
-                varying vec2 vUv;
-                varying vec2 vL;
-                varying vec2 vR;
-                varying vec2 vT;
-                varying vec2 vB;
-                uniform vec2 texelSize;
-                void main () {
-                    vUv = uv;
-                    vL = vUv - vec2(texelSize.x, 0.0);
-                    vR = vUv + vec2(texelSize.x, 0.0);
-                    vT = vUv + vec2(0.0, texelSize.y);
-                    vB = vUv - vec2(0.0, texelSize.y);
-                    gl_Position = vec4(position, 0, 1);
+            // Base vertex for fluid simulation passes: computes neighbor UVs for texel sampling
+            // Uniforms: texelSize (vec2f) => binding 0 uniform buffer
+            // Attributes: position (vec2f) @location(0), uv (vec2f) @location(1)
+            const baseVertex = /* wgsl */ `
+                struct MaterialUniforms {
+                    texelSize : vec2f,
+                };
+
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+
+                struct VertexInput {
+                    @location(0) position : vec2f,
+                    @location(1) uv : vec2f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                    @location(1) vL : vec2f,
+                    @location(2) vR : vec2f,
+                    @location(3) vT : vec2f,
+                    @location(4) vB : vec2f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    let uv = vec2f(input.uv.x, 1.0 - input.uv.y);
+                    output.vUv = uv;
+                    output.vL = uv - vec2f(material.texelSize.x, 0.0);
+                    output.vR = uv + vec2f(material.texelSize.x, 0.0);
+                    output.vT = uv + vec2f(0.0, material.texelSize.y);
+                    output.vB = uv - vec2f(0.0, material.texelSize.y);
+                    output.position = vec4f(input.position, 0.0, 1.0);
+                    return output;
                 }
             `;
 
-            const clearShader = /* glsl */ `
-                precision mediump float;
-                precision mediump sampler2D;
-                varying highp vec2 vUv;
-                uniform sampler2D uTexture;
-                uniform float value;
-                void main () {
-                    gl_FragColor = value * texture2D(uTexture, vUv);
+            // Clear shader
+            // Uniforms: texelSize (vec2f, from baseVertex), value (f32) => in uniform buffer
+            // Textures: uTexture => binding 1 (texture), binding 2 (sampler)
+            const clearShader = /* wgsl */ `
+                struct MaterialUniforms {
+                    texelSize : vec2f,
+                    value : f32,
+                };
+
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var uTextureTex : texture_2d<f32>;
+                @group(0) @binding(2) var uTextureSampler : sampler;
+
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    return material.value * textureSample(uTextureTex, uTextureSampler, input.vUv);
                 }
             `;
 
-            const splatShader = /* glsl */ `
-                precision highp float;
-                precision highp sampler2D;
-                varying vec2 vUv;
-                uniform sampler2D uTarget;
-                uniform float aspectRatio;
-                uniform vec3 color;
-                uniform vec2 point;
-                uniform float radius;
-                void main () {
-                    vec2 p = vUv - point.xy;
-                    p.x *= aspectRatio;
-                    vec3 splat = exp(-dot(p, p) / radius) * color;
-                    vec3 base = texture2D(uTarget, vUv).xyz;
-                    gl_FragColor = vec4(base + splat, 1.0);
+            // Splat shader
+            // Uniforms: texelSize (vec2f), aspectRatio (f32), radius (f32), point (vec2f), color (vec3f)
+            // Textures: uTarget
+            const splatShader = /* wgsl */ `
+                struct MaterialUniforms {
+                    texelSize : vec2f,
+                    aspectRatio : f32,
+                    radius : f32,
+                    point : vec2f,
+                    color : vec3f,
+                };
+
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var uTargetTex : texture_2d<f32>;
+                @group(0) @binding(2) var uTargetSampler : sampler;
+
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    var p = input.vUv - material.point;
+                    p.x *= material.aspectRatio;
+                    let splat = exp(-dot(p, p) / material.radius) * material.color;
+                    let base = textureSample(uTargetTex, uTargetSampler, input.vUv).xyz;
+                    return vec4f(base + splat, 1.0);
                 }
             `;
 
-            const advectionManualFilteringShader = /* glsl */ `
-                precision highp float;
-                precision highp sampler2D;
-                varying vec2 vUv;
-                uniform sampler2D uVelocity;
-                uniform sampler2D uSource;
-                uniform vec2 texelSize;
-                uniform vec2 dyeTexelSize;
-                uniform float dt;
-                uniform float dissipation;
-                vec4 bilerp (sampler2D sam, vec2 uv, vec2 tsize) {
-                    vec2 st = uv / tsize - 0.5;
-                    vec2 iuv = floor(st);
-                    vec2 fuv = fract(st);
-                    vec4 a = texture2D(sam, (iuv + vec2(0.5, 0.5)) * tsize);
-                    vec4 b = texture2D(sam, (iuv + vec2(1.5, 0.5)) * tsize);
-                    vec4 c = texture2D(sam, (iuv + vec2(0.5, 1.5)) * tsize);
-                    vec4 d = texture2D(sam, (iuv + vec2(1.5, 1.5)) * tsize);
-                    return mix(mix(a, b, fuv.x), mix(c, d, fuv.x), fuv.y);
-                }
-                void main () {
-                    vec2 coord = vUv - dt * bilerp(uVelocity, vUv, texelSize).xy * texelSize;
-                    gl_FragColor = dissipation * bilerp(uSource, coord, dyeTexelSize);
-                    gl_FragColor.a = 1.0;
+            // Advection shader (with linear filtering support — WebGPU always supports linear filtering on float textures if the feature is enabled)
+            // Uniforms: texelSize (vec2f), dyeTexelSize (vec2f), dt (f32), dissipation (f32)
+            // Textures: uVelocity, uSource
+            const advectionShader = /* wgsl */ `
+                struct MaterialUniforms {
+                    texelSize : vec2f,
+                    dyeTexelSize : vec2f,
+                    dt : f32,
+                    dissipation : f32,
+                };
+
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var uVelocityTex : texture_2d<f32>;
+                @group(0) @binding(2) var uVelocitySampler : sampler;
+                @group(0) @binding(3) var uSourceTex : texture_2d<f32>;
+                @group(0) @binding(4) var uSourceSampler : sampler;
+
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let coord = input.vUv - material.dt * textureSample(uVelocityTex, uVelocitySampler, input.vUv).xy * material.texelSize;
+                    var col = material.dissipation * textureSample(uSourceTex, uSourceSampler, coord);
+                    col.a = 1.0;
+                    return col;
                 }
             `;
 
-            const advectionShader = /* glsl */ `
-                precision highp float;
-                precision highp sampler2D;
-                varying vec2 vUv;
-                uniform sampler2D uVelocity;
-                uniform sampler2D uSource;
-                uniform vec2 texelSize;
-                uniform float dt;
-                uniform float dissipation;
-                void main () {
-                    vec2 coord = vUv - dt * texture2D(uVelocity, vUv).xy * texelSize;
-                    gl_FragColor = dissipation * texture2D(uSource, coord);
-                    gl_FragColor.a = 1.0;
+            // Divergence shader
+            // Uniforms: texelSize (vec2f) => in uniform buffer
+            // Textures: uVelocity
+            const divergenceShader = /* wgsl */ `
+                struct MaterialUniforms {
+                    texelSize : vec2f,
+                };
+
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var uVelocityTex : texture_2d<f32>;
+                @group(0) @binding(2) var uVelocitySampler : sampler;
+
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vL : vec2f,
+                    @location(2) vR : vec2f,
+                    @location(3) vT : vec2f,
+                    @location(4) vB : vec2f,
+                };
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    var L = textureSample(uVelocityTex, uVelocitySampler, input.vL).x;
+                    var R = textureSample(uVelocityTex, uVelocitySampler, input.vR).x;
+                    var T = textureSample(uVelocityTex, uVelocitySampler, input.vT).y;
+                    var B = textureSample(uVelocityTex, uVelocitySampler, input.vB).y;
+                    let C = textureSample(uVelocityTex, uVelocitySampler, input.vUv).xy;
+                    if (input.vL.x < 0.0) { L = -C.x; }
+                    if (input.vR.x > 1.0) { R = -C.x; }
+                    if (input.vT.y > 1.0) { T = -C.y; }
+                    if (input.vB.y < 0.0) { B = -C.y; }
+                    let div = 0.5 * (R - L + T - B);
+                    return vec4f(div, 0.0, 0.0, 1.0);
                 }
             `;
 
-            const divergenceShader = /* glsl */ `
-                precision mediump float;
-                precision mediump sampler2D;
-                varying highp vec2 vUv;
-                varying highp vec2 vL;
-                varying highp vec2 vR;
-                varying highp vec2 vT;
-                varying highp vec2 vB;
-                uniform sampler2D uVelocity;
-                void main () {
-                    float L = texture2D(uVelocity, vL).x;
-                    float R = texture2D(uVelocity, vR).x;
-                    float T = texture2D(uVelocity, vT).y;
-                    float B = texture2D(uVelocity, vB).y;
-                    vec2 C = texture2D(uVelocity, vUv).xy;
-                    if (vL.x < 0.0) { L = -C.x; }
-                    if (vR.x > 1.0) { R = -C.x; }
-                    if (vT.y > 1.0) { T = -C.y; }
-                    if (vB.y < 0.0) { B = -C.y; }
-                    float div = 0.5 * (R - L + T - B);
-                    gl_FragColor = vec4(div, 0.0, 0.0, 1.0);
+            // Curl shader
+            // Uniforms: texelSize (vec2f) => in uniform buffer
+            // Textures: uVelocity
+            const curlShader = /* wgsl */ `
+                struct MaterialUniforms {
+                    texelSize : vec2f,
+                };
+
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var uVelocityTex : texture_2d<f32>;
+                @group(0) @binding(2) var uVelocitySampler : sampler;
+
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vL : vec2f,
+                    @location(2) vR : vec2f,
+                    @location(3) vT : vec2f,
+                    @location(4) vB : vec2f,
+                };
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let L = textureSample(uVelocityTex, uVelocitySampler, input.vL).y;
+                    let R = textureSample(uVelocityTex, uVelocitySampler, input.vR).y;
+                    let T = textureSample(uVelocityTex, uVelocitySampler, input.vT).x;
+                    let B = textureSample(uVelocityTex, uVelocitySampler, input.vB).x;
+                    let vorticity = R - L - T + B;
+                    return vec4f(0.5 * vorticity, 0.0, 0.0, 1.0);
                 }
             `;
 
-            const curlShader = /* glsl */ `
-                precision mediump float;
-                precision mediump sampler2D;
-                varying highp vec2 vUv;
-                varying highp vec2 vL;
-                varying highp vec2 vR;
-                varying highp vec2 vT;
-                varying highp vec2 vB;
-                uniform sampler2D uVelocity;
-                void main () {
-                    float L = texture2D(uVelocity, vL).y;
-                    float R = texture2D(uVelocity, vR).y;
-                    float T = texture2D(uVelocity, vT).x;
-                    float B = texture2D(uVelocity, vB).x;
-                    float vorticity = R - L - T + B;
-                    gl_FragColor = vec4(0.5 * vorticity, 0.0, 0.0, 1.0);
-                }
-            `;
+            // Vorticity shader
+            // Uniforms: texelSize (vec2f), curl (f32), dt (f32)
+            // Textures: uVelocity, uCurl
+            const vorticityShader = /* wgsl */ `
+                struct MaterialUniforms {
+                    texelSize : vec2f,
+                    curl : f32,
+                    dt : f32,
+                };
 
-            const vorticityShader = /* glsl */ `
-                precision highp float;
-                precision highp sampler2D;
-                varying vec2 vUv;
-                varying vec2 vL;
-                varying vec2 vR;
-                varying vec2 vT;
-                varying vec2 vB;
-                uniform sampler2D uVelocity;
-                uniform sampler2D uCurl;
-                uniform float curl;
-                uniform float dt;
-                void main () {
-                    float L = texture2D(uCurl, vL).x;
-                    float R = texture2D(uCurl, vR).x;
-                    float T = texture2D(uCurl, vT).x;
-                    float B = texture2D(uCurl, vB).x;
-                    float C = texture2D(uCurl, vUv).x;
-                    vec2 force = 0.5 * vec2(abs(T) - abs(B), abs(R) - abs(L));
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var uVelocityTex : texture_2d<f32>;
+                @group(0) @binding(2) var uVelocitySampler : sampler;
+                @group(0) @binding(3) var uCurlTex : texture_2d<f32>;
+                @group(0) @binding(4) var uCurlSampler : sampler;
+
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vL : vec2f,
+                    @location(2) vR : vec2f,
+                    @location(3) vT : vec2f,
+                    @location(4) vB : vec2f,
+                };
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let L = textureSample(uCurlTex, uCurlSampler, input.vL).x;
+                    let R = textureSample(uCurlTex, uCurlSampler, input.vR).x;
+                    let T = textureSample(uCurlTex, uCurlSampler, input.vT).x;
+                    let B = textureSample(uCurlTex, uCurlSampler, input.vB).x;
+                    let C = textureSample(uCurlTex, uCurlSampler, input.vUv).x;
+                    var force = 0.5 * vec2f(abs(T) - abs(B), abs(R) - abs(L));
                     force /= length(force) + 0.0001;
-                    force *= curl * C;
+                    force *= material.curl * C;
                     force.y *= -1.0;
-                    vec2 vel = texture2D(uVelocity, vUv).xy;
-                    gl_FragColor = vec4(vel + force * dt, 0.0, 1.0);
+                    let vel = textureSample(uVelocityTex, uVelocitySampler, input.vUv).xy;
+                    return vec4f(vel + force * material.dt, 0.0, 1.0);
                 }
             `;
 
-            const pressureShader = /* glsl */ `
-                precision mediump float;
-                precision mediump sampler2D;
-                varying highp vec2 vUv;
-                varying highp vec2 vL;
-                varying highp vec2 vR;
-                varying highp vec2 vT;
-                varying highp vec2 vB;
-                uniform sampler2D uPressure;
-                uniform sampler2D uDivergence;
-                void main () {
-                    float L = texture2D(uPressure, vL).x;
-                    float R = texture2D(uPressure, vR).x;
-                    float T = texture2D(uPressure, vT).x;
-                    float B = texture2D(uPressure, vB).x;
-                    float C = texture2D(uPressure, vUv).x;
-                    float divergence = texture2D(uDivergence, vUv).x;
-                    float pressure = (L + R + B + T - divergence) * 0.25;
-                    gl_FragColor = vec4(pressure, 0.0, 0.0, 1.0);
+            // Pressure shader
+            // Uniforms: texelSize (vec2f) => in uniform buffer
+            // Textures: uPressure, uDivergence
+            const pressureShader = /* wgsl */ `
+                struct MaterialUniforms {
+                    texelSize : vec2f,
+                };
+
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var uPressureTex : texture_2d<f32>;
+                @group(0) @binding(2) var uPressureSampler : sampler;
+                @group(0) @binding(3) var uDivergenceTex : texture_2d<f32>;
+                @group(0) @binding(4) var uDivergenceSampler : sampler;
+
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vL : vec2f,
+                    @location(2) vR : vec2f,
+                    @location(3) vT : vec2f,
+                    @location(4) vB : vec2f,
+                };
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let L = textureSample(uPressureTex, uPressureSampler, input.vL).x;
+                    let R = textureSample(uPressureTex, uPressureSampler, input.vR).x;
+                    let T = textureSample(uPressureTex, uPressureSampler, input.vT).x;
+                    let B = textureSample(uPressureTex, uPressureSampler, input.vB).x;
+                    let C = textureSample(uPressureTex, uPressureSampler, input.vUv).x;
+                    let divergence = textureSample(uDivergenceTex, uDivergenceSampler, input.vUv).x;
+                    let pressure = (L + R + B + T - divergence) * 0.25;
+                    return vec4f(pressure, 0.0, 0.0, 1.0);
                 }
             `;
 
-            const gradientSubtractShader = /* glsl */ `
-                precision mediump float;
-                precision mediump sampler2D;
-                varying highp vec2 vUv;
-                varying highp vec2 vL;
-                varying highp vec2 vR;
-                varying highp vec2 vT;
-                varying highp vec2 vB;
-                uniform sampler2D uPressure;
-                uniform sampler2D uVelocity;
-                void main () {
-                    float L = texture2D(uPressure, vL).x;
-                    float R = texture2D(uPressure, vR).x;
-                    float T = texture2D(uPressure, vT).x;
-                    float B = texture2D(uPressure, vB).x;
-                    vec2 velocity = texture2D(uVelocity, vUv).xy;
-                    velocity.xy -= vec2(R - L, T - B);
-                    gl_FragColor = vec4(velocity, 0.0, 1.0);
+            // Gradient subtract shader
+            // Uniforms: texelSize (vec2f) => in uniform buffer
+            // Textures: uPressure, uVelocity
+            const gradientSubtractShader = /* wgsl */ `
+                struct MaterialUniforms {
+                    texelSize : vec2f,
+                };
+
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var uPressureTex : texture_2d<f32>;
+                @group(0) @binding(2) var uPressureSampler : sampler;
+                @group(0) @binding(3) var uVelocityTex : texture_2d<f32>;
+                @group(0) @binding(4) var uVelocitySampler : sampler;
+
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vL : vec2f,
+                    @location(2) vR : vec2f,
+                    @location(3) vT : vec2f,
+                    @location(4) vB : vec2f,
+                };
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let L = textureSample(uPressureTex, uPressureSampler, input.vL).x;
+                    let R = textureSample(uPressureTex, uPressureSampler, input.vR).x;
+                    let T = textureSample(uPressureTex, uPressureSampler, input.vT).x;
+                    let B = textureSample(uPressureTex, uPressureSampler, input.vB).x;
+                    var velocity = textureSample(uVelocityTex, uVelocitySampler, input.vUv).xy;
+                    velocity -= vec2f(R - L, T - B);
+                    return vec4f(velocity, 0.0, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 35 });
+                const camera = new Camera(renderer, { fov: 35 });
                 camera.position.set(0, 1, 5);
                 camera.lookAt([0, 0, 0]);
 
-                const post = new Post(gl);
+                const post = new Post(renderer);
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                     post.resize();
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
-                // Helper functions for larger device support
-                function getSupportedFormat(gl, internalFormat, format, type) {
-                    if (!supportRenderTextureFormat(gl, internalFormat, format, type)) {
-                        switch (internalFormat) {
-                            case gl.R16F:
-                                return getSupportedFormat(gl, gl.RG16F, gl.RG, type);
-                            case gl.RG16F:
-                                return getSupportedFormat(gl, gl.RGBA16F, gl.RGBA, type);
-                            default:
-                                return null;
-                        }
-                    }
-
-                    return { internalFormat, format };
-                }
-
-                function supportRenderTextureFormat(gl, internalFormat, format, type) {
-                    let texture = gl.createTexture();
-                    gl.bindTexture(gl.TEXTURE_2D, texture);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                    gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, 4, 4, 0, format, type, null);
-
-                    let fbo = gl.createFramebuffer();
-                    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-                    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-
-                    const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-                    if (status != gl.FRAMEBUFFER_COMPLETE) return false;
-                    return true;
-                }
-
                 // Helper to create a ping-pong FBO pairing for simulating on GPU
-                function createDoubleFBO(gl, { width, height, wrapS, wrapT, minFilter = gl.LINEAR, magFilter = minFilter, type, format, internalFormat, depth } = {}) {
-                    const options = { width, height, wrapS, wrapT, minFilter, magFilter, type, format, internalFormat, depth };
+                function createDoubleFBO({ width, height, format = 'rgba16float', depth = false } = {}) {
+                    const options = { width, height, format, depth };
                     const fbo = {
-                        read: new RenderTarget(gl, options),
-                        write: new RenderTarget(gl, options),
+                        read: new RenderTarget(renderer, options),
+                        write: new RenderTarget(renderer, options),
                         swap: () => {
                             let temp = fbo.read;
                             fbo.read = fbo.write;
@@ -325,201 +384,169 @@
                 // Common uniform
                 const texelSize = { value: new Vec2(1 / simRes) };
 
-                // Get supported formats and types for FBOs
-                let supportLinearFiltering = gl.renderer.extensions[`OES_texture_${gl.renderer.isWebgl2 ? `` : `half_`}float_linear`];
-                const halfFloat = gl.renderer.isWebgl2 ? gl.HALF_FLOAT : gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES;
-
-                const filtering = supportLinearFiltering ? gl.LINEAR : gl.NEAREST;
-                let rgba, rg, r;
-
-                if (gl.renderer.isWebgl2) {
-                    rgba = getSupportedFormat(gl, gl.RGBA16F, gl.RGBA, halfFloat);
-                    rg = getSupportedFormat(gl, gl.RG16F, gl.RG, halfFloat);
-                    r = getSupportedFormat(gl, gl.R16F, gl.RED, halfFloat);
-                } else {
-                    rgba = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloat);
-                    rg = rgba;
-                    r = rgba;
-                }
-
                 // Create fluid simulation FBOs
-                const density = createDoubleFBO(gl, {
+                const density = createDoubleFBO({
                     width: dyeRes,
                     height: dyeRes,
-                    type: halfFloat,
-                    format: rgba?.format,
-                    internalFormat: rgba?.internalFormat,
-                    minFilter: filtering,
+                    format: 'rgba16float',
+                });
+
+                const velocity = createDoubleFBO({
+                    width: simRes,
+                    height: simRes,
+                    format: 'rgba16float',
+                });
+
+                const pressure = createDoubleFBO({
+                    width: simRes,
+                    height: simRes,
+                    format: 'rgba16float',
+                });
+
+                const divergence = new RenderTarget(renderer, {
+                    width: simRes,
+                    height: simRes,
+                    format: 'rgba16float',
                     depth: false,
                 });
 
-                const velocity = createDoubleFBO(gl, {
+                const curl = new RenderTarget(renderer, {
                     width: simRes,
                     height: simRes,
-                    type: halfFloat,
-                    format: rg?.format,
-                    internalFormat: rg?.internalFormat,
-                    minFilter: filtering,
-                    depth: false,
-                });
-
-                const pressure = createDoubleFBO(gl, {
-                    width: simRes,
-                    height: simRes,
-                    type: halfFloat,
-                    format: r?.format,
-                    internalFormat: r?.internalFormat,
-                    minFilter: gl.NEAREST,
-                    depth: false,
-                });
-
-                const divergence = new RenderTarget(gl, {
-                    width: simRes,
-                    height: simRes,
-                    type: halfFloat,
-                    format: r?.format,
-                    internalFormat: r?.internalFormat,
-                    minFilter: gl.NEAREST,
-                    depth: false,
-                });
-
-                const curl = new RenderTarget(gl, {
-                    width: simRes,
-                    height: simRes,
-                    type: halfFloat,
-                    format: r?.format,
-                    internalFormat: r?.internalFormat,
-                    minFilter: gl.NEAREST,
+                    format: 'rgba16float',
                     depth: false,
                 });
 
                 // Geometry to be used for the simulation programs
-                const triangle = new Geometry(gl, {
+                const triangle = new Geometry(renderer, {
                     position: { size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3]) },
                     uv: { size: 2, data: new Float32Array([0, 0, 2, 0, 0, 2]) },
                 });
 
                 // Create fluid simulation programs
-                const clearProgram = new Mesh(gl, {
+                // Note: In WebGPU, texture uniforms must not be null at construction time
+                // because Program.js builds the bind group layout once. We use the FBO
+                // read textures as initial placeholders — they get overwritten each frame.
+                const clearProgram = new Mesh(renderer, {
                     geometry: triangle,
-                    program: new Program(gl, {
+                    program: new Program(renderer, {
                         vertex: baseVertex,
                         fragment: clearShader,
                         uniforms: {
                             texelSize,
-                            uTexture: { value: null },
                             value: { value: pressureDissipation },
+                            uTexture: { value: pressure.read.texture },
                         },
                         depthTest: false,
                         depthWrite: false,
                     }),
                 });
 
-                const splatProgram = new Mesh(gl, {
+                const splatProgram = new Mesh(renderer, {
                     geometry: triangle,
-                    program: new Program(gl, {
+                    program: new Program(renderer, {
                         vertex: baseVertex,
                         fragment: splatShader,
                         uniforms: {
                             texelSize,
-                            uTarget: { value: null },
                             aspectRatio: { value: 1 },
-                            color: { value: new Color() },
-                            point: { value: new Vec2() },
                             radius: { value: radius / 100 },
+                            point: { value: new Vec2() },
+                            color: { value: new Color() },
+                            uTarget: { value: velocity.read.texture },
                         },
                         depthTest: false,
                         depthWrite: false,
                     }),
                 });
 
-                const advectionProgram = new Mesh(gl, {
+                const advectionProgram = new Mesh(renderer, {
                     geometry: triangle,
-                    program: new Program(gl, {
+                    program: new Program(renderer, {
                         vertex: baseVertex,
-                        fragment: supportLinearFiltering ? advectionShader : advectionManualFilteringShader,
+                        fragment: advectionShader,
                         uniforms: {
                             texelSize,
                             dyeTexelSize: { value: new Vec2(1 / dyeRes) },
-                            uVelocity: { value: null },
-                            uSource: { value: null },
                             dt: { value: 0.016 },
                             dissipation: { value: 1 },
+                            uVelocity: { value: velocity.read.texture },
+                            uSource: { value: velocity.read.texture },
                         },
                         depthTest: false,
                         depthWrite: false,
                     }),
                 });
 
-                const divergenceProgram = new Mesh(gl, {
+                const divergenceProgram = new Mesh(renderer, {
                     geometry: triangle,
-                    program: new Program(gl, {
+                    program: new Program(renderer, {
                         vertex: baseVertex,
                         fragment: divergenceShader,
                         uniforms: {
                             texelSize,
-                            uVelocity: { value: null },
+                            uVelocity: { value: velocity.read.texture },
                         },
                         depthTest: false,
                         depthWrite: false,
                     }),
                 });
 
-                const curlProgram = new Mesh(gl, {
+                const curlProgram = new Mesh(renderer, {
                     geometry: triangle,
-                    program: new Program(gl, {
+                    program: new Program(renderer, {
                         vertex: baseVertex,
                         fragment: curlShader,
                         uniforms: {
                             texelSize,
-                            uVelocity: { value: null },
+                            uVelocity: { value: velocity.read.texture },
                         },
                         depthTest: false,
                         depthWrite: false,
                     }),
                 });
 
-                const vorticityProgram = new Mesh(gl, {
+                const vorticityProgram = new Mesh(renderer, {
                     geometry: triangle,
-                    program: new Program(gl, {
+                    program: new Program(renderer, {
                         vertex: baseVertex,
                         fragment: vorticityShader,
                         uniforms: {
                             texelSize,
-                            uVelocity: { value: null },
-                            uCurl: { value: null },
                             curl: { value: curlStrength },
                             dt: { value: 0.016 },
+                            uVelocity: { value: velocity.read.texture },
+                            uCurl: { value: curl.texture },
                         },
                         depthTest: false,
                         depthWrite: false,
                     }),
                 });
 
-                const pressureProgram = new Mesh(gl, {
+                const pressureProgram = new Mesh(renderer, {
                     geometry: triangle,
-                    program: new Program(gl, {
+                    program: new Program(renderer, {
                         vertex: baseVertex,
                         fragment: pressureShader,
                         uniforms: {
                             texelSize,
-                            uPressure: { value: null },
-                            uDivergence: { value: null },
+                            uPressure: { value: pressure.read.texture },
+                            uDivergence: { value: divergence.texture },
                         },
                         depthTest: false,
                         depthWrite: false,
                     }),
                 });
 
-                const gradientSubtractProgram = new Mesh(gl, {
+                const gradientSubtractProgram = new Mesh(renderer, {
                     geometry: triangle,
-                    program: new Program(gl, {
+                    program: new Program(renderer, {
                         vertex: baseVertex,
                         fragment: gradientSubtractShader,
                         uniforms: {
                             texelSize,
-                            uPressure: { value: null },
-                            uVelocity: { value: null },
+                            uPressure: { value: pressure.read.texture },
+                            uVelocity: { value: velocity.read.texture },
                         },
                         depthTest: false,
                         depthWrite: false,
@@ -563,11 +590,11 @@
                     // Add if the mouse is moving
                     if (Math.abs(deltaX) || Math.abs(deltaY)) {
                         splats.push({
-                            // Get mouse value in 0 to 1 range, with y flipped
-                            x: e.x / gl.renderer.width,
-                            y: 1 - e.y / gl.renderer.height,
+                            // Get mouse value in 0 to 1 range
+                            x: e.x / renderer.width,
+                            y: e.y / renderer.height,
                             dx: deltaX * 5,
-                            dy: deltaY * -5,
+                            dy: deltaY * 5,
                         });
                     }
                 }
@@ -575,11 +602,11 @@
                 // Function to draw number of interactions onto input render target
                 function splat({ x, y, dx, dy }) {
                     splatProgram.program.uniforms.uTarget.value = velocity.read.texture;
-                    splatProgram.program.uniforms.aspectRatio.value = gl.renderer.width / gl.renderer.height;
+                    splatProgram.program.uniforms.aspectRatio.value = renderer.width / renderer.height;
                     splatProgram.program.uniforms.point.value.set(x, y);
                     splatProgram.program.uniforms.color.value.set(dx, dy, 1);
 
-                    gl.renderer.render({
+                    renderer.render({
                         scene: splatProgram,
                         target: velocity.write,
                         sort: false,
@@ -589,7 +616,7 @@
 
                     splatProgram.program.uniforms.uTarget.value = density.read.texture;
 
-                    gl.renderer.render({
+                    renderer.render({
                         scene: splatProgram,
                         target: density.write,
                         sort: false,
@@ -599,11 +626,11 @@
                 }
 
                 // Create initial scene
-                const geometry = new Box(gl);
-                const mesh = new Mesh(gl, { geometry, program: new NormalProgram(gl) });
+                const geometry = new Box(renderer);
+                const mesh = new Mesh(renderer, { geometry, program: new NormalProgram(renderer) });
 
                 for (let i = 0; i < 20; i++) {
-                    const m = new Mesh(gl, { geometry, program: new NormalProgram(gl) });
+                    const m = new Mesh(renderer, { geometry, program: new NormalProgram(renderer) });
                     m.position.set(Math.random() * 3 - 1.5, Math.random() * 3 - 1.5, Math.random() * 3 - 1.5);
                     m.rotation.set(Math.random() * 6.28 - 3.14, Math.random() * 6.28 - 3.14, 0);
                     m.scale.set(Math.random() * 0.5 + 0.1);
@@ -613,8 +640,8 @@
                 const pass = post.addPass({
                     fragment,
                     uniforms: {
-                        tFluid: { value: null },
                         uTime: { value: 0 },
+                        tFluid: { value: density.read.texture },
                     },
                 });
 
@@ -623,8 +650,8 @@
                     requestAnimationFrame(update);
 
                     // Perform all of the fluid simulation renders
-                    // No need to clear during sim, saving a number of GL calls.
-                    gl.renderer.autoClear = false;
+                    // No need to clear during sim, saving a number of GPU calls.
+                    renderer.autoClear = false;
 
                     // Render all of the inputs since last frame
                     for (let i = splats.length - 1; i >= 0; i--) {
@@ -633,7 +660,7 @@
 
                     curlProgram.program.uniforms.uVelocity.value = velocity.read.texture;
 
-                    gl.renderer.render({
+                    renderer.render({
                         scene: curlProgram,
                         target: curl,
                         sort: false,
@@ -643,7 +670,7 @@
                     vorticityProgram.program.uniforms.uVelocity.value = velocity.read.texture;
                     vorticityProgram.program.uniforms.uCurl.value = curl.texture;
 
-                    gl.renderer.render({
+                    renderer.render({
                         scene: vorticityProgram,
                         target: velocity.write,
                         sort: false,
@@ -653,7 +680,7 @@
 
                     divergenceProgram.program.uniforms.uVelocity.value = velocity.read.texture;
 
-                    gl.renderer.render({
+                    renderer.render({
                         scene: divergenceProgram,
                         target: divergence,
                         sort: false,
@@ -662,7 +689,7 @@
 
                     clearProgram.program.uniforms.uTexture.value = pressure.read.texture;
 
-                    gl.renderer.render({
+                    renderer.render({
                         scene: clearProgram,
                         target: pressure.write,
                         sort: false,
@@ -675,7 +702,7 @@
                     for (let i = 0; i < iterations; i++) {
                         pressureProgram.program.uniforms.uPressure.value = pressure.read.texture;
 
-                        gl.renderer.render({
+                        renderer.render({
                             scene: pressureProgram,
                             target: pressure.write,
                             sort: false,
@@ -687,7 +714,7 @@
                     gradientSubtractProgram.program.uniforms.uPressure.value = pressure.read.texture;
                     gradientSubtractProgram.program.uniforms.uVelocity.value = velocity.read.texture;
 
-                    gl.renderer.render({
+                    renderer.render({
                         scene: gradientSubtractProgram,
                         target: velocity.write,
                         sort: false,
@@ -700,7 +727,7 @@
                     advectionProgram.program.uniforms.uSource.value = velocity.read.texture;
                     advectionProgram.program.uniforms.dissipation.value = velocityDissipation;
 
-                    gl.renderer.render({
+                    renderer.render({
                         scene: advectionProgram,
                         target: velocity.write,
                         sort: false,
@@ -713,7 +740,7 @@
                     advectionProgram.program.uniforms.uSource.value = density.read.texture;
                     advectionProgram.program.uniforms.dissipation.value = densityDissipation;
 
-                    gl.renderer.render({
+                    renderer.render({
                         scene: advectionProgram,
                         target: density.write,
                         sort: false,
@@ -722,7 +749,7 @@
                     density.swap();
 
                     // Set clear back to default
-                    gl.renderer.autoClear = true;
+                    renderer.autoClear = true;
 
                     // Update post pass uniform with the simulation output
                     pass.uniforms.tFluid.value = density.read.texture;

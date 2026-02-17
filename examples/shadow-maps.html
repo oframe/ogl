@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
         <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-        <title>OGL • Shadow maps</title>
+        <title>OGL &bull; Shadow maps</title>
         <link href="assets/main.css" rel="stylesheet" />
     </head>
     <body>
@@ -14,82 +14,161 @@
         <script type="module">
             import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Orbit, Plane, Shadow } from '../src/index.js';
 
-            const vertexColor = /* glsl */ `
-                attribute vec3 position;
-                attribute vec2 uv;
+            // Vertex shader for the airplane model.
+            // Airplane geometry attributes: position(@0), uv(@1), normal(@2)
+            const vertexAirplane = /* wgsl */ `
+                struct MaterialUniforms {
+                    shadowProjectionMatrix : mat4x4f,
+                    shadowViewMatrix : mat4x4f,
+                };
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tMapTex : texture_2d<f32>;
+                @group(0) @binding(2) var tMapSampler : sampler;
+                @group(0) @binding(3) var tShadowTex : texture_2d<f32>;
+                @group(0) @binding(4) var tShadowSampler : sampler;
 
-                uniform mat4 modelMatrix;
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                uniform mat4 shadowViewMatrix;
-                uniform mat4 shadowProjectionMatrix;
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) uv : vec2f,
+                    @location(2) normal : vec3f,
+                };
 
-                varying vec2 vUv;
-                varying vec4 vLightNDC;
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                    @location(1) vLightNDC : vec4f,
+                };
 
-                // Matrix to shift range from -1->1 to 0->1
-                const mat4 depthScaleMatrix = mat4(
-                    0.5, 0, 0, 0,
-                    0, 0.5, 0, 0,
-                    0, 0, 0.5, 0,
-                    0.5, 0.5, 0.5, 1
+                // WebGPU depth is [0,1], so z needs no remapping.
+                // xy: [-1,1] -> [0,1], y flipped for texture sampling.
+                const depthScaleMatrix = mat4x4f(
+                    0.5,  0.0, 0.0, 0.0,
+                    0.0, -0.5, 0.0, 0.0,
+                    0.0,  0.0, 1.0, 0.0,
+                    0.5,  0.5, 0.0, 1.0,
                 );
 
-                void main() {
-                    vUv = uv;
-
-                    // Calculate the NDC (normalized device coords) for the light to compare against shadowmap
-                    vLightNDC = depthScaleMatrix * shadowProjectionMatrix * shadowViewMatrix * modelMatrix * vec4(position, 1.0);
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.vLightNDC = depthScaleMatrix * material.shadowProjectionMatrix * material.shadowViewMatrix * object.modelMatrix * vec4f(input.position, 1.0);
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragmentColor = /* glsl */ `
-                precision highp float;
+            // Vertex shader for the ground plane.
+            // Plane geometry attributes: position(@0), normal(@1), uv(@2)
+            const vertexPlane = /* wgsl */ `
+                struct MaterialUniforms {
+                    shadowProjectionMatrix : mat4x4f,
+                    shadowViewMatrix : mat4x4f,
+                };
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tMapTex : texture_2d<f32>;
+                @group(0) @binding(2) var tMapSampler : sampler;
+                @group(0) @binding(3) var tShadowTex : texture_2d<f32>;
+                @group(0) @binding(4) var tShadowSampler : sampler;
 
-                uniform sampler2D tMap;
-                uniform sampler2D tShadow;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                varying vec2 vUv;
-                varying vec4 vLightNDC;
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) normal : vec3f,
+                    @location(2) uv : vec2f,
+                };
 
-                float unpackRGBA (vec4 v) {
-                    return dot(v, 1.0 / vec4(1.0, 255.0, 65025.0, 16581375.0));
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                    @location(1) vLightNDC : vec4f,
+                };
+
+                const depthScaleMatrix = mat4x4f(
+                    0.5,  0.0, 0.0, 0.0,
+                    0.0, -0.5, 0.0, 0.0,
+                    0.0,  0.0, 1.0, 0.0,
+                    0.5,  0.5, 0.0, 1.0,
+                );
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.vLightNDC = depthScaleMatrix * material.shadowProjectionMatrix * material.shadowViewMatrix * object.modelMatrix * vec4f(input.position, 1.0);
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
+                }
+            `;
+
+            // Shared fragment shader for both airplane and ground
+            const fragmentColor = /* wgsl */ `
+                struct MaterialUniforms {
+                    shadowProjectionMatrix : mat4x4f,
+                    shadowViewMatrix : mat4x4f,
+                };
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tMapTex : texture_2d<f32>;
+                @group(0) @binding(2) var tMapSampler : sampler;
+                @group(0) @binding(3) var tShadowTex : texture_2d<f32>;
+                @group(0) @binding(4) var tShadowSampler : sampler;
+
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vLightNDC : vec4f,
+                };
+
+                fn unpackRGBA(v : vec4f) -> f32 {
+                    return dot(v, 1.0 / vec4f(1.0, 255.0, 65025.0, 16581375.0));
                 }
 
-                void main() {
-                    vec3 tex = texture2D(tMap, vUv).rgb;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let tex = textureSample(tMapTex, tMapSampler, input.vUv).rgb;
 
-                    vec3 lightPos = vLightNDC.xyz / vLightNDC.w;
+                    let lightPos = input.vLightNDC.xyz / input.vLightNDC.w;
 
-                    float bias = 0.001;
-                    float depth = lightPos.z - bias;
-                    float occluder = unpackRGBA(texture2D(tShadow, lightPos.xy));
+                    let bias = 0.001;
+                    let depth = lightPos.z - bias;
+                    let occluder = unpackRGBA(textureSample(tShadowTex, tShadowSampler, lightPos.xy));
 
                     // Compare actual depth from light to the occluded depth rendered in the depth map
                     // If the occluded depth is smaller, we must be in shadow
-                    float shadow = mix(0.2, 1.0, step(depth, occluder));
+                    let shadow = mix(0.2, 1.0, step(depth, occluder));
 
-                    gl_FragColor.rgb = tex * shadow;
-                    gl_FragColor.a = 1.0;
+                    return vec4f(tex * shadow, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 35 });
+                const camera = new Camera(renderer, { fov: 35 });
                 camera.position.set(5, 4, 10);
 
                 const controls = new Orbit(camera);
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
@@ -98,7 +177,7 @@
 
                 // Swap between the 'fov' and 'left/right/etc' lines to switch from an orthographic to perspective camera,
                 // and hence, directional light to spotlight projection.
-                const light = new Camera(gl, {
+                const light = new Camera(renderer, {
                     left: -3,
                     right: 3,
                     bottom: -3,
@@ -112,65 +191,73 @@
                 light.lookAt([0, 0, 0]);
 
                 // Create shadow instance attached to light camera
-                const shadow = new Shadow(gl, { light });
+                const shadow = new Shadow(renderer, { light });
 
                 addAirplane();
                 addGround();
 
                 let airplane;
                 async function addAirplane() {
-                    const texture = new Texture(gl);
+                    const texture = new Texture(renderer);
                     const img = new Image();
                     img.onload = () => (texture.image = img);
                     img.src = 'assets/airplane.jpg';
 
-                    const program = new Program(gl, {
-                        vertex: vertexColor,
+                    // Shadow uniforms must be included at Program construction time for WebGPU
+                    const program = new Program(renderer, {
+                        vertex: vertexAirplane,
                         fragment: fragmentColor,
                         uniforms: {
                             tMap: { value: texture },
+                            shadowProjectionMatrix: { value: shadow.light.projectionMatrix },
+                            shadowViewMatrix: { value: shadow.light.viewMatrix },
+                            tShadow: shadow.targetUniform,
                         },
                         cullFace: false,
                     });
 
                     const data = await (await fetch(`assets/airplane.json`)).json();
 
-                    const geometry = new Geometry(gl, {
+                    const geometry = new Geometry(renderer, {
                         position: { size: 3, data: new Float32Array(data.position) },
                         uv: { size: 2, data: new Float32Array(data.uv) },
                         normal: { size: 3, data: new Float32Array(data.normal) },
                     });
 
-                    const mesh = new Mesh(gl, { geometry, program });
+                    const mesh = new Mesh(renderer, { geometry, program });
                     mesh.setParent(scene);
 
-                    // Use the 'add' method to attach the mesh to the shadow map
+                    // Attach mesh to shadow — uniforms already included so receive is a no-op
                     shadow.add({ mesh });
 
                     airplane = mesh;
                 }
 
                 function addGround() {
-                    const texture = new Texture(gl);
+                    const texture = new Texture(renderer);
                     const img = new Image();
                     img.onload = () => (texture.image = img);
                     img.src = 'assets/water.jpg';
 
-                    const program = new Program(gl, {
-                        vertex: vertexColor,
+                    // Shadow uniforms must be included at Program construction time for WebGPU
+                    const program = new Program(renderer, {
+                        vertex: vertexPlane,
                         fragment: fragmentColor,
                         uniforms: {
                             tMap: { value: texture },
+                            shadowProjectionMatrix: { value: shadow.light.projectionMatrix },
+                            shadowViewMatrix: { value: shadow.light.viewMatrix },
+                            tShadow: shadow.targetUniform,
                         },
                         cullFace: false,
                     });
 
-                    const geometry = new Plane(gl);
+                    const geometry = new Plane(renderer);
 
-                    const mesh = new Mesh(gl, { geometry, program });
+                    const mesh = new Mesh(renderer, { geometry, program });
                     mesh.setParent(scene);
 
-                    // Use the 'add' method to attach the mesh to the shadow map
+                    // Attach mesh to shadow — uniforms already included so receive is a no-op
                     shadow.add({ mesh });
 
                     mesh.rotation.x = Math.PI / 2;

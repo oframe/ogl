@@ -14,89 +14,156 @@
         <script type="module">
             import { Renderer, Camera, Program, Mesh, Vec2, Post, Box, Transform } from '../src/index.js';
 
-            const brightPassFragment = /* glsl */ `
-                precision highp float;
-                uniform sampler2D tMap;
-                uniform float uThreshold;
+            // Bright pass - filter the scene to only the bright parts
+            // Uniforms: uThreshold (f32) + tMap (texture)
+            // Bindings: 0 = uniform buffer, 1 = texture, 2 = sampler
+            const brightPassFragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    uThreshold : f32,
+                };
 
-                varying vec2 vUv;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tMapTex : texture_2d<f32>;
+                @group(0) @binding(2) var tMapSampler : sampler;
 
-                void main() {
-                    vec4 tex = texture2D(tMap, vUv);
-                    vec4 bright = tex * step(uThreshold, length(tex.rgb) / 1.73205);
-                    gl_FragColor = bright;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let tex = textureSample(tMapTex, tMapSampler, input.vUv);
+                    let bright = tex * step(material.uThreshold, length(tex.rgb) / 1.73205);
+                    return bright;
                 }
             `;
 
-            const blurFragment = /* glsl */ `
-                precision highp float;
+            // Gaussian blur pass
+            // Uniforms: uResolution (vec2f) + uDirection (vec2f) + tMap (texture)
+            // Bindings: 0 = uniform buffer, 1 = texture, 2 = sampler
+            const blurFragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    uResolution : vec2f,
+                    uDirection : vec2f,
+                };
+
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tMapTex : texture_2d<f32>;
+                @group(0) @binding(2) var tMapSampler : sampler;
+
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
 
                 // https://github.com/Jam3/glsl-fast-gaussian-blur/blob/master/5.glsl
-                vec4 blur5(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
-                    vec4 color = vec4(0.0);
-                    vec2 off1 = vec2(1.3333333333333333) * direction;
-                    color += texture2D(image, uv) * 0.29411764705882354;
-                    color += texture2D(image, uv + (off1 / resolution)) * 0.35294117647058826;
-                    color += texture2D(image, uv - (off1 / resolution)) * 0.35294117647058826;
+                fn blur5(tex : texture_2d<f32>, smp : sampler, uv : vec2f, resolution : vec2f, direction : vec2f) -> vec4f {
+                    var color = vec4f(0.0);
+                    let off1 = vec2f(1.3333333333333333) * direction;
+                    color += textureSample(tex, smp, uv) * 0.29411764705882354;
+                    color += textureSample(tex, smp, uv + (off1 / resolution)) * 0.35294117647058826;
+                    color += textureSample(tex, smp, uv - (off1 / resolution)) * 0.35294117647058826;
                     return color;
                 }
 
                 // https://github.com/Jam3/glsl-fast-gaussian-blur/blob/master/9.glsl
-                vec4 blur9(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
-                    vec4 color = vec4(0.0);
-                    vec2 off1 = vec2(1.3846153846) * direction;
-                    vec2 off2 = vec2(3.2307692308) * direction;
-                    color += texture2D(image, uv) * 0.2270270270;
-                    color += texture2D(image, uv + (off1 / resolution)) * 0.3162162162;
-                    color += texture2D(image, uv - (off1 / resolution)) * 0.3162162162;
-                    color += texture2D(image, uv + (off2 / resolution)) * 0.0702702703;
-                    color += texture2D(image, uv - (off2 / resolution)) * 0.0702702703;
+                fn blur9(tex : texture_2d<f32>, smp : sampler, uv : vec2f, resolution : vec2f, direction : vec2f) -> vec4f {
+                    var color = vec4f(0.0);
+                    let off1 = vec2f(1.3846153846) * direction;
+                    let off2 = vec2f(3.2307692308) * direction;
+                    color += textureSample(tex, smp, uv) * 0.2270270270;
+                    color += textureSample(tex, smp, uv + (off1 / resolution)) * 0.3162162162;
+                    color += textureSample(tex, smp, uv - (off1 / resolution)) * 0.3162162162;
+                    color += textureSample(tex, smp, uv + (off2 / resolution)) * 0.0702702703;
+                    color += textureSample(tex, smp, uv - (off2 / resolution)) * 0.0702702703;
                     return color;
                 }
 
-                uniform sampler2D tMap;
-                uniform vec2 uDirection;
-                uniform vec2 uResolution;
-
-                varying vec2 vUv;
-
-                void main() {
-
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
                     // Swap with blur9 for higher quality
-                    // gl_FragColor = blur9(tMap, vUv, uResolution, uDirection);
-                    gl_FragColor = blur5(tMap, vUv, uResolution, uDirection);
+                    // return blur9(tMapTex, tMapSampler, input.vUv, material.uResolution, material.uDirection);
+                    return blur5(tMapTex, tMapSampler, input.vUv, material.uResolution, material.uDirection);
                 }
             `;
 
-            const compositeFragment = /* glsl */ `
-                precision highp float;
+            // Composite pass - combine scene with bloom
+            // Uniforms: uResolution (vec2f) + uBloomStrength (f32) + tBloom (texture) + tMap (texture)
+            // Bindings: 0 = uniform buffer, 1 = tBloom texture, 2 = tBloom sampler, 3 = tMap texture, 4 = tMap sampler
+            const compositeFragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    uResolution : vec2f,
+                    uBloomStrength : f32,
+                };
 
-                uniform sampler2D tMap;
-                uniform sampler2D tBloom;
-                uniform vec2 uResolution;
-                uniform float uBloomStrength;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tBloomTex : texture_2d<f32>;
+                @group(0) @binding(2) var tBloomSampler : sampler;
+                @group(0) @binding(3) var tMapTex : texture_2d<f32>;
+                @group(0) @binding(4) var tMapSampler : sampler;
 
-                varying vec2 vUv;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
 
-                void main() {
-                    gl_FragColor = texture2D(tMap, vUv) + texture2D(tBloom, vUv) * uBloomStrength;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    return textureSample(tMapTex, tMapSampler, input.vUv) + textureSample(tBloomTex, tBloomSampler, input.vUv) * material.uBloomStrength;
+                }
+            `;
+
+            // Scene vertex shader - standard object UBO transform
+            const sceneVertex = /* wgsl */ `
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
+
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
+
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) normal : vec3f,
+                    @location(2) uv : vec2f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
+                }
+            `;
+
+            // Scene fragment shader - simple UV-based coloring
+            const sceneFragment = /* wgsl */ `
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    return vec4f(input.vUv, 1.0, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 1 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(0.0, 0.0, 0.1, 1);
+                const renderer = await Renderer.create({ dpr: 1 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 0.0, g: 0.0, b: 0.1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 35 });
+                const camera = new Camera(renderer, { fov: 35 });
                 camera.position.set(0, 1, 5);
                 camera.lookAt([0, 0, 0]);
 
                 // Create composite post at full resolution, and bloom at reduced resolution
-                const postComposite = new Post(gl);
+                const postComposite = new Post(renderer);
                 // `targetOnly: true` prevents post from rendering to canvas
-                const postBloom = new Post(gl, { dpr: 0.5, targetOnly: true });
+                const postBloom = new Post(renderer, { dpr: 0.5, targetOnly: true });
 
                 // Create uniforms for passes
                 const resolution = { value: new Vec2() };
@@ -114,32 +181,12 @@
                 }
 
                 function initScene() {
-                    const geometry = new Box(gl);
-                    const program = new Program(gl, {
-                        vertex: /* glsl */ `
-                            attribute vec3 position;
-                            attribute vec2 uv;
-                            uniform mat4 modelViewMatrix;
-                            uniform mat4 projectionMatrix;
-
-                            varying vec2 vUv;
-
-                            void main() {
-                                vUv = uv;
-                                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);
-                            }
-                        `,
-                        fragment: /* glsl */ `
-                            precision highp float;
-
-                            varying vec2 vUv;
-
-                            void main() {
-                                gl_FragColor = vec4(vUv, 1.0, 1.0);
-                            }
-                        `,
+                    const geometry = new Box(renderer);
+                    const program = new Program(renderer, {
+                        vertex: sceneVertex,
+                        fragment: sceneFragment,
                     });
-                    mesh = new Mesh(gl, { geometry, program });
+                    mesh = new Mesh(renderer, { geometry, program });
                     mesh.setParent(scene);
                 }
 

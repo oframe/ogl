@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
         <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-        <title>OGL • GLTF Draco and WebP Extensions</title>
+        <title>OGL &bull; GLTF Draco and WebP Extensions</title>
         <link href="assets/main.css" rel="stylesheet" />
     </head>
     <body>
@@ -19,357 +19,348 @@
 
             import { Renderer, Camera, Transform, Orbit, Program, DracoManager, GLTFLoader, Vec3, TextureLoader } from '../src/index.js';
 
-            const shader = {
-                vertex: /* glsl */ `
-                    attribute vec3 position;
-
-                    #ifdef UV
-                        attribute vec2 uv;
-                    #else
-                        const vec2 uv = vec2(0);
-                    #endif
-
-                    #ifdef NORMAL
-                        attribute vec3 normal;
-                    #else
-                        const vec3 normal = vec3(0);
-                    #endif
-
-                    #ifdef INSTANCED
-                        attribute mat4 instanceMatrix;
-                    #endif
-
-                    #ifdef SKINNING
-                        attribute vec4 skinIndex;
-                        attribute vec4 skinWeight;
-                    #endif
-
-                    uniform mat4 modelViewMatrix;
-                    uniform mat4 projectionMatrix;
-                    uniform mat4 modelMatrix;
-                    uniform mat3 normalMatrix;
-
-                    #ifdef SKINNING
-                        uniform sampler2D boneTexture;
-                        uniform int boneTextureSize;
-                    #endif
-
-                    varying vec2 vUv;
-                    varying vec3 vNormal;
-                    varying vec3 vMPos;
-                    varying vec4 vMVPos;
-
-                    #ifdef SKINNING
-                        mat4 getBoneMatrix(const in float i) {
-                            float j = i * 4.0;
-                            float x = mod(j, float(boneTextureSize));
-                            float y = floor(j / float(boneTextureSize));
-
-                            float dx = 1.0 / float(boneTextureSize);
-                            float dy = 1.0 / float(boneTextureSize);
-
-                            y = dy * (y + 0.5);
-
-                            vec4 v1 = texture2D(boneTexture, vec2(dx * (x + 0.5), y));
-                            vec4 v2 = texture2D(boneTexture, vec2(dx * (x + 1.5), y));
-                            vec4 v3 = texture2D(boneTexture, vec2(dx * (x + 2.5), y));
-                            vec4 v4 = texture2D(boneTexture, vec2(dx * (x + 3.5), y));
-
-                            return mat4(v1, v2, v3, v4);
-                        }
-
-                        void skin(inout vec4 pos, inout vec3 nml) {
-                            mat4 boneMatX = getBoneMatrix(skinIndex.x);
-                            mat4 boneMatY = getBoneMatrix(skinIndex.y);
-                            mat4 boneMatZ = getBoneMatrix(skinIndex.z);
-                            mat4 boneMatW = getBoneMatrix(skinIndex.w);
-
-                            // Update normal
-                            mat4 skinMatrix = mat4(0.0);
-                            skinMatrix += skinWeight.x * boneMatX;
-                            skinMatrix += skinWeight.y * boneMatY;
-                            skinMatrix += skinWeight.z * boneMatZ;
-                            skinMatrix += skinWeight.w * boneMatW;
-                            nml = vec4(skinMatrix * vec4(nml, 0.0)).xyz;
-
-                            // Update position
-                            vec4 transformed = vec4(0.0);
-                            transformed += boneMatX * pos * skinWeight.x;
-                            transformed += boneMatY * pos * skinWeight.y;
-                            transformed += boneMatZ * pos * skinWeight.z;
-                            transformed += boneMatW * pos * skinWeight.w;
-                            pos = transformed;
-                        }
-                    #endif
-
-                    void main() {
-                        vec4 pos = vec4(position, 1);
-                        vec3 nml = normal;
-
-                        #ifdef SKINNING
-                            skin(pos, nml);
-                        #endif
-
-                        #ifdef INSTANCED
-                            pos = instanceMatrix * pos;
-
-                            mat3 m = mat3(instanceMatrix);
-                            nml /= vec3(dot(m[0], m[0]), dot(m[1], m[1]), dot(m[2], m[2]));
-                            nml = m * nml;
-                        #endif
-
-                        vUv = uv;
-                        vNormal = normalize(nml);
-
-                        vec4 mPos = modelMatrix * pos;
-                        vMPos = mPos.xyz / mPos.w;
-                        vMVPos = modelViewMatrix * pos;
-
-                        gl_Position = projectionMatrix * vMVPos;
-                    }
-                `,
-
-                fragment: /* glsl */ `
-                    uniform mat4 viewMatrix;
-                    uniform vec3 cameraPosition;
-
-                    uniform vec4 uBaseColorFactor;
-                    uniform sampler2D tBaseColor;
-
-                    uniform sampler2D tRM;
-                    uniform float uRoughness;
-                    uniform float uMetallic;
-
-                    uniform sampler2D tNormal;
-                    uniform float uNormalScale;
-
-                    uniform sampler2D tEmissive;
-                    uniform vec3 uEmissive;
-
-                    uniform sampler2D tOcclusion;
-
-                    uniform sampler2D tLUT;
-                    uniform sampler2D tEnvDiffuse;
-                    uniform sampler2D tEnvSpecular;
-                    uniform float uEnvDiffuse;
-                    uniform float uEnvSpecular;
-
-                    uniform vec3 uLightDirection;
-                    uniform vec3 uLightColor;
-
-                    uniform float uAlpha;
-                    uniform float uAlphaCutoff;
-
-                    varying vec2 vUv;
-                    varying vec3 vNormal;
-                    varying vec3 vMPos;
-                    varying vec4 vMVPos;
-
-                    const float PI = 3.14159265359;
-                    const float RECIPROCAL_PI = 0.31830988618;
-                    const float RECIPROCAL_PI2 = 0.15915494;
-                    const float LN2 = 0.6931472;
-
-                    const float ENV_LODS = 6.0;
-
-                    vec4 SRGBtoLinear(vec4 srgb) {
-                        vec3 linOut = pow(srgb.xyz, vec3(2.2));
-                        return vec4(linOut, srgb.w);
-                    }
-
-                    vec4 RGBMToLinear(in vec4 value) {
-                        float maxRange = 6.0;
-                        return vec4(value.xyz * value.w * maxRange, 1.0);
-                    }
-
-                    vec3 linearToSRGB(vec3 color) {
-                        return pow(color, vec3(1.0 / 2.2));
-                    }
-
-                    vec3 getNormal() {
-                        #ifdef NORMAL_MAP
-                            vec3 pos_dx = dFdx(vMPos.xyz);
-                            vec3 pos_dy = dFdy(vMPos.xyz);
-                            vec2 tex_dx = dFdx(vUv);
-                            vec2 tex_dy = dFdy(vUv);
-
-                            // Tangent, Bitangent
-                            vec3 t = normalize(pos_dx * tex_dy.t - pos_dy * tex_dx.t);
-                            vec3 b = normalize(-pos_dx * tex_dy.s + pos_dy * tex_dx.s);
-                            mat3 tbn = mat3(t, b, normalize(vNormal));
-
-                            vec3 n = texture2D(tNormal, vUv).rgb * 2.0 - 1.0;
-                            n.xy *= uNormalScale;
-                            vec3 normal = normalize(tbn * n);
-
-                            // Get world normal from view normal (normalMatrix * normal)
-                            // return normalize((vec4(normal, 0.0) * viewMatrix).xyz);
-                            return normalize(normal);
-                        #else
-                            return normalize(vNormal);
-                        #endif
-                    }
-
-                    vec3 specularReflection(vec3 specularEnvR0, vec3 specularEnvR90, float VdH) {
-                        return specularEnvR0 + (specularEnvR90 - specularEnvR0) * pow(clamp(1.0 - VdH, 0.0, 1.0), 5.0);
-                    }
-
-                    float geometricOcclusion(float NdL, float NdV, float roughness) {
-                        float r = roughness;
-
-                        float attenuationL = 2.0 * NdL / (NdL + sqrt(r * r + (1.0 - r * r) * (NdL * NdL)));
-                        float attenuationV = 2.0 * NdV / (NdV + sqrt(r * r + (1.0 - r * r) * (NdV * NdV)));
-                        return attenuationL * attenuationV;
-                    }
-
-                    float microfacetDistribution(float roughness, float NdH) {
-                        float roughnessSq = roughness * roughness;
-                        float f = (NdH * roughnessSq - NdH) * NdH + 1.0;
-                        return roughnessSq / (PI * f * f);
-                    }
-
-                    vec2 cartesianToPolar(vec3 n) {
-                        vec2 uv;
-                        uv.x = atan(n.z, n.x) * RECIPROCAL_PI2 + 0.5;
-                        uv.y = asin(n.y) * RECIPROCAL_PI + 0.5;
-                        return uv;
-                    }
-
-                    void getIBLContribution(inout vec3 diffuse, inout vec3 specular, float NdV, float roughness, vec3 n, vec3 reflection, vec3 diffuseColor, vec3 specularColor) {
-                        vec3 brdf = SRGBtoLinear(texture2D(tLUT, vec2(NdV, roughness))).rgb;
-
-                        vec3 diffuseLight = RGBMToLinear(texture2D(tEnvDiffuse, cartesianToPolar(n))).rgb;
-                        diffuseLight = mix(vec3(1), diffuseLight, uEnvDiffuse);
-
-                        // Sample 2 levels and mix between to get smoother degradation
-                        float blend = roughness * ENV_LODS;
-                        float level0 = floor(blend);
-                        float level1 = min(ENV_LODS, level0 + 1.0);
-                        blend -= level0;
-
-                        // Sample the specular env map atlas depending on the roughness value
-                        vec2 uvSpec = cartesianToPolar(reflection);
-                        uvSpec.y /= 2.0;
-
-                        vec2 uv0 = uvSpec;
-                        vec2 uv1 = uvSpec;
-
-                        uv0 /= pow(2.0, level0);
-                        uv0.y += 1.0 - exp(-LN2 * level0);
-
-                        uv1 /= pow(2.0, level1);
-                        uv1.y += 1.0 - exp(-LN2 * level1);
-
-                        vec3 specular0 = RGBMToLinear(texture2D(tEnvSpecular, uv0)).rgb;
-                        vec3 specular1 = RGBMToLinear(texture2D(tEnvSpecular, uv1)).rgb;
-                        vec3 specularLight = mix(specular0, specular1, blend);
-
-                        diffuse = diffuseLight * diffuseColor;
-
-                        // Bit of extra reflection for smooth materials
-                        float reflectivity = pow((1.0 - roughness), 2.0) * 0.05;
-                        specular = specularLight * (specularColor * brdf.x + brdf.y + reflectivity);
-                        specular *= uEnvSpecular;
-                    }
-
-                    void main() {
-                        vec4 baseColor = uBaseColorFactor;
-                        #ifdef COLOR_MAP
-                            baseColor *= SRGBtoLinear(texture2D(tBaseColor, vUv));
-                        #endif
-
-                        // Get base alpha
-                        float alpha = baseColor.a;
-
-                        #ifdef ALPHA_MASK
-                            if (alpha < uAlphaCutoff) discard;
-                        #endif
-
-                        // RM map packed as gb = [nothing, roughness, metallic, nothing]
-                        vec4 rmSample = vec4(1);
-                        #ifdef RM_MAP
-                            rmSample *= texture2D(tRM, vUv);
-                        #endif
-                        float roughness = clamp(rmSample.g * uRoughness, 0.04, 1.0);
-                        float metallic = clamp(rmSample.b * uMetallic, 0.04, 1.0);
-
-                        vec3 f0 = vec3(0.04);
-                        vec3 diffuseColor = baseColor.rgb * (vec3(1.0) - f0) * (1.0 - metallic);
-                        vec3 specularColor = mix(f0, baseColor.rgb, metallic);
-
-                        vec3 specularEnvR0 = specularColor;
-                        vec3 specularEnvR90 = vec3(clamp(max(max(specularColor.r, specularColor.g), specularColor.b) * 25.0, 0.0, 1.0));
-
-                        vec3 N = getNormal();
-                        vec3 V = normalize(cameraPosition - vMPos);
-                        vec3 L = normalize(uLightDirection);
-                        vec3 H = normalize(L + V);
-                        vec3 reflection = normalize(reflect(-V, N));
-
-                        float NdL = clamp(dot(N, L), 0.001, 1.0);
-                        float NdV = clamp(abs(dot(N, V)), 0.001, 1.0);
-                        float NdH = clamp(dot(N, H), 0.0, 1.0);
-                        float LdH = clamp(dot(L, H), 0.0, 1.0);
-                        float VdH = clamp(dot(V, H), 0.0, 1.0);
-
-                        vec3 F = specularReflection(specularEnvR0, specularEnvR90, VdH);
-                        float G = geometricOcclusion(NdL, NdV, roughness);
-                        float D = microfacetDistribution(roughness, NdH);
-
-                        vec3 diffuseContrib = (1.0 - F) * (diffuseColor / PI);
-                        vec3 specContrib = F * G * D / (4.0 * NdL * NdV);
-
-                        // Shading based off lights
-                        vec3 color = NdL * uLightColor * (diffuseContrib + specContrib);
-
-                        // Add lights spec to alpha for reflections on transparent surfaces (glass)
-                        alpha = max(alpha, max(max(specContrib.r, specContrib.g), specContrib.b));
-
-                        // Calculate IBL lighting
-                        vec3 diffuseIBL;
-                        vec3 specularIBL;
-                        getIBLContribution(diffuseIBL, specularIBL, NdV, roughness, N, reflection, diffuseColor, specularColor);
-
-                        // Add IBL on top of color
-                        color += diffuseIBL + specularIBL;
-
-                        // Add IBL spec to alpha for reflections on transparent surfaces (glass)
-                        alpha = max(alpha, max(max(specularIBL.r, specularIBL.g), specularIBL.b));
-
-                        #ifdef OCC_MAP
-                            // TODO: figure out how to apply occlusion
-                            // color *= SRGBtoLinear(texture2D(tOcclusion, vUv)).rgb;
-                        #endif
-
-                        #ifdef EMISSIVE_MAP
-                            vec3 emissive = SRGBtoLinear(texture2D(tEmissive, vUv)).rgb * uEmissive;
-                            color += emissive;
-                        #endif
-
-                        // Convert to sRGB to display
-                        gl_FragColor.rgb = linearToSRGB(color);
-
-                        // Apply uAlpha uniform at the end to overwrite any specular additions on transparent surfaces
-                        gl_FragColor.a = alpha * uAlpha;
-                    }
-                `,
-            };
+            /**
+             * Build WGSL vertex + fragment shaders dynamically based on the
+             * attributes and material textures of each GLTF mesh node.
+             *
+             * Because WGSL has no preprocessor, we generate different shader
+             * strings per material variant, only including the bindings that
+             * are actually present.
+             */
+
+            function buildShaders(node, mat) {
+                // ---- Determine which vertex attributes exist ----
+                const attrs = Object.keys(node.geometry.attributes).filter((k) => k !== 'index');
+                const hasUV = attrs.includes('uv');
+                const hasNormal = attrs.includes('normal');
+
+                // Build @location map from attribute iteration order
+                const locationMap = {};
+                attrs.forEach((name, i) => (locationMap[name] = i));
+
+                // ---- Determine which textures exist ----
+                const hasColorMap = !!mat.baseColorTexture;
+                const hasNormalMap = !!mat.normalTexture;
+                const hasRMMap = !!mat.metallicRoughnessTexture;
+                const hasOccMap = !!mat.occlusionTexture;
+                const hasEmissiveMap = !!mat.emissiveTexture;
+                const isAlphaMask = mat.alphaMode === 'MASK';
+
+                // ---- Material uniform struct ----
+                // Always include all scalar uniforms (they are small).
+                const materialStructWGSL = /* wgsl */ `
+                struct MaterialUniforms {
+                    uBaseColorFactor : vec4f,
+                    uRoughness : f32,
+                    uMetallic : f32,
+                    uNormalScale : f32,
+                    uAlpha : f32,
+                    uAlphaCutoff : f32,
+                    uEnvDiffuse : f32,
+                    uEnvSpecular : f32,
+                    _pad0 : f32,
+                    uEmissive : vec3f,
+                    _pad1 : f32,
+                    uLightDirection : vec3f,
+                    _pad2 : f32,
+                    uLightColor : vec3f,
+                };
+                `;
+
+                // ---- Build texture bindings for fragment shader ----
+                // Textures follow the uniform buffer in binding order.
+                // Each texture uses 2 bindings (texture + sampler).
+                let texBindingIndex = 1; // 0 = uniform buffer
+                const texBindings = [];
+                const texNames = [];
+
+                function addTex(name) {
+                    texBindings.push(
+                        `@group(0) @binding(${texBindingIndex}) var ${name} : texture_2d<f32>;`,
+                        `@group(0) @binding(${texBindingIndex + 1}) var ${name}Sampler : sampler;`
+                    );
+                    texNames.push(name);
+                    texBindingIndex += 2;
+                }
+
+                // Order must match the uniform order passed to Program
+                if (hasColorMap) addTex('tBaseColor');
+                if (hasRMMap) addTex('tRM');
+                if (hasNormalMap) addTex('tNormal');
+                if (hasOccMap) addTex('tOcclusion');
+                if (hasEmissiveMap) addTex('tEmissive');
+                addTex('tLUT');
+                addTex('tEnvDiffuse');
+                addTex('tEnvSpecular');
+
+                const texBindingsWGSL = texBindings.join('\n                ');
+
+                // ---- Object UBO (bind group 1) ----
+                const objectUBOWGSL = /* wgsl */ `
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
+                `;
+
+                // ---- Vertex shader ----
+                const vertexInputMembers = [];
+                vertexInputMembers.push(`@location(${locationMap.position}) position : vec3f`);
+                if (hasNormal) vertexInputMembers.push(`@location(${locationMap.normal}) normal : vec3f`);
+                if (hasUV) vertexInputMembers.push(`@location(${locationMap.uv}) uv : vec2f`);
+
+                let varyingIndex = 0;
+                const vertexOutputMembers = [`@builtin(position) position : vec4f`];
+                const fragInputMembers = [];
+
+                if (hasUV) {
+                    vertexOutputMembers.push(`@location(${varyingIndex}) vUv : vec2f`);
+                    fragInputMembers.push(`@location(${varyingIndex}) vUv : vec2f`);
+                    varyingIndex++;
+                }
+                if (hasNormal) {
+                    vertexOutputMembers.push(`@location(${varyingIndex}) vNormal : vec3f`);
+                    fragInputMembers.push(`@location(${varyingIndex}) vNormal : vec3f`);
+                    varyingIndex++;
+                }
+                vertexOutputMembers.push(`@location(${varyingIndex}) vMPos : vec3f`);
+                fragInputMembers.push(`@location(${varyingIndex}) vMPos : vec3f`);
+                varyingIndex++;
+
+                const vertex = /* wgsl */ `
+                ${materialStructWGSL}
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+
+                ${objectUBOWGSL}
+
+                struct VertexInput {
+                    ${vertexInputMembers.join(',\n                    ')},
+                };
+
+                struct VertexOutput {
+                    ${vertexOutputMembers.join(',\n                    ')},
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    ${hasUV ? 'output.vUv = input.uv;' : ''}
+                    ${hasNormal ? 'output.vNormal = normalize(object.normalMatrix * input.normal);' : ''}
+
+                    let mPos = object.modelMatrix * vec4f(input.position, 1.0);
+                    output.vMPos = mPos.xyz / mPos.w;
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
+                }
+                `;
+
+                // ---- Fragment shader ----
+                const fragment = /* wgsl */ `
+                ${materialStructWGSL}
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+
+                ${texBindingsWGSL}
+
+                ${objectUBOWGSL}
+
+                struct FragmentInput {
+                    ${fragInputMembers.join(',\n                    ')},
+                };
+
+                const PI = 3.14159265359;
+                const RECIPROCAL_PI = 0.31830988618;
+                const RECIPROCAL_PI2 = 0.15915494;
+                const LN2 = 0.6931472;
+                const ENV_LODS = 6.0;
+
+                fn SRGBtoLinear(srgb : vec4f) -> vec4f {
+                    let linOut = pow(srgb.xyz, vec3f(2.2));
+                    return vec4f(linOut, srgb.w);
+                }
+
+                fn RGBMToLinear(value : vec4f) -> vec4f {
+                    let maxRange = 6.0;
+                    return vec4f(value.xyz * value.w * maxRange, 1.0);
+                }
+
+                fn linearToSRGB(color : vec3f) -> vec3f {
+                    return pow(color, vec3f(1.0 / 2.2));
+                }
+
+                ${hasNormalMap ? `
+                fn getNormal(vMPos : vec3f, vUv : vec2f, vNormal : vec3f) -> vec3f {
+                    let pos_dx = dpdx(vMPos);
+                    let pos_dy = -dpdy(vMPos);
+                    let tex_dx = dpdx(vUv);
+                    let tex_dy = -dpdy(vUv);
+
+                    let t = normalize(pos_dx * tex_dy.y - pos_dy * tex_dx.y);
+                    let b = normalize(-pos_dx * tex_dy.x + pos_dy * tex_dx.x);
+                    let tbn = mat3x3f(t, b, normalize(vNormal));
+
+                    var n = textureSample(tNormal, tNormalSampler, vUv).rgb * 2.0 - 1.0;
+                    n = vec3f(n.xy * material.uNormalScale, n.z);
+                    return normalize(tbn * n);
+                }
+                ` : ''}
+
+                fn specularReflection(specularEnvR0 : vec3f, specularEnvR90 : vec3f, VdH : f32) -> vec3f {
+                    return specularEnvR0 + (specularEnvR90 - specularEnvR0) * pow(clamp(1.0 - VdH, 0.0, 1.0), 5.0);
+                }
+
+                fn geometricOcclusion(NdL : f32, NdV : f32, roughness : f32) -> f32 {
+                    let r = roughness;
+                    let attenuationL = 2.0 * NdL / (NdL + sqrt(r * r + (1.0 - r * r) * (NdL * NdL)));
+                    let attenuationV = 2.0 * NdV / (NdV + sqrt(r * r + (1.0 - r * r) * (NdV * NdV)));
+                    return attenuationL * attenuationV;
+                }
+
+                fn microfacetDistribution(roughness : f32, NdH : f32) -> f32 {
+                    let roughnessSq = roughness * roughness;
+                    let f = (NdH * roughnessSq - NdH) * NdH + 1.0;
+                    return roughnessSq / (PI * f * f);
+                }
+
+                fn cartesianToPolar(n : vec3f) -> vec2f {
+                    var uv : vec2f;
+                    uv.x = atan2(n.z, n.x) * RECIPROCAL_PI2 + 0.5;
+                    uv.y = asin(n.y) * RECIPROCAL_PI + 0.5;
+                    return uv;
+                }
+
+                struct IBLResult {
+                    diffuse : vec3f,
+                    specular : vec3f,
+                };
+
+                fn getIBLContribution(NdV : f32, roughness : f32, n : vec3f, reflection : vec3f, diffuseColor : vec3f, specularColor : vec3f) -> IBLResult {
+                    let brdf = SRGBtoLinear(textureSample(tLUT, tLUTSampler, vec2f(NdV, roughness))).rgb;
+
+                    let diffuseLight = RGBMToLinear(textureSample(tEnvDiffuse, tEnvDiffuseSampler, cartesianToPolar(n))).rgb;
+                    let mixedDiffuse = mix(vec3f(1.0), diffuseLight, material.uEnvDiffuse);
+
+                    // Sample 2 levels and mix between to get smoother degradation
+                    var blend = roughness * ENV_LODS;
+                    let level0 = floor(blend);
+                    let level1 = min(ENV_LODS, level0 + 1.0);
+                    blend -= level0;
+
+                    // Sample the specular env map atlas depending on the roughness value
+                    var uvSpec = cartesianToPolar(reflection);
+                    uvSpec.y /= 2.0;
+
+                    var uv0 = uvSpec;
+                    var uv1 = uvSpec;
+
+                    uv0 /= pow(2.0, level0);
+                    uv0.y += 1.0 - exp(-LN2 * level0);
+
+                    uv1 /= pow(2.0, level1);
+                    uv1.y += 1.0 - exp(-LN2 * level1);
+
+                    let specular0 = RGBMToLinear(textureSample(tEnvSpecular, tEnvSpecularSampler, uv0)).rgb;
+                    let specular1 = RGBMToLinear(textureSample(tEnvSpecular, tEnvSpecularSampler, uv1)).rgb;
+                    let specularLight = mix(specular0, specular1, blend);
+
+                    let diffuse = mixedDiffuse * diffuseColor;
+
+                    // Bit of extra reflection for smooth materials
+                    let reflectivity = pow((1.0 - roughness), 2.0) * 0.05;
+                    var specular = specularLight * (specularColor * brdf.x + brdf.y + reflectivity);
+                    specular *= material.uEnvSpecular;
+
+                    return IBLResult(diffuse, specular);
+                }
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    var baseColor = material.uBaseColorFactor;
+                    ${hasColorMap && hasUV ? `baseColor *= SRGBtoLinear(textureSample(tBaseColor, tBaseColorSampler, input.vUv));` : ''}
+
+                    // Get base alpha
+                    var alpha = baseColor.a;
+
+                    ${isAlphaMask ? `if (alpha < material.uAlphaCutoff) { discard; }` : ''}
+
+                    // RM map packed as gb = [nothing, roughness, metallic, nothing]
+                    var rmSample = vec4f(1.0);
+                    ${hasRMMap && hasUV ? `rmSample = textureSample(tRM, tRMSampler, input.vUv);` : ''}
+                    let roughness = clamp(rmSample.g * material.uRoughness, 0.04, 1.0);
+                    let metallic = clamp(rmSample.b * material.uMetallic, 0.04, 1.0);
+
+                    let f0 = vec3f(0.04);
+                    let diffuseColor = baseColor.rgb * (vec3f(1.0) - f0) * (1.0 - metallic);
+                    let specularColor = mix(f0, baseColor.rgb, metallic);
+
+                    let specularEnvR0 = specularColor;
+                    let specularEnvR90 = vec3f(clamp(max(max(specularColor.r, specularColor.g), specularColor.b) * 25.0, 0.0, 1.0));
+
+                    ${hasNormalMap && hasNormal && hasUV ? `let N = getNormal(input.vMPos, input.vUv, input.vNormal);` : hasNormal ? `let N = normalize(input.vNormal);` : `let N = vec3f(0.0, 1.0, 0.0);`}
+                    let V = normalize(object.cameraPosition - input.vMPos);
+                    let L = normalize(material.uLightDirection);
+                    let H = normalize(L + V);
+                    let reflection = normalize(reflect(-V, N));
+
+                    let NdL = clamp(dot(N, L), 0.001, 1.0);
+                    let NdV = clamp(abs(dot(N, V)), 0.001, 1.0);
+                    let NdH = clamp(dot(N, H), 0.0, 1.0);
+                    let LdH = clamp(dot(L, H), 0.0, 1.0);
+                    let VdH = clamp(dot(V, H), 0.0, 1.0);
+
+                    let F = specularReflection(specularEnvR0, specularEnvR90, VdH);
+                    let G = geometricOcclusion(NdL, NdV, roughness);
+                    let D = microfacetDistribution(roughness, NdH);
+
+                    let diffuseContrib = (1.0 - F) * (diffuseColor / PI);
+                    let specContrib = F * G * D / (4.0 * NdL * NdV);
+
+                    // Shading based off lights
+                    var color = NdL * material.uLightColor * (diffuseContrib + specContrib);
+
+                    // Add lights spec to alpha for reflections on transparent surfaces (glass)
+                    alpha = max(alpha, max(max(specContrib.r, specContrib.g), specContrib.b));
+
+                    // Calculate IBL lighting
+                    let ibl = getIBLContribution(NdV, roughness, N, reflection, diffuseColor, specularColor);
+
+                    // Add IBL on top of color
+                    color += ibl.diffuse + ibl.specular;
+
+                    // Add IBL spec to alpha for reflections on transparent surfaces (glass)
+                    alpha = max(alpha, max(max(ibl.specular.r, ibl.specular.g), ibl.specular.b));
+
+                    ${hasEmissiveMap && hasUV ? `
+                    // Emissive
+                    let emissive = SRGBtoLinear(textureSample(tEmissive, tEmissiveSampler, input.vUv)).rgb * material.uEmissive;
+                    color += emissive;
+                    ` : ''}
+
+                    // Convert to sRGB to display
+                    let finalColor = linearToSRGB(color);
+
+                    // Apply uAlpha uniform at the end to overwrite any specular additions on transparent surfaces
+                    return vec4f(finalColor, alpha * material.uAlpha);
+                }
+                `;
+
+                return { vertex, fragment };
+            }
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(0.1, 0.1, 0.1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 0.1, g: 0.1, b: 0.1, a: 1 };
 
-                const camera = new Camera(gl, { near: 1, far: 1000 });
-                // camera.position.set(60, 25, -60);
+                const camera = new Camera(renderer, { near: 1, far: 1000 });
                 camera.position.set(30, 15, -30);
                 const controls = new Orbit(camera);
-                // controls.target.y = 25;
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
@@ -379,13 +370,13 @@
                 let gltf;
 
                 // Common textures for uber shader
-                const lutTexture = TextureLoader.load(gl, {
+                const lutTexture = TextureLoader.load(renderer, {
                     src: 'assets/pbr/lut.png',
                 });
-                const envDiffuseTexture = TextureLoader.load(gl, {
+                const envDiffuseTexture = TextureLoader.load(renderer, {
                     src: 'assets/sunset-diffuse-RGBM.png',
                 });
-                const envSpecularTexture = TextureLoader.load(gl, {
+                const envSpecularTexture = TextureLoader.load(renderer, {
                     src: 'assets/sunset-specular-RGBM.png',
                 });
 
@@ -399,13 +390,13 @@
                     // Note: this is the only added line from the load-gltf example
                     GLTFLoader.setDracoManager(new DracoManager(`assets/libs/draco/DracoWorker.js`));
 
-                    gltf = await GLTFLoader.load(gl, `assets/gltf/hershel-optimized.glb`);
+                    gltf = await GLTFLoader.load(renderer, `assets/gltf/hershel-optimized.glb`);
                     addGLTF(gltf);
                 }
 
                 function handlers() {
-                    gl.canvas.addEventListener('dragover', over);
-                    gl.canvas.addEventListener('drop', drop);
+                    renderer.canvas.addEventListener('dragover', over);
+                    renderer.canvas.addEventListener('drop', drop);
                 }
 
                 function over(e) {
@@ -426,7 +417,7 @@
                             desc = JSON.parse(textDecoder.decode(e.target.result));
                         }
                         const dir = '';
-                        gltf = await GLTFLoader.parse(gl, desc, dir);
+                        gltf = await GLTFLoader.parse(renderer, desc, dir);
                         addGLTF(gltf);
                     };
                 }
@@ -463,8 +454,6 @@
                         group.primitives.forEach((mesh) => {
                             if (!mesh.parent) return; // Skip unattached
 
-                            // TODO: for skins, go over joints, not mesh
-                            // if (mesh instanceof GLTFSkin) return; // Skip skinned geometry
                             if (!mesh.geometry.bounds) mesh.geometry.computeBoundingSphere();
 
                             boundsCenter.copy(mesh.geometry.bounds.center).applyMatrix4(mesh.worldMatrix);
@@ -501,78 +490,50 @@
                 }
 
                 function createProgram(node) {
-                    const gltf = node.program.gltfMaterial || {};
-                    let { vertex, fragment } = shader;
+                    const mat = node.program.gltfMaterial || {};
 
-                    const vertexPrefix = renderer.isWebgl2
-                        ? /* glsl */ `#version 300 es
-                        #define attribute in
-                        #define varying out
-                        #define texture2D texture
-                    `
-                        : ``;
+                    const hasColorMap = !!mat.baseColorTexture;
+                    const hasNormalMap = !!mat.normalTexture;
+                    const hasRMMap = !!mat.metallicRoughnessTexture;
+                    const hasOccMap = !!mat.occlusionTexture;
+                    const hasEmissiveMap = !!mat.emissiveTexture;
 
-                    const fragmentPrefix = renderer.isWebgl2
-                        ? /* glsl */ `#version 300 es
-                        precision highp float;
-                        #define varying in
-                        #define texture2D texture
-                        #define gl_FragColor FragColor
-                        out vec4 FragColor;
-                    `
-                        : /* glsl */ `#extension GL_OES_standard_derivatives : enable
-                        precision highp float;
-                    `;
+                    // Build WGSL shaders dynamically based on available attributes/textures
+                    const { vertex, fragment } = buildShaders(node, mat);
 
-                    let defines = `
-                        ${node.geometry.attributes.uv ? `#define UV` : ``}
-                        ${node.geometry.attributes.normal ? `#define NORMAL` : ``}
-                        ${node.geometry.isInstanced ? `#define INSTANCED` : ``}
-                        ${node.boneTexture ? `#define SKINNING` : ``}
-                        ${gltf.alphaMode === 'MASK' ? `#define ALPHA_MASK` : ``}
-                        ${gltf.baseColorTexture ? `#define COLOR_MAP` : ``}
-                        ${gltf.normalTexture ? `#define NORMAL_MAP` : ``}
-                        ${gltf.metallicRoughnessTexture ? `#define RM_MAP` : ``}
-                        ${gltf.occlusionTexture ? `#define OCC_MAP` : ``}
-                        ${gltf.emissiveTexture ? `#define EMISSIVE_MAP` : ``}
-                    `;
+                    // Build uniforms object.
+                    // Order of texture uniforms MUST match the order in buildShaders addTex() calls.
+                    // Scalar uniforms go first (packed into the uniform buffer).
+                    const uniforms = {
+                        uBaseColorFactor: { value: mat.baseColorFactor || [1, 1, 1, 1] },
+                        uRoughness: { value: mat.roughnessFactor !== undefined ? mat.roughnessFactor : 1 },
+                        uMetallic: { value: mat.metallicFactor !== undefined ? mat.metallicFactor : 1 },
+                        uNormalScale: { value: mat.normalTexture ? mat.normalTexture.scale || 1 : 1 },
+                        uAlpha: { value: 1 },
+                        uAlphaCutoff: { value: mat.alphaCutoff !== undefined ? mat.alphaCutoff : 0.5 },
+                        uEnvDiffuse: { value: 0.5 },
+                        uEnvSpecular: { value: 0.5 },
+                        uEmissive: { value: mat.emissiveFactor || [0, 0, 0] },
+                        uLightDirection: { value: new Vec3(0, 1, 1) },
+                        uLightColor: { value: new Vec3(2.5) },
+                    };
 
-                    vertex = vertexPrefix + defines + vertex;
-                    fragment = fragmentPrefix + defines + fragment;
+                    // Add textures in the same order as buildShaders
+                    if (hasColorMap) uniforms.tBaseColor = { value: mat.baseColorTexture.texture };
+                    if (hasRMMap) uniforms.tRM = { value: mat.metallicRoughnessTexture.texture };
+                    if (hasNormalMap) uniforms.tNormal = { value: mat.normalTexture.texture };
+                    if (hasOccMap) uniforms.tOcclusion = { value: mat.occlusionTexture.texture };
+                    if (hasEmissiveMap) uniforms.tEmissive = { value: mat.emissiveTexture.texture };
+                    uniforms.tLUT = { value: lutTexture };
+                    uniforms.tEnvDiffuse = { value: envDiffuseTexture };
+                    uniforms.tEnvSpecular = { value: envSpecularTexture };
 
-                    const program = new Program(gl, {
+                    const program = new Program(renderer, {
                         vertex,
                         fragment,
-                        uniforms: {
-                            uBaseColorFactor: { value: gltf.baseColorFactor || [1, 1, 1, 1] },
-                            tBaseColor: { value: gltf.baseColorTexture ? gltf.baseColorTexture.texture : null },
-
-                            tRM: { value: gltf.metallicRoughnessTexture ? gltf.metallicRoughnessTexture.texture : null },
-                            uRoughness: { value: gltf.roughnessFactor !== undefined ? gltf.roughnessFactor : 1 },
-                            uMetallic: { value: gltf.metallicFactor !== undefined ? gltf.metallicFactor : 1 },
-
-                            tNormal: { value: gltf.normalTexture ? gltf.normalTexture.texture : null },
-                            uNormalScale: { value: gltf.normalTexture ? gltf.normalTexture.scale || 1 : 1 },
-
-                            tOcclusion: { value: gltf.occlusionTexture ? gltf.occlusionTexture.texture : null },
-
-                            tEmissive: { value: gltf.emissiveTexture ? gltf.emissiveTexture.texture : null },
-                            uEmissive: { value: gltf.emissiveFactor || [0, 0, 0] },
-
-                            tLUT: { value: lutTexture },
-                            tEnvDiffuse: { value: envDiffuseTexture },
-                            tEnvSpecular: { value: envSpecularTexture },
-                            uEnvDiffuse: { value: 0.5 },
-                            uEnvSpecular: { value: 0.5 },
-
-                            uLightDirection: { value: new Vec3(0, 1, 1) },
-                            uLightColor: { value: new Vec3(2.5) },
-
-                            uAlpha: { value: 1 },
-                            uAlphaCutoff: { value: gltf.alphaCutoff },
-                        },
-                        transparent: gltf.alphaMode === 'BLEND',
-                        cullFace: gltf.doubleSided ? false : gl.BACK,
+                        uniforms,
+                        transparent: mat.alphaMode === 'BLEND',
+                        cullFace: mat.doubleSided ? false : 'back',
                     });
 
                     return program;

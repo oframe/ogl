@@ -850,11 +850,11 @@ export function perspective(out, fovy, aspect, near, far) {
     out[7] = 0;
     out[8] = 0;
     out[9] = 0;
-    out[10] = (far + near) * nf;
+    out[10] = far * nf;
     out[11] = -1;
     out[12] = 0;
     out[13] = 0;
-    out[14] = 2 * far * near * nf;
+    out[14] = far * near * nf;
     out[15] = 0;
     return out;
 }
@@ -885,11 +885,11 @@ export function ortho(out, left, right, bottom, top, near, far) {
     out[7] = 0;
     out[8] = 0;
     out[9] = 0;
-    out[10] = 2 * nf;
+    out[10] = nf;
     out[11] = 0;
     out[12] = (left + right) * lr;
     out[13] = (top + bottom) * bt;
-    out[14] = (far + near) * nf;
+    out[14] = near * nf;
     out[15] = 1;
     return out;
 }

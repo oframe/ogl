@@ -22,105 +22,138 @@
         <script type="module">
             import { Renderer, Camera, Vec3, Orbit, Sphere, Transform, Program, Mesh, Texture } from '../src/index.js';
 
-            const VERTEX_SHADER = /* glsl */ `
-                attribute vec2 uv;
-                attribute vec3 position;
-                attribute vec3 normal;
+            const VERTEX_SHADER = /* wgsl */ `
+                struct MaterialUniforms {
+                    u_dt : f32,
+                    u_lightWorldPosition : vec3f,
+                    u_shininess : f32,
+                };
 
-                uniform mat4 modelMatrix;
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-                uniform mat3 normalMatrix;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var colMap : texture_2d<f32>;
+                @group(0) @binding(2) var colMapSampler : sampler;
+                @group(0) @binding(3) var specMap : texture_2d<f32>;
+                @group(0) @binding(4) var specMapSampler : sampler;
+                @group(0) @binding(5) var cloudMap : texture_2d<f32>;
+                @group(0) @binding(6) var cloudMapSampler : sampler;
 
-                uniform vec3 u_lightWorldPosition;
-                uniform vec3 cameraPosition;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                varying vec3 v_normal;
-                varying vec3 v_surfaceToLight;
-                varying vec3 v_surfaceToView;
-                varying vec2 v_uv;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                void main() {
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) normal : vec3f,
+                    @location(2) uv : vec2f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) v_normal : vec3f,
+                    @location(1) v_surfaceToLight : vec3f,
+                    @location(2) v_surfaceToView : vec3f,
+                    @location(3) v_uv : vec2f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
 
                     // Pass UV information to Fragment Shader
-                    v_uv = uv;
+                    output.v_uv = input.uv;
 
                     // Calculate World Space Normal
-                    v_normal = normalMatrix * normal;
+                    output.v_normal = object.normalMatrix * input.normal;
 
                     // Compute the world position of the surface
-                    vec3 surfaceWorldPosition = mat3(modelMatrix) * position;
+                    let surfaceWorldPosition = (object.modelMatrix * vec4f(input.position, 0.0)).xyz;
 
                     // Vector from the surface, to the light
-                    v_surfaceToLight = u_lightWorldPosition - surfaceWorldPosition;
+                    output.v_surfaceToLight = material.u_lightWorldPosition - surfaceWorldPosition;
 
                     // Vector from the surface, to the camera
-                    v_surfaceToView = cameraPosition - surfaceWorldPosition;
+                    output.v_surfaceToView = object.cameraPosition - surfaceWorldPosition;
 
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const FRAGMENT_SHADER = /* glsl */ `
-                precision highp float;
+            const FRAGMENT_SHADER = /* wgsl */ `
+                struct MaterialUniforms {
+                    u_dt : f32,
+                    u_lightWorldPosition : vec3f,
+                    u_shininess : f32,
+                };
 
-                varying vec3 v_normal;
-                varying vec3 v_surfaceToLight;
-                varying vec3 v_surfaceToView;
-                varying vec2 v_uv;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var colMap : texture_2d<f32>;
+                @group(0) @binding(2) var colMapSampler : sampler;
+                @group(0) @binding(3) var specMap : texture_2d<f32>;
+                @group(0) @binding(4) var specMapSampler : sampler;
+                @group(0) @binding(5) var cloudMap : texture_2d<f32>;
+                @group(0) @binding(6) var cloudMapSampler : sampler;
 
-                uniform float u_dt;
-                uniform float u_shininess;
-                uniform sampler2D colMap;
-                uniform sampler2D specMap;
-                uniform sampler2D cloudMap;
+                struct FragmentInput {
+                    @location(0) v_normal : vec3f,
+                    @location(1) v_surfaceToLight : vec3f,
+                    @location(2) v_surfaceToView : vec3f,
+                    @location(3) v_uv : vec2f,
+                };
 
-                void main() {
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
 
                     // Re-normalize interpolated varyings
-                    vec3 normal = normalize(v_normal);
-                    vec3 surfaceToLightDirection = normalize(v_surfaceToLight);
-                    vec3 surfaceToViewDirection = normalize(v_surfaceToView);
+                    let normal = normalize(input.v_normal);
+                    let surfaceToLightDirection = normalize(input.v_surfaceToLight);
+                    let surfaceToViewDirection = normalize(input.v_surfaceToView);
 
                     // Calculate Half-Vector, Vector that bisects the angle of reflection.
-                    // This vector indecates the "brightest point"; A "refrence vector" if you will.
-                    vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
+                    // This vector indicates the "brightest point"; A "reference vector" if you will.
+                    let halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
 
                     // Then we can get the brightness at any point by seeing "how similar"
-                    // the surface normal is to the refrence vector.
-                    float light = dot(normal, surfaceToLightDirection);
+                    // the surface normal is to the reference vector.
+                    let light = dot(normal, surfaceToLightDirection);
 
                     // By raising the specular vector to a power we can control the intensity
                     // of the light
-                    float specular = 0.0;
+                    var specular = 0.0;
                     if (light > 0.0) {
-                        specular = pow(dot(normal, halfVector), u_shininess * 100.0);
+                        specular = pow(dot(normal, halfVector), material.u_shininess * 100.0);
                     }
 
                     // Mapping textures
-                    vec3 colMap = texture2D(colMap, v_uv).rgb;
-                    vec3 spec = texture2D(specMap, v_uv).rgb;
+                    let col = textureSample(colMap, colMapSampler, input.v_uv).rgb;
+                    let spec = textureSample(specMap, specMapSampler, input.v_uv).rgb;
 
-                    vec2 cloudUV = vec2(v_uv.x + u_dt, v_uv.y);
-                    vec3 cloud = texture2D(cloudMap, cloudUV).rgb;
+                    let cloudUV = vec2f(input.v_uv.x + material.u_dt, input.v_uv.y);
+                    let cloud = textureSample(cloudMap, cloudMapSampler, cloudUV).rgb;
 
-                    gl_FragColor.rgb = colMap + cloud;
+                    var color = col + cloud;
 
                     // Add Point Lighting
-                    gl_FragColor.rgb *= light;
+                    color *= light;
 
                     // Add Specular Highlights
-                    gl_FragColor.rgb += specular * spec;
+                    color += specular * spec;
+
+                    return vec4f(color, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer();
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(0.05, 0.05, 0.05, 1);
+                const renderer = await Renderer.create();
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 0.05, g: 0.05, b: 0.05, a: 1 };
 
-                const camera = new Camera(gl);
+                const camera = new Camera(renderer);
                 camera.position.set(0, 0, 2);
 
                 const controls = new Orbit(camera, {
@@ -130,37 +163,37 @@
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
                     camera.perspective({
-                        aspect: gl.canvas.width / gl.canvas.height,
+                        aspect: renderer.canvas.width / renderer.canvas.height,
                     });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
                 const scene = new Transform();
-                const geometry = new Sphere(gl, { widthSegments: 64 });
+                const geometry = new Sphere(renderer, { widthSegments: 64 });
 
                 // Make A point Light
                 const light = new Vec3(20, 30, 60);
 
                 // Color Map
-                const colMap = new Texture(gl);
+                const colMap = new Texture(renderer);
                 const img = new Image();
                 img.onload = () => (colMap.image = img);
                 img.src = 'assets/earth.jpg';
 
                 // Specular Map
-                const specMap = new Texture(gl);
+                const specMap = new Texture(renderer);
                 const specMap_img = new Image();
                 specMap_img.onload = () => (specMap.image = specMap_img);
                 specMap_img.src = 'assets/earth_specular.jpg';
 
                 // Cloud Map
-                const cloudMap = new Texture(gl, { wrapS: gl.REPEAT, wrapT: gl.REPEAT });
+                const cloudMap = new Texture(renderer, { wrapS: 'repeat', wrapT: 'repeat' });
                 const cloudMap_img = new Image();
                 cloudMap_img.onload = () => (cloudMap.image = cloudMap_img);
                 cloudMap_img.src = 'assets/earth_cloud.jpg';
 
-                const program = new Program(gl, {
+                const program = new Program(renderer, {
                     vertex: VERTEX_SHADER,
                     fragment: FRAGMENT_SHADER,
                     uniforms: {
@@ -173,7 +206,7 @@
                     },
                 });
 
-                const mesh = new Mesh(gl, { geometry, program });
+                const mesh = new Mesh(renderer, { geometry, program });
                 mesh.setParent(scene);
 
                 document.addEventListener('mousemove', (e) => {

@@ -14,58 +14,67 @@
         <script type="module">
             import { Renderer, Transform, Vec3, Color, Polyline } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                precision highp float;
+            // Custom screen-space vertex shader (no camera / no object UBO)
+            const vertex = /* wgsl */ `
+                struct MaterialUniforms {
+                    uResolution : vec2f,
+                    uDPR : f32,
+                    uThickness : f32,
+                    uColor : vec3f,
+                    uMiter : f32,
+                };
 
-                attribute vec3 position;
-                attribute vec3 next;
-                attribute vec3 prev;
-                attribute vec2 uv;
-                attribute float side;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
 
-                uniform vec2 uResolution;
-                uniform float uDPR;
-                uniform float uThickness;
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) prev : vec3f,
+                    @location(2) next : vec3f,
+                    @location(3) side : f32,
+                    @location(4) uv : vec2f,
+                };
 
-                vec4 getPosition() {
-                    vec4 current = vec4(position, 1);
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                };
 
-                    vec2 aspect = vec2(uResolution.x / uResolution.y, 1);
-                    vec2 nextScreen = next.xy * aspect;
-                    vec2 prevScreen = prev.xy * aspect;
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var current = vec4f(input.position, 1.0);
+
+                    let aspect = vec2f(material.uResolution.x / material.uResolution.y, 1.0);
+                    let nextScreen = input.next.xy * aspect;
+                    let prevScreen = input.prev.xy * aspect;
 
                     // Calculate the tangent direction
-                    vec2 tangent = normalize(nextScreen - prevScreen);
+                    let tangent = normalize(nextScreen - prevScreen);
 
                     // Rotate 90 degrees to get the normal
-                    vec2 normal = vec2(-tangent.y, tangent.x);
+                    var normal = vec2f(-tangent.y, tangent.x);
                     normal /= aspect;
 
                     // Taper the line to be fatter in the middle, and skinny at the ends using the uv.y
-                    normal *= mix(1.0, 0.1, pow(abs(uv.y - 0.5) * 2.0, 2.0) );
+                    normal *= mix(1.0, 0.1, pow(abs(input.uv.y - 0.5) * 2.0, 2.0));
 
                     // When the points are on top of each other, shrink the line to avoid artifacts.
-                    float dist = length(nextScreen - prevScreen);
+                    let dist = length(nextScreen - prevScreen);
                     normal *= smoothstep(0.0, 0.02, dist);
 
-                    float pixelWidthRatio = 1.0 / (uResolution.y / uDPR);
-                    float pixelWidth = current.w * pixelWidthRatio;
-                    normal *= pixelWidth * uThickness;
-                    current.xy -= normal * side;
+                    let pixelWidthRatio = 1.0 / (material.uResolution.y / material.uDPR);
+                    let pixelWidth = current.w * pixelWidthRatio;
+                    normal *= pixelWidth * material.uThickness;
 
-                    return current;
-                }
-
-                void main() {
-                    gl_Position = getPosition();
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.position = vec4f(current.xy - normal * input.side, current.zw);
+                    return output;
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(0.9, 0.9, 0.9, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 0.9, g: 0.9, b: 0.9, a: 1 };
 
                 const scene = new Transform();
 
@@ -114,7 +123,7 @@
 
                     // Pass in the points, and any custom elements - for example here we've made
                     // custom shaders, and accompanying uniforms.
-                    line.polyline = new Polyline(gl, {
+                    line.polyline = new Polyline(renderer, {
                         points,
                         vertex,
                         uniforms: {
@@ -151,7 +160,7 @@
                     }
 
                     // Get mouse value in -1 to 1 range, with y flipped
-                    mouse.set((e.x / gl.renderer.width) * 2 - 1, (e.y / gl.renderer.height) * -2 + 1, 0);
+                    mouse.set((e.x / renderer.width) * 2 - 1, (e.y / renderer.height) * -2 + 1, 0);
                 }
 
                 const tmp = new Vec3();

@@ -1,21 +1,3 @@
-// attribute params
-// {
-//     data - typed array eg UInt16Array for indices, Float32Array
-//     size - int default 1
-//     instanced - default null. Pass divisor amount
-//     type - gl enum default gl.UNSIGNED_SHORT for 'index', gl.FLOAT for others
-//     normalized - boolean default false
-
-//     buffer - gl buffer, if buffer exists, don't need to provide data - although needs position data for bounds calculation
-//     stride - default 0 - for when passing in buffer
-//     offset - default 0 - for when passing in buffer
-//     count - default null - for when passing in buffer
-//     min - array - for when passing in buffer
-//     max - array - for when passing in buffer
-// }
-
-// TODO: fit in transform feedback
-
 import { Vec3 } from '../math/Vec3.js';
 
 const tempVec3 = /* @__PURE__ */ new Vec3();
@@ -23,30 +5,54 @@ const tempVec3 = /* @__PURE__ */ new Vec3();
 let ID = 1;
 let ATTR_ID = 1;
 
-// To stop inifinite warnings
 let isBoundsWarned = false;
 
-export class Geometry {
-    constructor(gl, attributes = {}) {
-        if (!gl.canvas) console.error('gl not passed as first argument to Geometry');
-        this.gl = gl;
-        this.attributes = attributes;
-        this.id = ID++;
+// Map TypedArray + size to WebGPU vertex format
+function getVertexFormat(data, size) {
+    if (data instanceof Float32Array) {
+        return ['float32', 'float32x2', 'float32x3', 'float32x4'][size - 1];
+    }
+    if (data instanceof Uint8Array) {
+        return ['uint8x2', 'uint8x2', 'uint8x4', 'uint8x4'][size - 1];
+    }
+    if (data instanceof Int8Array) {
+        return ['sint8x2', 'sint8x2', 'sint8x4', 'sint8x4'][size - 1];
+    }
+    if (data instanceof Uint16Array) {
+        return ['uint16x2', 'uint16x2', 'uint16x4', 'uint16x4'][size - 1];
+    }
+    if (data instanceof Int16Array) {
+        return ['sint16x2', 'sint16x2', 'sint16x4', 'sint16x4'][size - 1];
+    }
+    if (data instanceof Uint32Array) {
+        return ['uint32', 'uint32x2', 'uint32x3', 'uint32x4'][size - 1];
+    }
+    if (data instanceof Int32Array) {
+        return ['sint32', 'sint32x2', 'sint32x3', 'sint32x4'][size - 1];
+    }
+    return 'float32x' + size;
+}
 
-        // Store one VAO per program attribute locations order
-        this.VAOs = {};
+function getIndexFormat(data) {
+    if (data instanceof Uint32Array) return 'uint32';
+    return 'uint16';
+}
+
+export class Geometry {
+    constructor(gpu, attributes = {}) {
+        this.renderer = gpu.renderer || gpu;
+        this.device = this.renderer.device;
+        this.attributes = {};
+        this.id = ID++;
 
         this.drawRange = { start: 0, count: 0 };
         this.instancedCount = 0;
+        this.isInstanced = false;
 
-        // Unbind current VAO so that new buffers don't get added to active mesh
-        this.gl.renderer.bindVertexArray(null);
-        this.gl.renderer.currentGeometry = null;
+        // Vertex layout caching
+        this._cachedLayouts = null;
+        this._layoutKey = null;
 
-        // Alias for state store to avoid redundant calls for global state
-        this.glState = this.gl.renderer.state;
-
-        // create the buffers
         for (let key in attributes) {
             this.addAttribute(key, attributes[key]);
         }
@@ -55,31 +61,31 @@ export class Geometry {
     addAttribute(key, attr) {
         this.attributes[key] = attr;
 
-        // Set options
-        attr.id = ATTR_ID++; // TODO: currently unused, remove?
+        // Invalidate cached layouts
+        this._cachedLayouts = null;
+        this._layoutKey = null;
+
+        attr.id = ATTR_ID++;
         attr.size = attr.size || 1;
-        attr.type =
-            attr.type ||
-            (attr.data.constructor === Float32Array
-                ? this.gl.FLOAT
-                : attr.data.constructor === Uint16Array
-                ? this.gl.UNSIGNED_SHORT
-                : this.gl.UNSIGNED_INT); // Uint32Array
-        attr.target = key === 'index' ? this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER;
         attr.normalized = attr.normalized || false;
         attr.stride = attr.stride || 0;
         attr.offset = attr.offset || 0;
         attr.count = attr.count || (attr.stride ? attr.data.byteLength / attr.stride : attr.data.length / attr.size);
         attr.divisor = attr.instanced || 0;
         attr.needsUpdate = false;
-        attr.usage = attr.usage || this.gl.STATIC_DRAW;
 
-        if (!attr.buffer) {
-            // Push data to buffer
-            this.updateAttribute(attr);
+        if (key === 'index') {
+            attr.indexFormat = getIndexFormat(attr.data);
+        } else {
+            attr.format = getVertexFormat(attr.data, attr.size);
         }
 
-        // Update geometry counts. If indexed, ignore regular attributes
+        // Create GPU buffer
+        if (!attr.buffer) {
+            this.createBuffer(key, attr);
+        }
+
+        // Update counts
         if (attr.divisor) {
             this.isInstanced = true;
             if (this.instancedCount && this.instancedCount !== attr.count * attr.divisor) {
@@ -94,18 +100,18 @@ export class Geometry {
         }
     }
 
+    createBuffer(key, attr) {
+        const usage = key === 'index' ? GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST : GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST;
+
+        // Buffer size must be multiple of 4
+        const size = Math.ceil(attr.data.byteLength / 4) * 4;
+        attr.buffer = this.device.createBuffer({ size, usage, mappedAtCreation: true });
+        new attr.data.constructor(attr.buffer.getMappedRange()).set(attr.data);
+        attr.buffer.unmap();
+    }
+
     updateAttribute(attr) {
-        const isNewBuffer = !attr.buffer;
-        if (isNewBuffer) attr.buffer = this.gl.createBuffer();
-        if (this.glState.boundBuffer !== attr.buffer) {
-            this.gl.bindBuffer(attr.target, attr.buffer);
-            this.glState.boundBuffer = attr.buffer;
-        }
-        if (isNewBuffer) {
-            this.gl.bufferData(attr.target, attr.data, attr.usage);
-        } else {
-            this.gl.bufferSubData(attr.target, 0, attr.data);
-        }
+        this.device.queue.writeBuffer(attr.buffer, 0, attr.data);
         attr.needsUpdate = false;
     }
 
@@ -122,98 +128,81 @@ export class Geometry {
         this.instancedCount = value;
     }
 
-    createVAO(program) {
-        this.VAOs[program.attributeOrder] = this.gl.renderer.createVertexArray();
-        this.gl.renderer.bindVertexArray(this.VAOs[program.attributeOrder]);
-        this.bindAttributes(program);
-    }
+    getVertexBufferLayouts() {
+        if (this._cachedLayouts) return this._cachedLayouts;
 
-    bindAttributes(program) {
-        // Link all attributes to program using gl.vertexAttribPointer
-        program.attributeLocations.forEach((location, { name, type }) => {
-            // If geometry missing a required shader attribute
-            if (!this.attributes[name]) {
-                console.warn(`active attribute ${name} not being supplied`);
-                return;
-            }
+        const layouts = [];
+        let slot = 0;
 
-            const attr = this.attributes[name];
+        for (let key in this.attributes) {
+            if (key === 'index') continue;
+            const attr = this.attributes[key];
 
-            this.gl.bindBuffer(attr.target, attr.buffer);
-            this.glState.boundBuffer = attr.buffer;
+            const bytesPerElement = attr.data.BYTES_PER_ELEMENT;
+            const arrayStride = attr.stride || attr.size * bytesPerElement;
 
-            // For matrix attributes, buffer needs to be defined per column
-            let numLoc = 1;
-            if (type === 35674) numLoc = 2; // mat2
-            if (type === 35675) numLoc = 3; // mat3
-            if (type === 35676) numLoc = 4; // mat4
+            layouts.push({
+                arrayStride,
+                stepMode: attr.divisor ? 'instance' : 'vertex',
+                attributes: [
+                    {
+                        shaderLocation: slot,
+                        offset: attr.offset,
+                        format: attr.format,
+                    },
+                ],
+            });
 
-            const size = attr.size / numLoc;
-            const stride = numLoc === 1 ? 0 : numLoc * numLoc * 4;
-            const offset = numLoc === 1 ? 0 : numLoc * 4;
-
-            for (let i = 0; i < numLoc; i++) {
-                this.gl.vertexAttribPointer(location + i, size, attr.type, attr.normalized, attr.stride + stride, attr.offset + i * offset);
-                this.gl.enableVertexAttribArray(location + i);
-
-                // For instanced attributes, divisor needs to be set.
-                // For firefox, need to set back to 0 if non-instanced drawn after instanced. Else won't render
-                this.gl.renderer.vertexAttribDivisor(location + i, attr.divisor);
-            }
-        });
-
-        // Bind indices if geometry indexed
-        if (this.attributes.index) this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.attributes.index.buffer);
-    }
-
-    draw({ program, mode = this.gl.TRIANGLES }) {
-        if (this.gl.renderer.currentGeometry !== `${this.id}_${program.attributeOrder}`) {
-            if (!this.VAOs[program.attributeOrder]) this.createVAO(program);
-            this.gl.renderer.bindVertexArray(this.VAOs[program.attributeOrder]);
-            this.gl.renderer.currentGeometry = `${this.id}_${program.attributeOrder}`;
+            // Store slot mapping for draw time
+            attr.slot = slot;
+            slot++;
         }
 
-        // Check if any attributes need updating
-        program.attributeLocations.forEach((location, { name }) => {
-            const attr = this.attributes[name];
+        this._cachedLayouts = layouts;
+        return layouts;
+    }
+
+    getLayoutKey() {
+        if (this._layoutKey) return this._layoutKey;
+        this._layoutKey = JSON.stringify(this.getVertexBufferLayouts());
+        return this._layoutKey;
+    }
+
+    draw({ passEncoder, renderState }) {
+        // Skip redundant vertex/index buffer binds when same geometry is already bound
+        const needsBind = !renderState || renderState.geometry !== this;
+
+        for (let key in this.attributes) {
+            if (key === 'index') continue;
+            const attr = this.attributes[key];
             if (attr.needsUpdate) this.updateAttribute(attr);
-        });
+            if (needsBind) passEncoder.setVertexBuffer(attr.slot, attr.buffer);
+        }
 
-        // For drawElements, offset needs to be multiple of type size
-        let indexBytesPerElement = 2;
-        if (this.attributes.index?.type === this.gl.UNSIGNED_INT) indexBytesPerElement = 4;
+        if (this.attributes.index) {
+            const index = this.attributes.index;
+            if (index.needsUpdate) this.updateAttribute(index);
+            if (needsBind) passEncoder.setIndexBuffer(index.buffer, index.indexFormat);
 
-        if (this.isInstanced) {
-            if (this.attributes.index) {
-                this.gl.renderer.drawElementsInstanced(
-                    mode,
-                    this.drawRange.count,
-                    this.attributes.index.type,
-                    this.attributes.index.offset + this.drawRange.start * indexBytesPerElement,
-                    this.instancedCount
-                );
+            if (this.isInstanced) {
+                passEncoder.drawIndexed(this.drawRange.count, this.instancedCount, this.drawRange.start);
             } else {
-                this.gl.renderer.drawArraysInstanced(mode, this.drawRange.start, this.drawRange.count, this.instancedCount);
+                passEncoder.drawIndexed(this.drawRange.count, 1, this.drawRange.start);
             }
         } else {
-            if (this.attributes.index) {
-                this.gl.drawElements(
-                    mode,
-                    this.drawRange.count,
-                    this.attributes.index.type,
-                    this.attributes.index.offset + this.drawRange.start * indexBytesPerElement
-                );
+            if (this.isInstanced) {
+                passEncoder.draw(this.drawRange.count, this.instancedCount, this.drawRange.start);
             } else {
-                this.gl.drawArrays(mode, this.drawRange.start, this.drawRange.count);
+                passEncoder.draw(this.drawRange.count, 1, this.drawRange.start);
             }
         }
+
+        if (renderState) renderState.geometry = this;
     }
 
     getPosition() {
-        // Use position buffer, or min/max if available
         const attr = this.attributes.position;
-        // if (attr.min) return [...attr.min, ...attr.max];
-        if (attr.data) return attr;
+        if (attr?.data) return attr;
         if (isBoundsWarned) return;
         console.warn('No position buffer data found to compute bounds');
         return (isBoundsWarned = true);
@@ -222,8 +211,6 @@ export class Geometry {
     computeBoundingBox(attr) {
         if (!attr) attr = this.getPosition();
         const array = attr.data;
-        // Data loaded shouldn't haave stride, only buffers
-        // const stride = attr.stride ? attr.stride / array.BYTES_PER_ELEMENT : attr.size;
         const stride = attr.size;
 
         if (!this.bounds) {
@@ -244,7 +231,6 @@ export class Geometry {
         min.set(+Infinity);
         max.set(-Infinity);
 
-        // TODO: check size of position (eg triangle with Vec2)
         for (let i = 0, l = array.length; i < l; i += stride) {
             const x = array[i];
             const y = array[i + 1];
@@ -266,8 +252,6 @@ export class Geometry {
     computeBoundingSphere(attr) {
         if (!attr) attr = this.getPosition();
         const array = attr.data;
-        // Data loaded shouldn't haave stride, only buffers
-        // const stride = attr.stride ? attr.stride / array.BYTES_PER_ELEMENT : attr.size;
         const stride = attr.size;
 
         if (!this.bounds) this.computeBoundingBox(attr);
@@ -282,12 +266,10 @@ export class Geometry {
     }
 
     remove() {
-        for (let key in this.VAOs) {
-            this.gl.renderer.deleteVertexArray(this.VAOs[key]);
-            delete this.VAOs[key];
-        }
         for (let key in this.attributes) {
-            this.gl.deleteBuffer(this.attributes[key].buffer);
+            if (this.attributes[key].buffer) {
+                this.attributes[key].buffer.destroy();
+            }
             delete this.attributes[key];
         }
     }

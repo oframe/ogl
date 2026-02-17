@@ -6,17 +6,16 @@ import { Triangle } from './Triangle.js';
 
 export class Flowmap {
     constructor(
-        gl,
+        gpu,
         {
             size = 128, // default size of the render targets
             falloff = 0.3, // size of the stamp, percentage of the size
             alpha = 1, // opacity of the stamp
             dissipation = 0.98, // affects the speed that the stamp fades. Closer to 1 is slower
-            type, // Pass in gl.FLOAT to force it, defaults to gl.HALF_FLOAT
         } = {}
     ) {
         const _this = this;
-        this.gl = gl;
+        this.renderer = gpu.renderer || gpu;
 
         // output uniform containing render target textures
         this.uniform = { value: null };
@@ -45,36 +44,24 @@ export class Flowmap {
         }
 
         function createFBOs() {
-            // Requested type not supported, fall back to half float
-            if (!type) type = gl.HALF_FLOAT || gl.renderer.extensions['OES_texture_half_float'].HALF_FLOAT_OES;
-
-            let minFilter = (() => {
-                if (gl.renderer.isWebgl2) return gl.LINEAR;
-                if (gl.renderer.extensions[`OES_texture_${type === gl.FLOAT ? '' : 'half_'}float_linear`]) return gl.LINEAR;
-                return gl.NEAREST;
-            })();
-
             const options = {
                 width: size,
                 height: size,
-                type,
-                format: gl.RGBA,
-                internalFormat: gl.renderer.isWebgl2 ? (type === gl.FLOAT ? gl.RGBA32F : gl.RGBA16F) : gl.RGBA,
-                minFilter,
+                format: 'rgba16float',
                 depth: false,
             };
 
-            _this.mask.read = new RenderTarget(gl, options);
-            _this.mask.write = new RenderTarget(gl, options);
+            _this.mask.read = new RenderTarget(gpu, options);
+            _this.mask.write = new RenderTarget(gpu, options);
             _this.mask.swap();
         }
 
         function initProgram() {
-            return new Mesh(gl, {
+            return new Mesh(gpu, {
                 // Triangle that includes -1 to 1 range for 'position', and 0 to 1 range for 'uv'.
-                geometry: new Triangle(gl),
+                geometry: new Triangle(gpu),
 
-                program: new Program(gl, {
+                program: new Program(gpu, {
                     vertex,
                     fragment,
                     uniforms: {
@@ -98,7 +85,7 @@ export class Flowmap {
     update() {
         this.mesh.program.uniforms.uAspect.value = this.aspect;
 
-        this.gl.renderer.render({
+        this.renderer.render({
             scene: this.mesh,
             target: this.mask.write,
             clear: false,
@@ -107,44 +94,54 @@ export class Flowmap {
     }
 }
 
-const vertex = /* glsl */ `
-    attribute vec2 uv;
-    attribute vec2 position;
+const vertex = /* wgsl */ `
+    struct VertexInput {
+        @location(0) position : vec2f,
+        @location(1) uv : vec2f,
+    };
 
-    varying vec2 vUv;
+    struct VertexOutput {
+        @builtin(position) position : vec4f,
+        @location(0) vUv : vec2f,
+    };
 
-    void main() {
-        vUv = uv;
-        gl_Position = vec4(position, 0, 1);
+    @vertex fn main(input : VertexInput) -> VertexOutput {
+        var output : VertexOutput;
+        output.vUv = input.uv;
+        output.position = vec4f(input.position, 0.0, 1.0);
+        return output;
     }
 `;
 
-const fragment = /* glsl */ `
-    precision highp float;
+const fragment = /* wgsl */ `
+    struct MaterialUniforms {
+        uFalloff : f32,
+        uAlpha : f32,
+        uDissipation : f32,
+        uAspect : f32,
+        uMouse : vec2f,
+        uVelocity : vec2f,
+    };
 
-    uniform sampler2D tMap;
+    @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+    @group(0) @binding(1) var tMap : texture_2d<f32>;
+    @group(0) @binding(2) var tMapSampler : sampler;
 
-    uniform float uFalloff;
-    uniform float uAlpha;
-    uniform float uDissipation;
-    
-    uniform float uAspect;
-    uniform vec2 uMouse;
-    uniform vec2 uVelocity;
+    struct FragmentInput {
+        @location(0) vUv : vec2f,
+    };
 
-    varying vec2 vUv;
+    @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+        var color = textureSample(tMap, tMapSampler, vec2f(input.vUv.x, 1.0 - input.vUv.y)) * material.uDissipation;
 
-    void main() {
-        vec4 color = texture2D(tMap, vUv) * uDissipation;
+        var cursor = input.vUv - material.uMouse;
+        cursor.x *= material.uAspect;
 
-        vec2 cursor = vUv - uMouse;
-        cursor.x *= uAspect;
+        let stamp = vec3f(material.uVelocity * vec2f(1.0, -1.0), 1.0 - pow(1.0 - min(1.0, length(material.uVelocity)), 3.0));
+        let falloff = smoothstep(material.uFalloff, 0.0, length(cursor)) * material.uAlpha;
 
-        vec3 stamp = vec3(uVelocity * vec2(1, -1), 1.0 - pow(1.0 - min(1.0, length(uVelocity)), 3.0));
-        float falloff = smoothstep(uFalloff, 0.0, length(cursor)) * uAlpha;
+        color = vec4f(mix(color.rgb, stamp, vec3f(falloff)), color.a);
 
-        color.rgb = mix(color.rgb, stamp, vec3(falloff));
-
-        gl_FragColor = color;
+        return color;
     }
 `;

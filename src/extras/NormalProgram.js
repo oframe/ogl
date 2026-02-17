@@ -1,38 +1,47 @@
 import { Program } from '../core/Program.js';
 
-const vertex = /* glsl */ `
-    precision highp float;
-    precision highp int;
+const vertex = /* wgsl */ `
+    struct ObjectUniforms {
+        modelMatrix : mat4x4f,
+        viewMatrix : mat4x4f,
+        modelViewMatrix : mat4x4f,
+        projectionMatrix : mat4x4f,
+        normalMatrix : mat3x3f,
+        cameraPosition : vec3f,
+    };
 
-    attribute vec3 position;
-    attribute vec3 normal;
+    @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-    uniform mat3 normalMatrix;
-    uniform mat4 modelViewMatrix;
-    uniform mat4 projectionMatrix;
+    struct VertexInput {
+        @location(0) position : vec3f,
+        @location(1) normal : vec3f,
+    };
 
-    varying vec3 vNormal;
+    struct VertexOutput {
+        @builtin(position) position : vec4f,
+        @location(0) vNormal : vec3f,
+    };
 
-    void main() {
-        vNormal = normalize(normalMatrix * normal);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    @vertex fn main(input : VertexInput) -> VertexOutput {
+        var output : VertexOutput;
+        output.vNormal = normalize(object.normalMatrix * input.normal);
+        output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+        return output;
     }
 `;
 
-const fragment = /* glsl */ `
-    precision highp float;
-    precision highp int;
+const fragment = /* wgsl */ `
+    struct FragmentInput {
+        @location(0) vNormal : vec3f,
+    };
 
-    varying vec3 vNormal;
-
-    void main() {
-        gl_FragColor.rgb = normalize(vNormal);
-        gl_FragColor.a = 1.0;
+    @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+        return vec4f(normalize(input.vNormal), 1.0);
     }
 `;
 
-export function NormalProgram(gl) {
-    return new Program(gl, {
+export function NormalProgram(gpu) {
+    return new Program(gpu, {
         vertex: vertex,
         fragment: fragment,
         cullFace: false,

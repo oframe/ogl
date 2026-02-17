@@ -14,96 +14,120 @@
         <script type="module">
             import { Renderer, Camera, RenderTarget, Vec3, Transform, Program, Box, Mesh, NormalProgram } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec2 uv;
-                attribute vec3 position;
-                attribute vec3 normal;
+            const vertex = /* wgsl */ `
+                struct MaterialUniforms {
+                    uTime : f32,
+                    uTargetRender : f32,
+                };
 
-                // Add instanced attributes just like any attribute
-                attribute vec3 offset;
-                attribute vec3 random;
-                attribute vec4 id;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-                uniform float uTime;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                varying vec2 vUv;
-                varying vec3 vNormal;
-                varying vec4 vId;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                void rotate2d(inout vec2 v, float a){
-                    mat2 m = mat2(cos(a), -sin(a), sin(a),  cos(a));
-                    v = m * v;
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) normal : vec3f,
+                    @location(2) uv : vec2f,
+                    @location(3) offset : vec3f,
+                    @location(4) random : vec3f,
+                    @location(5) id : vec4f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                    @location(1) vNormal : vec3f,
+                    @location(2) vId : vec4f,
+                };
+
+                fn rotate2d(v : vec2f, a : f32) -> vec2f {
+                    let m = mat2x2f(cos(a), -sin(a), sin(a), cos(a));
+                    return m * v;
                 }
 
-                void main() {
-                    vUv = uv;
-                    vId = id;
-                    vNormal = normal;
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.vId = input.id;
+                    output.vNormal = input.normal;
 
                     // copy position so that we can modify the instances
-                    vec3 pos = position;
+                    var pos = input.position;
 
                     // scale first
-                    pos *= 0.9 + random.y * 0.2;
+                    pos *= 0.9 + input.random.y * 0.2;
 
                     // rotate around y axis
-                    rotate2d(pos.xz, random.x * 6.28 + 4.0 * uTime * (random.y - 0.5));
+                    let rotated = rotate2d(pos.xz, input.random.x * 6.28 + 4.0 * material.uTime * (input.random.y - 0.5));
+                    pos = vec3f(rotated.x, pos.y, rotated.y);
 
-                    pos += offset;
+                    pos += input.offset;
 
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(pos, 1.0);
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    uTime : f32,
+                    uTargetRender : f32,
+                };
 
-                uniform float uTime;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
 
-                // Re-use same program to render pick-texture
-                uniform bool uTargetRender;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vNormal : vec3f,
+                    @location(2) vId : vec4f,
+                };
 
-                varying vec2 vUv;
-                varying vec4 vId;
-                varying vec3 vNormal;
-
-                void main() {
-                    if (uTargetRender) {
-                        gl_FragColor = vId;
-                        return;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    if (material.uTargetRender > 0.5) {
+                        return input.vId;
                     }
-
-                    vec3 normal = normalize(vNormal);
-                    float lighting = dot(normal, normalize(vec3(-0.3, 0.8, 0.6)));
-                    gl_FragColor.rgb = vec3(0.2, 0.8, 1.0) + lighting * 0.1;
-                    gl_FragColor.a = 1.0;
+                    let normal = normalize(input.vNormal);
+                    let lighting = dot(normal, normalize(vec3f(-0.3, 0.8, 0.6)));
+                    return vec4f(vec3f(0.2, 0.8, 1.0) + lighting * 0.1, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 15 });
+                const camera = new Camera(renderer, { fov: 15 });
                 camera.position.z = 15;
 
                 let target;
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
-                    target = new RenderTarget(gl);
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
+                    // Create pick render target at canvas pixel dimensions
+                    target = new RenderTarget(renderer, {
+                        width: renderer.canvas.width,
+                        height: renderer.canvas.height,
+                    });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
                 const scene = new Transform();
 
-                const program = new Program(gl, {
+                const num = 20;
+
+                const program = new Program(renderer, {
                     vertex,
                     fragment,
                     uniforms: {
@@ -112,12 +136,9 @@
                     },
                 });
 
-                let mesh,
-                    highlight,
-                    objects = [];
+                let mesh, highlight;
+                let objects = [];
                 {
-                    const num = 20;
-
                     let offsetData = new Float32Array(num * 3);
                     let randomData = new Float32Array(num * 3);
                     let idData = new Float32Array(num * 4);
@@ -137,23 +158,30 @@
                         objects.push({ id, offset, random });
                     }
 
-                    const geometry = new Box(gl, {
+                    const geometry = new Box(renderer, {
                         width: 0.2,
                         height: 0.2,
                         depth: 0.2,
-                        attributes: {
-                            offset: { instanced: 1, size: 3, data: offsetData },
-                            random: { instanced: 1, size: 3, data: randomData },
-                            // Add id data. This way we can recognize the instance later.
-                            id: { instanced: 1, size: 4, data: idData },
-                        },
                     });
+                    // Add instanced attributes after Box creation so that
+                    // built-in attributes (position=0, normal=1, uv=2) get
+                    // lower slot indices, matching the shader @location layout.
+                    geometry.addAttribute('offset', { instanced: 1, size: 3, data: offsetData });
+                    geometry.addAttribute('random', { instanced: 1, size: 3, data: randomData });
+                    // Add id data. This way we can recognize the instance later.
+                    geometry.addAttribute('id', { instanced: 1, size: 4, data: idData });
 
-                    mesh = new Mesh(gl, { geometry, program });
+                    mesh = new Mesh(renderer, { geometry, program });
                     mesh.setParent(scene);
 
-                    // Create a single non-instanced copy
-                    highlight = new Mesh(gl, { geometry, program: new NormalProgram(gl) });
+                    // Create a separate non-instanced geometry for the highlight
+                    // (sharing the instanced geometry would draw 20 overlapping instances)
+                    const highlightGeometry = new Box(renderer, {
+                        width: 0.2,
+                        height: 0.2,
+                        depth: 0.2,
+                    });
+                    highlight = new Mesh(renderer, { geometry: highlightGeometry, program: new NormalProgram(renderer) });
                     highlight.setParent(scene);
                     highlight.visible = false;
                 }
@@ -170,11 +198,16 @@
 
                 const mouse = new Vec3();
                 function move(e) {
-                    mouse.set(
-                        (e.x * gl.canvas.width) / gl.canvas.clientWidth,
-                        gl.canvas.height - (e.y * gl.canvas.height) / gl.canvas.clientHeight - 1
-                    );
+                    // Map mouse coordinates to the pick render target pixel space
+                    // WebGPU textures have y=0 at top, same as mouse events — no Y flip needed
+                    const mx = Math.floor((e.x * target.width) / renderer.canvas.clientWidth);
+                    const my = Math.floor((e.y * target.height) / renderer.canvas.clientHeight);
+                    mouse.set(mx, my);
                 }
+
+                // Non-blocking async picking pattern for WebGPU
+                let pickPending = false;
+                let highlightedId = -1;
 
                 requestAnimationFrame(update);
                 function update(t) {
@@ -185,47 +218,40 @@
                     let time = t * 0.001;
                     program.uniforms.uTime.value = time;
 
-                    // Draw to texture
-                    mesh.program.uniforms.uTargetRender.value = 1;
-                    gl.clearColor(0, 0, 0, 0);
+                    // Only start a new pick if previous one is done
+                    if (!pickPending) {
+                        pickPending = true;
 
-                    // Render ids to render target
-                    renderer.render({ scene: mesh, camera, target });
+                        // Render ids to pick render target
+                        mesh.program.uniforms.uTargetRender.value = 1;
+                        renderer.render({ scene: mesh, camera, target });
 
-                    // Read pixel data from target
-                    const data = new Uint8Array(4);
-                    gl.readPixels(
-                        mouse.x, // x
-                        mouse.y, // y
-                        1, // width
-                        1, // height
-                        gl.RGBA, // format
-                        gl.UNSIGNED_BYTE, // type
-                        data
-                    ); // typed array to hold result
+                        // Async read pixel at mouse position
+                        target.readPixel(mouse.x, mouse.y).then((data) => {
+                            // Transform color back to id
+                            const id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
+                            highlightedId = (id >= 1 && id <= num) ? id : -1;
+                            pickPending = false;
+                        });
+                    }
 
-                    // Transform color back to id
-                    const id = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
-
-                    if (id) {
-                        // Restore same transformations as in shader
-                        // but only for the higlighted item
-                        let data = objects[id - 1];
-                        let [rx, ry, rz] = data.random;
+                    // Update highlight transform every frame to stay in sync with shader rotation
+                    if (highlightedId >= 1) {
+                        let obj = objects[highlightedId - 1];
+                        let [rx, ry, rz] = obj.random;
                         highlight.scale.set(0.9 + ry * 0.2).scale(1.005);
                         highlight.rotation.set(0);
                         highlight.rotation.y = rx * 6.28 + 4 * time * (ry - 0.5);
-                        highlight.position.set(data.offset);
+                        highlight.position.set(obj.offset);
                         highlight.visible = true;
                     } else {
                         highlight.visible = false;
                     }
 
-                    // Reset
+                    // Render visible scene
                     mesh.program.uniforms.uTargetRender.value = 0;
                     program.uniforms.uTime.value = time;
-                    gl.clearColor(1, 1, 1, 1);
-
+                    renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
                     renderer.render({ scene, camera });
                 }
             }

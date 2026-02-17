@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head><title>Color Space Test</title></head>
+<body>
+<pre id="output"></pre>
+<script type="module">
+const log = (msg) => { document.getElementById('output').textContent += msg + '\n'; console.log(msg); };
+
+// Detect display color gamut
+const isP3 = window.matchMedia('(color-gamut: p3)').matches;
+const isSRGB = window.matchMedia('(color-gamut: srgb)').matches;
+log(`Display: P3=${isP3}, sRGB=${isSRGB}`);
+log(`Screen: ${screen.width}x${screen.height}, colorDepth=${screen.colorDepth}`);
+
+// Load a known env map PNG
+const response = await fetch('assets/sunset-diffuse-RGBM.png');
+const blob = await response.blob();
+
+// Create ImageBitmaps with and without colorSpaceConversion
+const bmpNone = await createImageBitmap(blob, { colorSpaceConversion: 'none' });
+const bmpDefault = await createImageBitmap(blob, {});
+
+log(`Image size: ${bmpNone.width}x${bmpNone.height}`);
+
+// Read pixels from each ImageBitmap via OffscreenCanvas
+async function readPixels(bmp, label) {
+    const canvas = new OffscreenCanvas(bmp.width, bmp.height);
+    const ctx = canvas.getContext('2d', { colorSpace: 'srgb' });
+    ctx.drawImage(bmp, 0, 0);
+    const data = ctx.getImageData(0, 0, bmp.width, bmp.height, { colorSpace: 'srgb' });
+    // Sample a few pixels
+    const pixels = [];
+    const positions = [[0,0], [100,100], [200,50], [bmp.width/2|0, bmp.height/2|0]];
+    for (const [x,y] of positions) {
+        const i = (y * bmp.width + x) * 4;
+        pixels.push({ x, y, r: data.data[i], g: data.data[i+1], b: data.data[i+2], a: data.data[i+3] });
+    }
+    log(`\n${label}:`);
+    pixels.forEach(p => log(`  (${p.x},${p.y}): rgba(${p.r}, ${p.g}, ${p.b}, ${p.a})`));
+    return pixels;
+}
+
+const pixelsNone = await readPixels(bmpNone, 'colorSpaceConversion: none');
+const pixelsDefault = await readPixels(bmpDefault, 'colorSpaceConversion: default');
+
+// Compare
+log('\nDifferences:');
+let maxDiff = 0;
+for (let i = 0; i < pixelsNone.length; i++) {
+    const a = pixelsNone[i], b = pixelsDefault[i];
+    const dr = Math.abs(a.r - b.r), dg = Math.abs(a.g - b.g), db = Math.abs(a.b - b.b), da = Math.abs(a.a - b.a);
+    maxDiff = Math.max(maxDiff, dr, dg, db, da);
+    log(`  (${a.x},${a.y}): dr=${dr} dg=${dg} db=${db} da=${da}`);
+}
+log(`\nMax channel difference: ${maxDiff}`);
+if (maxDiff === 0) {
+    log('=> NO DIFFERENCE - colorSpaceConversion has no effect on this display');
+} else {
+    log('=> DIFFERENCE FOUND - P3 display color management is affecting texture data!');
+}
+
+// Now test WebGPU copyExternalImageToTexture
+if (navigator.gpu) {
+    const adapter = await navigator.gpu.requestAdapter();
+    const device = await adapter.requestDevice();
+
+    async function uploadAndReadBack(bmp, destColorSpace, label) {
+        const tex = device.createTexture({
+            size: [bmp.width, bmp.height],
+            format: 'rgba8unorm',
+            usage: GPUTextureUsage.COPY_SRC | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+        });
+
+        const opts = { texture: tex };
+        if (destColorSpace) opts.colorSpace = destColorSpace;
+
+        device.queue.copyExternalImageToTexture(
+            { source: bmp },
+            opts,
+            [bmp.width, bmp.height]
+        );
+
+        // Read back via buffer
+        const bytesPerRow = Math.ceil(bmp.width * 4 / 256) * 256;
+        const buf = device.createBuffer({
+            size: bytesPerRow * bmp.height,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+        });
+        const enc = device.createCommandEncoder();
+        enc.copyTextureToBuffer({ texture: tex }, { buffer: buf, bytesPerRow }, [bmp.width, bmp.height]);
+        device.queue.submit([enc.finish()]);
+        await buf.mapAsync(GPUMapMode.READ);
+        const data = new Uint8Array(buf.getMappedRange());
+
+        const positions = [[0,0], [100,100], [200,50], [bmp.width/2|0, bmp.height/2|0]];
+        log(`\nWebGPU ${label}:`);
+        const pixels = [];
+        for (const [x,y] of positions) {
+            const i = y * bytesPerRow + x * 4;
+            const p = { x, y, r: data[i], g: data[i+1], b: data[i+2], a: data[i+3] };
+            pixels.push(p);
+            log(`  (${p.x},${p.y}): rgba(${p.r}, ${p.g}, ${p.b}, ${p.a})`);
+        }
+        buf.unmap();
+        tex.destroy();
+        buf.destroy();
+        return pixels;
+    }
+
+    // Test with colorSpaceConversion:'none' source + srgb dest (our current setup)
+    const bmpNone2 = await createImageBitmap(blob, { colorSpaceConversion: 'none' });
+    const gpuSrgb = await uploadAndReadBack(bmpNone2, 'srgb', 'src=none, dst=srgb');
+
+    // Test with default source + srgb dest
+    const bmpDef2 = await createImageBitmap(blob, {});
+    const gpuDefSrgb = await uploadAndReadBack(bmpDef2, 'srgb', 'src=default, dst=srgb');
+
+    // Test with default source + display-p3 dest
+    const bmpDef3 = await createImageBitmap(blob, {});
+    const gpuDefP3 = await uploadAndReadBack(bmpDef3, 'display-p3', 'src=default, dst=display-p3');
+
+    // Compare GPU results
+    log('\nGPU Comparison (none+srgb vs default+srgb):');
+    let gpuMaxDiff1 = 0;
+    for (let i = 0; i < gpuSrgb.length; i++) {
+        const a = gpuSrgb[i], b = gpuDefSrgb[i];
+        const dr = Math.abs(a.r - b.r), dg = Math.abs(a.g - b.g), db = Math.abs(a.b - b.b), da = Math.abs(a.a - b.a);
+        gpuMaxDiff1 = Math.max(gpuMaxDiff1, dr, dg, db, da);
+        log(`  (${a.x},${a.y}): dr=${dr} dg=${dg} db=${db} da=${da}`);
+    }
+    log(`Max diff: ${gpuMaxDiff1}`);
+
+    log('\nGPU Comparison (none+srgb vs default+display-p3):');
+    let gpuMaxDiff2 = 0;
+    for (let i = 0; i < gpuSrgb.length; i++) {
+        const a = gpuSrgb[i], b = gpuDefP3[i];
+        const dr = Math.abs(a.r - b.r), dg = Math.abs(a.g - b.g), db = Math.abs(a.b - b.b), da = Math.abs(a.a - b.a);
+        gpuMaxDiff2 = Math.max(gpuMaxDiff2, dr, dg, db, da);
+        log(`  (${a.x},${a.y}): dr=${dr} dg=${dg} db=${db} da=${da}`);
+    }
+    log(`Max diff: ${gpuMaxDiff2}`);
+
+    if (gpuMaxDiff1 > 0) {
+        log('\n=> copyExternalImageToTexture IS doing color space conversion!');
+        log('   This explains the brightness difference vs WebGL.');
+    }
+    if (gpuMaxDiff2 === 0 && gpuMaxDiff1 > 0) {
+        log('=> FIX: Use display-p3 destination colorSpace to match WebGL behavior.');
+    }
+}
+</script>
+</body>
+</html>

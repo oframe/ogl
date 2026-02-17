@@ -14,47 +14,69 @@
         <script type="module">
             import { Renderer, Camera, Transform, Geometry, Program, Mesh } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec2 uv;
-                attribute vec3 position;
+            const vertex = /* wgsl */ `
+                struct MaterialUniforms {
+                    uTime : f32,
+                };
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
 
-                varying vec2 vUv;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                void main() {
-                    vUv = uv;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) uv : vec2f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    uTime : f32,
+                };
 
-                uniform float uTime;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
 
-                varying vec2 vUv;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
 
-                void main() {
-                    gl_FragColor.rgb = 0.5 + 0.3 * sin(vUv.yxx + uTime) + vec3(0.2, 0.0, 0.1);
-                    gl_FragColor.a = 1.0;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let c = 0.5 + 0.3 * sin(vec3f(input.vUv.y, input.vUv.x, input.vUv.x) + material.uTime) + vec3f(0.2, 0.0, 0.1);
+                    return vec4f(c, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer();
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create();
+                document.body.appendChild(renderer.canvas);
 
-                const camera = new Camera(gl, { fov: 15 });
+                const camera = new Camera(renderer, { fov: 15 });
                 camera.position.z = 15;
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
@@ -62,7 +84,7 @@
                 const scene = new Transform();
 
                 // 4 vertices, using 6 indices to designate 2 triangles using the default gl.TRIANGLES draw mode
-                const indexedGeometry = new Geometry(gl, {
+                const indexedGeometry = new Geometry(renderer, {
                     position: {
                         size: 3,
                         data: new Float32Array([
@@ -94,13 +116,13 @@
                         ]),
                     },
 
-                    // the indices attribute must use the name 'index' to be treated as an ELEMENT_ARRAY_BUFFER
+                    // the indices attribute must use the name 'index' to be treated as an index buffer
                     index: { data: new Uint16Array([0, 1, 2, 1, 3, 2]) },
                 });
 
                 // To recreate the same square using non-indexed geometry, 6 vertices need to be passed in, including 2 duplicates.
                 // If only the original 4 vertices were supplied, only one triangle would be drawn.
-                const nonIndexedGeometry = new Geometry(gl, {
+                const nonIndexedGeometry = new Geometry(renderer, {
                     position: {
                         size: 3,
                         data: new Float32Array([
@@ -143,7 +165,7 @@
                     },
                 });
 
-                const program = new Program(gl, {
+                const program = new Program(renderer, {
                     vertex,
                     fragment,
                     uniforms: {
@@ -151,11 +173,11 @@
                     },
                 });
 
-                const indexedMesh = new Mesh(gl, { geometry: indexedGeometry, program });
+                const indexedMesh = new Mesh(renderer, { geometry: indexedGeometry, program });
                 indexedMesh.setParent(scene);
                 indexedMesh.position.y = 0.9;
 
-                const nonIndexedMesh = new Mesh(gl, { geometry: nonIndexedGeometry, program });
+                const nonIndexedMesh = new Mesh(renderer, { geometry: nonIndexedGeometry, program });
                 nonIndexedMesh.setParent(scene);
                 nonIndexedMesh.position.y = -0.9;
 

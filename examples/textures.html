@@ -14,59 +14,112 @@
         <script type="module">
             import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Box } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec2 uv;
-                attribute vec3 position;
-                attribute vec3 normal;
+            const vertex = /* wgsl */ `
+                @group(0) @binding(0) var tMap : texture_2d<f32>;
+                @group(0) @binding(1) var tMapSampler : sampler;
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-                uniform mat3 normalMatrix;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                varying vec2 vUv;
-                varying vec3 vNormal;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                void main() {
-                    vUv = uv;
-                    vNormal = normalize(normalMatrix * normal);
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) uv : vec2f,
+                    @location(2) normal : vec3f,
+                };
 
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                    @location(1) vNormal : vec3f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.vNormal = normalize(object.normalMatrix * input.normal);
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                @group(0) @binding(0) var tMap : texture_2d<f32>;
+                @group(0) @binding(1) var tMapSampler : sampler;
 
-                uniform sampler2D tMap;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vNormal : vec3f,
+                };
 
-                varying vec2 vUv;
-                varying vec3 vNormal;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let tex = textureSample(tMap, tMapSampler, input.vUv).rgb;
+                    let normal = normalize(input.vNormal);
 
-                void main() {
-                    vec3 tex = texture2D(tMap, vUv).rgb;
-                    vec3 normal = normalize(vNormal);
+                    let light = normalize(vec3f(0.5, 1.0, -0.3));
+                    let shading = dot(normal, light) * 0.15;
 
-                    vec3 light = normalize(vec3(0.5, 1.0, -0.3));
-                    float shading = dot(normal, light) * 0.15;
+                    return vec4f(tex + shading, 1.0);
+                }
+            `;
 
-                    gl_FragColor.rgb = tex + shading;
-                    gl_FragColor.a = 1.0;
+            // Box geometry generates attributes in order: position, normal, uv, index
+            // so for the box vertex shader we need position(@0), normal(@1), uv(@2)
+            const boxVertex = /* wgsl */ `
+                @group(0) @binding(0) var tMap : texture_2d<f32>;
+                @group(0) @binding(1) var tMapSampler : sampler;
+
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
+
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
+
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) normal : vec3f,
+                    @location(2) uv : vec2f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                    @location(1) vNormal : vec3f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.vNormal = normalize(object.normalMatrix * input.normal);
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 45 });
+                const camera = new Camera(renderer, { fov: 45 });
                 camera.position.set(3, 1.5, 4);
                 camera.lookAt([1, 0.2, 0]);
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
@@ -74,18 +127,14 @@
                 const scene = new Transform();
 
                 // Upload empty texture while source loading
-                const texture = new Texture(gl);
+                const texture = new Texture(renderer);
 
                 // update image value with source once loaded
                 const img = new Image();
                 img.src = 'assets/saddle.jpg';
                 img.onload = () => (texture.image = img);
 
-                // Alternatively, you can use the TextureLoader class's load method that handles
-                // these steps for you. It also handles compressed textures and fallbacks.
-                // const texture = TextureLoader.load(gl, { src: 'assets/saddle.jpg'});
-
-                const program = new Program(gl, {
+                const program = new Program(renderer, {
                     vertex,
                     fragment,
                     uniforms: {
@@ -98,47 +147,45 @@
                 async function loadModel() {
                     const data = await (await fetch(`assets/saddle.json`)).json();
 
-                    const geometry = new Geometry(gl, {
+                    const geometry = new Geometry(renderer, {
                         position: { size: 3, data: new Float32Array(data.position) },
                         uv: { size: 2, data: new Float32Array(data.uv) },
                         normal: { size: 3, data: new Float32Array(data.normal) },
                     });
 
-                    mesh = new Mesh(gl, { geometry, program });
+                    mesh = new Mesh(renderer, { geometry, program });
                     mesh.position.set(0, 0, 0);
                     mesh.setParent(scene);
                 }
 
-                const videoGeometry = new Box(gl, { width: 1.78, height: 1, depth: 1.78 });
+                const videoGeometry = new Box(renderer, { width: 1.78, height: 1, depth: 1.78 });
 
                 // Init empty texture while source loading
-                const videoTexture = new Texture(gl, {
+                const videoTexture = new Texture(renderer, {
                     generateMipmaps: false,
                     width: 1024,
                     height: 512,
                 });
 
                 // Create video with attributes that let it autoplay
-                // Check update loop to see when video is attached to texture
                 let video = document.createElement('video');
                 video.src = 'assets/laputa.mp4';
 
                 // Disclaimer: video autoplay is a confusing, constantly-changing browser feature.
-                // The best approach is to never assume that it will work, and therefore prepare for a fallback.
                 video.loop = true;
                 video.muted = true;
                 video.setAttribute('playsinline', 'playsinline');
                 video.play();
 
-                const videoProgram = new Program(gl, {
-                    vertex,
+                const videoProgram = new Program(renderer, {
+                    vertex: boxVertex,
                     fragment,
                     uniforms: {
                         tMap: { value: videoTexture },
                     },
                     cullFace: false,
                 });
-                const videoMesh = new Mesh(gl, {
+                const videoMesh = new Mesh(renderer, {
                     geometry: videoGeometry,
                     program: videoProgram,
                 });

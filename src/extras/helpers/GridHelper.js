@@ -4,7 +4,7 @@ import { Geometry } from '../../core/Geometry.js';
 import { Vec3 } from '../../math/Vec3.js';
 
 export class GridHelper extends Mesh {
-    constructor(gl, { size = 10, divisions = 10, color = new Vec3(0.75, 0.75, 0.75), ...meshProps } = {}) {
+    constructor(gpu, { size = 10, divisions = 10, color = new Vec3(0.75, 0.75, 0.75), ...meshProps } = {}) {
         const numVertices = (size + 1) * 2 * 2;
         const vertices = new Float32Array(numVertices * 3);
 
@@ -17,36 +17,58 @@ export class GridHelper extends Mesh {
             vertices.set([-hs, 0, o, hs, 0, o], i * 12 + 6);
         }
 
-        const geometry = new Geometry(gl, {
+        const geometry = new Geometry(gpu, {
             position: { size: 3, data: vertices },
         });
 
-        const program = new Program(gl, {
+        const program = new Program(gpu, {
             vertex,
             fragment,
             uniforms: {
                 color: { value: color },
             },
+            topology: 'line-list',
+            cullFace: false,
         });
-        super(gl, { ...meshProps, mode: gl.LINES, geometry, program });
+        super(gpu, { ...meshProps, geometry, program });
     }
 }
 
-const vertex = /* glsl */ `
-attribute vec3 position;
-uniform mat4 modelViewMatrix;
-uniform mat4 projectionMatrix;
+const vertex = /* wgsl */ `
+struct ObjectUniforms {
+    modelMatrix : mat4x4f,
+    viewMatrix : mat4x4f,
+    modelViewMatrix : mat4x4f,
+    projectionMatrix : mat4x4f,
+    normalMatrix : mat3x3f,
+    cameraPosition : vec3f,
+};
 
-void main() {    
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+@group(1) @binding(0) var<uniform> object : ObjectUniforms;
+
+struct VertexInput {
+    @location(0) position : vec3f,
+};
+
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+};
+
+@vertex fn main(input : VertexInput) -> VertexOutput {
+    var output : VertexOutput;
+    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+    return output;
 }
 `;
 
-const fragment = /* glsl */ `
-precision highp float;
-uniform vec3 color;
+const fragment = /* wgsl */ `
+struct MaterialUniforms {
+    color : vec3f,
+};
 
-void main() {    
-    gl_FragColor = vec4(color, 1.0);
+@group(0) @binding(0) var<uniform> material : MaterialUniforms;
+
+@fragment fn main() -> @location(0) vec4f {
+    return vec4f(material.color, 1.0);
 }
 `;

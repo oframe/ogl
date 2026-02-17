@@ -2,29 +2,23 @@ let supportedFormat;
 let id = 0;
 
 export class BasisManager {
-    constructor(workerSrc, gl) {
-        if (!supportedFormat) supportedFormat = this.getSupportedFormat(gl);
+    constructor(workerSrc, gpu) {
+        if (!supportedFormat) supportedFormat = this.getSupportedFormat(gpu);
         this.onMessage = this.onMessage.bind(this);
         this.queue = new Map();
         this.initWorker(workerSrc);
     }
 
-    getSupportedFormat(gl = document.createElement('canvas').getContext('webgl')) {
-        /* if (!!gl.getExtension('WEBGL_compressed_texture_etc')) {
-            return 'etc2';
-        } else  */
-        if (!!gl.getExtension('WEBGL_compressed_texture_astc')) {
+    getSupportedFormat(gpu) {
+        const device = (gpu.renderer || gpu).device;
+        const features = device.features;
+
+        if (features.has('texture-compression-astc')) {
             return 'astc';
-        } else if (!!gl.getExtension('EXT_texture_compression_bptc')) {
-            return 'bptc';
-        } else if (!!gl.getExtension('WEBGL_compressed_texture_s3tc')) {
-            return 's3tc';
-        } else if (!!gl.getExtension('WEBGL_compressed_texture_etc1')) {
-            return 'etc1';
-        } else if (!!gl.getExtension('WEBGL_compressed_texture_pvrtc') || !!gl.getExtension('WEBKIT_WEBGL_compressed_texture_pvrtc')) {
-            return 'pvrtc';
-            // } else if (!!gl.getExtension('WEBGL_compressed_texture_atc')) {
-            //     return 'atc';
+        } else if (features.has('texture-compression-bc')) {
+            return 'bptc'; // Prefer BC7 (higher quality than BC1/BC3)
+        } else if (features.has('texture-compression-etc2')) {
+            return 'etc2';
         }
         return 'none';
     }
@@ -35,14 +29,21 @@ export class BasisManager {
     }
 
     onMessage({ data }) {
-        const { id, error, image } = data;
+        const { id, error, image, isCompressedTexture, internalFormat, width, height } = data;
         if (error) {
             console.log(error, id);
             return;
         }
         const textureResolve = this.queue.get(id);
         this.queue.delete(id);
+        // Reconstruct properties lost during structured clone (postMessage strips custom props from arrays/TypedArrays)
         image.isBasis = true;
+        image.isCompressedTexture = isCompressedTexture;
+        image.internalFormat = internalFormat;
+        if (!isCompressedTexture) {
+            image.width = width;
+            image.height = height;
+        }
         textureResolve(image);
     }
 

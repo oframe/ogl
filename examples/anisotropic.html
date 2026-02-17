@@ -22,51 +22,82 @@
         <script type="module">
             import { Renderer, Camera, Transform, Texture, Program, Mesh, Plane } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec2 uv;
-                attribute vec3 position;
+            const vertex = /* wgsl */ `
+                struct MaterialUniforms {
+                    fSlide : f32,
+                };
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tMap : texture_2d<f32>;
+                @group(0) @binding(2) var tMapSampler : sampler;
+                @group(0) @binding(3) var tMapA : texture_2d<f32>;
+                @group(0) @binding(4) var tMapASampler : sampler;
 
-                varying vec2 vUv;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                void main() {
-                    vUv = uv;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
+
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) normal : vec3f,
+                    @location(2) uv : vec2f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    fSlide : f32,
+                };
 
-                uniform sampler2D tMap;
-                uniform sampler2D tMapA;
-                uniform float fSlide;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tMap : texture_2d<f32>;
+                @group(0) @binding(2) var tMapSampler : sampler;
+                @group(0) @binding(3) var tMapA : texture_2d<f32>;
+                @group(0) @binding(4) var tMapASampler : sampler;
 
-                varying vec2 vUv;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
 
-                void main() {
-                    vec3 tex = texture2D(tMap, vUv).rgb;
-                    vec3 texA = texture2D(tMapA, vUv).rgb;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let tex = textureSample(tMap, tMapSampler, input.vUv).rgb;
+                    let texA = textureSample(tMapA, tMapASampler, input.vUv).rgb;
 
-                    gl_FragColor.rgb = mix(tex, texA, step(fSlide, vUv.x)) + 0.1;
-                    gl_FragColor.a = 1.0;
+                    let color = mix(tex, texA, step(material.fSlide, input.vUv.x)) + 0.1;
+                    return vec4f(color, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl);
+                const camera = new Camera(renderer);
                 camera.position.set(0, 0, 1);
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
@@ -74,10 +105,10 @@
                 const scene = new Transform();
 
                 // By default, anisotropy is not active
-                const texture = new Texture(gl);
+                const texture = new Texture(renderer, { generateMipmaps: true });
 
                 // Pass in number of anisotropic samples to activate
-                const textureAnisotropy = new Texture(gl, { anisotropy: 16 });
+                const textureAnisotropy = new Texture(renderer, { anisotropy: 16, generateMipmaps: true });
 
                 const img = new Image();
                 img.src = 'assets/grid.jpg';
@@ -86,9 +117,9 @@
                     textureAnisotropy.image = img;
                 };
 
-                const geometry = new Plane(gl);
+                const geometry = new Plane(renderer);
 
-                const program = new Program(gl, {
+                const program = new Program(renderer, {
                     vertex,
                     fragment,
                     uniforms: {
@@ -98,14 +129,14 @@
                     },
                 });
 
-                const mesh = new Mesh(gl, { geometry, program });
+                const mesh = new Mesh(renderer, { geometry, program });
                 mesh.scale.set(1, 2, 1);
                 mesh.rotation.set(-1.5, 0, 0);
 
                 mesh.setParent(scene);
 
-                gl.canvas.addEventListener('mousemove', (e) => {
-                    const x = (2 * e.x) / gl.canvas.width;
+                renderer.canvas.addEventListener('mousemove', (e) => {
+                    const x = (2 * e.x) / renderer.canvas.width;
                     program.uniforms.fSlide.value = x;
                 });
 

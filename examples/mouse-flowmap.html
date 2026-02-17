@@ -17,50 +17,60 @@
         <script type="module">
             import { Renderer, Program, Texture, Mesh, Vec2, Flowmap, Triangle } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec2 uv;
-                attribute vec2 position;
+            const vertex = /* wgsl */ `
+                struct VertexInput {
+                    @location(0) position : vec2f,
+                    @location(1) uv : vec2f,
+                };
 
-                varying vec2 vUv;
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                };
 
-                void main() {
-                    vUv = uv;
-                    gl_Position = vec4(position, 0, 1);
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.position = vec4f(input.position, 0.0, 1.0);
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    uTime : f32,
+                };
 
-                uniform sampler2D tWater;
-                uniform sampler2D tFlow;
-                uniform float uTime;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tWaterTex : texture_2d<f32>;
+                @group(0) @binding(2) var tWaterSampler : sampler;
+                @group(0) @binding(3) var tFlowTex : texture_2d<f32>;
+                @group(0) @binding(4) var tFlowSampler : sampler;
 
-                varying vec2 vUv;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
 
-                void main() {
-
+                @fragment fn main(input : FragmentInput, @builtin(position) fragCoord : vec4f) -> @location(0) vec4f {
                     // R and G values are velocity in the x and y direction
                     // B value is the velocity length
-                    vec3 flow = texture2D(tFlow, vUv).rgb;
+                    let flow = textureSample(tFlowTex, tFlowSampler, vec2f(input.vUv.x, 1.0 - input.vUv.y)).rgb;
 
                     // Use flow to adjust the uv lookup of a texture
-                    vec2 uv = gl_FragCoord.xy / 600.0;
+                    var uv = fragCoord.xy / 600.0;
                     uv += flow.xy * 0.05;
-                    vec3 tex = texture2D(tWater, uv).rgb;
+                    var tex = textureSample(tWaterTex, tWaterSampler, uv).rgb;
 
                     // Oscillate between raw values and the affected texture above
-                    tex = mix(tex, flow * 0.5 + 0.5, smoothstep(-0.3, 0.7, sin(uTime)));
+                    tex = mix(tex, flow * 0.5 + 0.5, smoothstep(-0.3, 0.7, sin(material.uTime)));
 
-                    gl_FragColor.rgb = tex;
-                    gl_FragColor.a = 1.0;
+                    return vec4f(tex, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
 
                 // Variable inputs to control flowmap
                 let aspect = 1;
@@ -74,17 +84,17 @@
                 window.addEventListener('resize', resize, false);
                 resize();
 
-                const flowmap = new Flowmap(gl);
+                const flowmap = new Flowmap(renderer);
 
                 // Triangle that includes -1 to 1 range for 'position', and 0 to 1 range for 'uv'.
-                const geometry = new Triangle(gl);
+                const geometry = new Triangle(renderer);
 
-                const texture = new Texture(gl, { wrapS: gl.REPEAT, wrapT: gl.REPEAT });
+                const texture = new Texture(renderer, { wrapS: 'repeat', wrapT: 'repeat' });
                 const img = new Image();
                 img.onload = () => (texture.image = img);
                 img.src = 'assets/water.jpg';
 
-                const program = new Program(gl, {
+                const program = new Program(renderer, {
                     vertex,
                     fragment,
                     uniforms: {
@@ -98,7 +108,7 @@
                     },
                 });
 
-                const mesh = new Mesh(gl, { geometry, program });
+                const mesh = new Mesh(renderer, { geometry, program });
 
                 // Create handlers to get mouse position and velocity
                 const isTouchCapable = 'ontouchstart' in window;
@@ -122,7 +132,7 @@
                     }
 
                     // Get mouse value in 0 to 1 range, with y flipped
-                    mouse.set(e.x / gl.renderer.width, 1 - e.y / gl.renderer.height);
+                    mouse.set(e.x / renderer.width, 1 - e.y / renderer.height);
 
                     // Calculate velocity
                     if (!lastTime) {

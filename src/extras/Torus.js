@@ -4,7 +4,7 @@ import { Geometry } from '../core/Geometry.js';
 import { Vec3 } from '../math/Vec3.js';
 
 export class Torus extends Geometry {
-    constructor(gl, { radius = 0.5, tube = 0.2, radialSegments = 8, tubularSegments = 6, arc = Math.PI * 2, attributes = {} } = {}) {
+    constructor(gpu, { radius = 0.5, tube = 0.2, radialSegments = 8, tubularSegments = 6, arc = Math.PI * 2, attributes = {} } = {}) {
         const num = (radialSegments + 1) * (tubularSegments + 1);
         const numIndices = radialSegments * tubularSegments * 6;
 
@@ -65,6 +65,6 @@ export class Torus extends Geometry {
             index: { data: indices },
         });
 
-        super(gl, attributes);
+        super(gpu, attributes);
     }
 }

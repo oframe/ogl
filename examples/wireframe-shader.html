@@ -14,103 +14,74 @@
         <script type="module">
             import { Renderer, Camera, Transform, Program, Geometry, Mesh, Vec3, Orbit } from '../src/index.js';
 
-            const vertex100 = /* glsl */ `
-                attribute vec3 position;
-                attribute vec3 barycentric;
+            const vertex = /* wgsl */ `
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                varying vec3 vBarycentric;
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) uv : vec2f,
+                    @location(2) normal : vec3f,
+                    @location(3) barycentric : vec3f,
+                };
 
-                void main() {
-                    vBarycentric = barycentric;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vBarycentric : vec3f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vBarycentric = input.barycentric;
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragment100 = /* glsl */ `#extension GL_OES_standard_derivatives : enable
-                precision highp float;
+            const fragment = /* wgsl */ `
+                struct FragmentInput {
+                    @location(0) vBarycentric : vec3f,
+                    @builtin(front_facing) frontFacing : bool,
+                };
 
-                varying vec3 vBarycentric;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let bary = input.vBarycentric;
 
-                void main() {
-                    vec3 bary = vBarycentric;
-
-                    vec3 color = vec3(0);
-                    float alpha = 1.0;
+                    var color = vec3f(0.0);
+                    var alpha = 1.0;
 
                     // Line thickness - in pixels
-                    float width = 1.0 * 0.5;
-                    vec3 d = fwidth(bary);
-                    vec3 s = smoothstep(d * (width + 0.5), d * (width - 0.5), bary);
+                    let width = 1.0 * 0.5;
+                    let d = fwidth(bary);
+                    let s = smoothstep(d * (width + 0.5), d * (width - 0.5), bary);
                     alpha *= max(max(s.x, s.y), s.z);
 
                     // Dashes
                     alpha *= step(0.0, sin(max(bary.x, bary.y) * 3.14 * 5.0));
 
                     // Back face shading
-                    color = mix(vec3(1, 0, 0), color, vec3(gl_FrontFacing));
-                    alpha = mix(alpha * 0.1 + 0.02, alpha, float(gl_FrontFacing));
+                    let ff = select(0.0, 1.0, input.frontFacing);
+                    color = mix(vec3f(1.0, 0.0, 0.0), color, vec3f(ff));
+                    alpha = mix(alpha * 0.1 + 0.02, alpha, ff);
 
-                    gl_FragColor.rgb = color;
-                    gl_FragColor.a = alpha;
-                }
-            `;
-
-            const vertex300 = /* glsl */ `#version 300 es
-                in vec3 position;
-                in vec3 barycentric;
-
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-
-                out vec3 vBarycentric;
-
-                void main() {
-                    vBarycentric = barycentric;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `;
-
-            const fragment300 = /* glsl */ `#version 300 es
-                precision highp float;
-
-                in vec3 vBarycentric;
-
-                out vec4 FragColor;
-
-                void main() {
-                    vec3 bary = vBarycentric;
-
-                    vec3 color = vec3(0);
-                    float alpha = 1.0;
-
-                    // Line thickness - in pixels
-                    float width = 1.0 * 0.5;
-                    vec3 d = fwidth(bary);
-                    vec3 s = smoothstep(d * (width + 0.5), d * (width - 0.5), bary);
-                    alpha *= max(max(s.x, s.y), s.z);
-
-                    // Dashes
-                    alpha *= step(0.0, sin(max(bary.x, bary.y) * 3.14 * 5.0));
-
-                    // Back face shading
-                    color = mix(vec3(1, 0, 0), color, vec3(gl_FrontFacing));
-                    alpha = mix(alpha * 0.1 + 0.02, alpha, float(gl_FrontFacing));
-
-                    FragColor.rgb = color;
-                    FragColor.a = alpha;
+                    return vec4f(color, alpha);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 35 });
+                const camera = new Camera(renderer, { fov: 35 });
                 camera.position.set(3, 2, 4);
 
                 const controls = new Orbit(camera, {
@@ -119,16 +90,16 @@
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
                 const scene = new Transform();
 
-                const program = new Program(gl, {
-                    vertex: renderer.isWebgl2 ? vertex300 : vertex100,
-                    fragment: renderer.isWebgl2 ? fragment300 : fragment100,
+                const program = new Program(renderer, {
+                    vertex,
+                    fragment,
                     transparent: true,
                     cullFace: false,
                     depthTest: false,
@@ -151,14 +122,14 @@
                 async function loadModel() {
                     const data = await (await fetch(`assets/goat.json`)).json();
 
-                    const geometry = new Geometry(gl, {
+                    const geometry = new Geometry(renderer, {
                         position: { size: 3, data: new Float32Array(data.position) },
                         uv: { size: 2, data: new Float32Array(data.uv) },
                         normal: { size: 3, data: new Float32Array(data.normal) },
                         barycentric: { size: 3, data: addBarycentric(data.position) },
                     });
 
-                    mesh = new Mesh(gl, { geometry, program });
+                    mesh = new Mesh(renderer, { geometry, program });
                     mesh.setParent(scene);
                 }
 
