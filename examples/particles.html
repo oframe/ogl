@@ -122,7 +122,6 @@
                     program.uniforms.uResolution.value[1] = renderer.canvas.height;
                 }
                 window.addEventListener('resize', resize, false);
-                resize();
 
                 // Quad vertices (2 triangles making a square from -0.5 to 0.5)
                 const quadPosition = new Float32Array([
@@ -169,6 +168,7 @@
                 });
 
                 const particles = new Mesh(renderer, { geometry, program });
+                resize();
 
                 requestAnimationFrame(update);
                 function update(t) {
