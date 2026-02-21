@@ -32,6 +32,16 @@ export class Program {
             topology = 'triangle-list',
             blendSrc,
             blendDst,
+            blendSrcAlpha,
+            blendDstAlpha,
+            blendEquation = 'add',
+            blendEquationAlpha,
+            stencil,
+            stencilFront,
+            stencilBack,
+            stencilReadMask = 0xFF,
+            stencilWriteMask = 0xFF,
+            stencilRef = 0,
         } = {}
     ) {
         this.renderer = gpu.renderer || gpu;
@@ -54,6 +64,17 @@ export class Program {
         }
         this.blendSrc = blendSrc;
         this.blendDst = blendDst;
+        this.blendSrcAlpha = blendSrc ? (blendSrcAlpha || 'one') : undefined;
+        this.blendDstAlpha = blendSrc ? (blendDstAlpha || 'one-minus-src-alpha') : undefined;
+        this.blendEquation = blendEquation;
+        this.blendEquationAlpha = blendEquationAlpha || blendEquation;
+
+        // Stencil state — `stencil` shorthand applies to both faces
+        this.stencilFront = stencilFront || stencil || undefined;
+        this.stencilBack = stencilBack || stencil || undefined;
+        this.stencilReadMask = stencilReadMask;
+        this.stencilWriteMask = stencilWriteMask;
+        this.stencilRef = stencilRef;
 
         // Create shader modules
         this.vertexModule = this.device.createShaderModule({ code: vertex });
@@ -264,7 +285,10 @@ export class Program {
 
     getPipeline(vertexLayouts, colorFormats, depthFormat, objectBindGroupLayout, layoutKey, indexFormat) {
         const isStrip = this.topology === 'line-strip' || this.topology === 'triangle-strip';
-        const key = (layoutKey || JSON.stringify(vertexLayouts)) + '|' + colorFormats.join(',') + '|' + (depthFormat || '') + '|' + (objectBindGroupLayout ? '1' : '0') + (isStrip && indexFormat ? '|' + indexFormat : '');
+        const key = (layoutKey || JSON.stringify(vertexLayouts)) + '|' + colorFormats.join(',') + '|' + (depthFormat || '') + '|' + (objectBindGroupLayout ? '1' : '0') + (isStrip && indexFormat ? '|' + indexFormat : '')
+            + (this.blendSrc ? '|' + this.blendSrc + this.blendDst + this.blendSrcAlpha + this.blendDstAlpha + this.blendEquation + this.blendEquationAlpha : '')
+            + (this.stencilFront ? '|sf' + JSON.stringify(this.stencilFront) : '')
+            + (this.stencilBack ? '|sb' + JSON.stringify(this.stencilBack) : '');
 
         if (this.pipelineCache.has(key)) return this.pipelineCache.get(key);
 
@@ -282,6 +306,13 @@ export class Program {
                 depthWriteEnabled: this.depthWrite,
                 depthCompare: this.depthTest ? this.depthFunc : 'always',
             };
+            if (this.stencilFront || this.stencilBack) {
+                const defaultStencil = { compare: 'always', failOp: 'keep', depthFailOp: 'keep', passOp: 'keep' };
+                depthStencil.stencilFront = { ...defaultStencil, ...this.stencilFront };
+                depthStencil.stencilBack = { ...defaultStencil, ...this.stencilBack };
+                depthStencil.stencilReadMask = this.stencilReadMask;
+                depthStencil.stencilWriteMask = this.stencilWriteMask;
+            }
         }
 
         // Color targets with optional blending
@@ -289,8 +320,8 @@ export class Program {
             const target = { format };
             if (this.blendSrc) {
                 target.blend = {
-                    color: { srcFactor: this.blendSrc, dstFactor: this.blendDst, operation: 'add' },
-                    alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+                    color: { srcFactor: this.blendSrc, dstFactor: this.blendDst, operation: this.blendEquation },
+                    alpha: { srcFactor: this.blendSrcAlpha, dstFactor: this.blendDstAlpha, operation: this.blendEquationAlpha },
                 };
             }
             return target;
@@ -357,6 +388,11 @@ export class Program {
             // No dynamic offsets — use render state tracking to skip redundant calls
             passEncoder.setBindGroup(0, this.bindGroup);
             if (renderState) renderState.program = this;
+        }
+
+        // Set stencil reference value for stencil operations
+        if (this.stencilFront || this.stencilBack) {
+            passEncoder.setStencilReference(this.stencilRef);
         }
     }
 

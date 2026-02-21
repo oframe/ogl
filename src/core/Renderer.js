@@ -16,6 +16,7 @@ export class Renderer {
         this.stencil = stencil;
         this.autoClear = autoClear;
         this.clearColor = { r: 0, g: 0, b: 0, a: 1 };
+        this.scissor = null;
         this.id = ID++;
 
         // Configure canvas context
@@ -277,6 +278,9 @@ export class Renderer {
 
         const passEncoder = commandEncoder.beginRenderPass(passDescriptor);
         passEncoder.setViewport(0, 0, width, height, 0, 1);
+        if (this.scissor) {
+            passEncoder.setScissorRect(this.scissor.x, this.scissor.y, this.scissor.width, this.scissor.height);
+        }
 
         renderList.forEach((node) => {
             node.draw({ camera, passEncoder });
