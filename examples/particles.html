@@ -17,8 +17,6 @@
             const vertex = /* wgsl */ `
                 struct MaterialUniforms {
                     uTime : f32,
-                    _pad0 : f32,
-                    uResolution : vec2f,
                 };
 
                 @group(0) @binding(0) var<uniform> material : MaterialUniforms;
@@ -70,12 +68,11 @@
                     // get the model view position so that we can scale the points off into the distance
                     var mvPos = object.viewMatrix * mPos;
 
-                    // gl_PointSize equivalent (in pixels)
+                    // Calculate point size equivalent
                     let pointSize = 300.0 / length(mvPos.xyz) * (input.random.x + 0.1);
 
-                    // Convert pixel size to view-space units and expand quad (billboard)
-                    let pixelToView = 2.0 / (material.uResolution.y * object.projectionMatrix[1][1]);
-                    mvPos += vec4f(input.position.xy * pointSize * pixelToView, 0.0, 0.0);
+                    // Expand quad in view space (billboard)
+                    mvPos += vec4f(input.position.xy * pointSize * 0.005, 0.0, 0.0);
 
                     output.position = object.projectionMatrix * mvPos;
                     return output;
@@ -85,8 +82,6 @@
             const fragment = /* wgsl */ `
                 struct MaterialUniforms {
                     uTime : f32,
-                    _pad0 : f32,
-                    uResolution : vec2f,
                 };
 
                 @group(0) @binding(0) var<uniform> material : MaterialUniforms;
@@ -118,8 +113,6 @@
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
                     camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
-                    program.uniforms.uResolution.value[0] = renderer.canvas.width;
-                    program.uniforms.uResolution.value[1] = renderer.canvas.height;
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
@@ -162,7 +155,6 @@
                     fragment,
                     uniforms: {
                         uTime: { value: 0 },
-                        uResolution: { value: new Float32Array([renderer.canvas.width, renderer.canvas.height]) },
                     },
                     transparent: true,
                     depthTest: false,
