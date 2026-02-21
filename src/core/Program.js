@@ -16,6 +16,10 @@ function getUniformInfo(value) {
     return { size: 4, alignment: 4 };
 }
 
+// Pre-allocated view descriptors for bind group texture views
+const CUBE_VIEW_DESC = { dimension: 'cube' };
+const DEFAULT_VIEW_DESC = {};
+
 export class Program {
     constructor(
         gpu,
@@ -76,11 +80,58 @@ export class Program {
         this.stencilWriteMask = stencilWriteMask;
         this.stencilRef = stencilRef;
 
+        // Pre-compute the immutable portion of the pipeline cache key (blend + stencil)
+        // These values never change after construction, so we build the string once
+        this._isStrip = this.topology === 'line-strip' || this.topology === 'triangle-strip';
+
+        let immutableKey = '';
+        if (this.blendSrc) {
+            immutableKey += '|b:' + this.blendSrc + ',' + this.blendDst + ',' + this.blendSrcAlpha + ',' + this.blendDstAlpha + ',' + this.blendEquation + ',' + this.blendEquationAlpha;
+        }
+        if (this.stencilFront) {
+            immutableKey += '|sf:' + this.stencilFront.compare + ',' + (this.stencilFront.failOp || 'keep') + ',' + (this.stencilFront.depthFailOp || 'keep') + ',' + (this.stencilFront.passOp || 'keep');
+        }
+        if (this.stencilBack) {
+            immutableKey += '|sb:' + this.stencilBack.compare + ',' + (this.stencilBack.failOp || 'keep') + ',' + (this.stencilBack.depthFailOp || 'keep') + ',' + (this.stencilBack.passOp || 'keep');
+        }
+        this._immutablePipelineKey = immutableKey;
+
+        // Pre-compute merged stencil state objects (avoid per-cache-miss spread)
+        if (this.stencilFront) {
+            this._mergedStencilFront = {
+                compare: this.stencilFront.compare || 'always',
+                failOp: this.stencilFront.failOp || 'keep',
+                depthFailOp: this.stencilFront.depthFailOp || 'keep',
+                passOp: this.stencilFront.passOp || 'keep',
+            };
+        }
+        if (this.stencilBack) {
+            this._mergedStencilBack = {
+                compare: this.stencilBack.compare || 'always',
+                failOp: this.stencilBack.failOp || 'keep',
+                depthFailOp: this.stencilBack.depthFailOp || 'keep',
+                passOp: this.stencilBack.passOp || 'keep',
+            };
+        }
+
+        // Pre-compute cull mode string
+        if (this.cullFace === 'back' || this.cullFace === true) this._cullMode = 'back';
+        else if (this.cullFace === 'front') this._cullMode = 'front';
+        else this._cullMode = 'none';
+
+        // Pre-compute blend target descriptor (reused for each color target on cache miss)
+        if (this.blendSrc) {
+            this._blendState = {
+                color: { srcFactor: this.blendSrc, dstFactor: this.blendDst, operation: this.blendEquation },
+                alpha: { srcFactor: this.blendSrcAlpha, dstFactor: this.blendDstAlpha, operation: this.blendEquationAlpha },
+            };
+        }
+
         // Create shader modules
         this.vertexModule = this.device.createShaderModule({ code: vertex });
         this.fragmentModule = this.device.createShaderModule({ code: fragment });
 
-        // Pipeline cache: key → GPURenderPipeline
+        // Pipeline cache: key -> GPURenderPipeline
         this.pipelineCache = new Map();
 
         // Uniform buffer layout and staging data
@@ -146,6 +197,7 @@ export class Program {
         if (hasUniforms) {
             const bufferSize = align(offset, 16);
             this.uniformLayout = layout;
+            this._uniformLayoutLength = layout.length;
             this.uniformData = new Float32Array(bufferSize / 4);
             this._uniformBufferSize = bufferSize;
 
@@ -177,7 +229,7 @@ export class Program {
             if (!uniform.value) continue;
             if (uniform.value._isTexture) {
                 const tex = uniform.value;
-                this.textureEntries.push({ name, binding: binding, lastTexture: null });
+                this.textureEntries.push({ name, binding: binding, lastTexture: null, lastGpuTexture: null, isCube: tex.isCube });
                 entries.push({
                     binding: binding++,
                     visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
@@ -194,6 +246,7 @@ export class Program {
             }
         }
 
+        this._textureEntryCount = this.textureEntries.length;
         this.bindGroupLayout = this.device.createBindGroupLayout({ entries });
     }
 
@@ -206,8 +259,14 @@ export class Program {
             this._lastRenderPassId = this.renderer._renderPassId;
         }
 
-        for (const entry of this.uniformLayout) {
-            const uniform = this.uniforms[entry.name];
+        const layout = this.uniformLayout;
+        const layoutLen = this._uniformLayoutLength;
+        const uniforms = this.uniforms;
+        const uniformData = this.uniformData;
+
+        for (let i = 0; i < layoutLen; i++) {
+            const entry = layout[i];
+            const uniform = uniforms[entry.name];
             if (!uniform || uniform.value === undefined) continue;
 
             const value = uniform.value;
@@ -216,31 +275,31 @@ export class Program {
             // Array of vectors
             if (entry.isArray) {
                 const strideFloats = entry.elemStride / 4;
-                for (let i = 0; i < entry.count; i++) {
-                    if (value[i] && value[i].length !== undefined) {
-                        this.uniformData.set(value[i], floatOffset + strideFloats * i);
+                for (let j = 0; j < entry.count; j++) {
+                    if (value[j] && value[j].length !== undefined) {
+                        uniformData.set(value[j], floatOffset + strideFloats * j);
                     }
                 }
                 continue;
             }
 
             if (typeof value === 'number') {
-                this.uniformData[floatOffset] = value;
+                uniformData[floatOffset] = value;
             } else if (value.length === 9) {
                 // mat3: pack as 3 vec4-aligned columns (12 floats, but aligned per column)
-                this.uniformData[floatOffset] = value[0];
-                this.uniformData[floatOffset + 1] = value[1];
-                this.uniformData[floatOffset + 2] = value[2];
+                uniformData[floatOffset] = value[0];
+                uniformData[floatOffset + 1] = value[1];
+                uniformData[floatOffset + 2] = value[2];
                 // padding at floatOffset + 3
-                this.uniformData[floatOffset + 4] = value[3];
-                this.uniformData[floatOffset + 5] = value[4];
-                this.uniformData[floatOffset + 6] = value[5];
+                uniformData[floatOffset + 4] = value[3];
+                uniformData[floatOffset + 5] = value[4];
+                uniformData[floatOffset + 6] = value[5];
                 // padding at floatOffset + 7
-                this.uniformData[floatOffset + 8] = value[6];
-                this.uniformData[floatOffset + 9] = value[7];
-                this.uniformData[floatOffset + 10] = value[8];
+                uniformData[floatOffset + 8] = value[6];
+                uniformData[floatOffset + 9] = value[7];
+                uniformData[floatOffset + 10] = value[8];
             } else if (value.length !== undefined) {
-                this.uniformData.set(value, floatOffset);
+                uniformData.set(value, floatOffset);
             }
         }
 
@@ -270,10 +329,11 @@ export class Program {
             entries.push({ binding: binding++, resource: { buffer: this._uniformPoolBuffer, size: this._uniformBufferSize } });
         }
 
-        for (const texEntry of this.textureEntries) {
+        const texEntries = this.textureEntries;
+        for (let i = 0, l = texEntries.length; i < l; i++) {
+            const texEntry = texEntries[i];
             const tex = this.uniforms[texEntry.name].value;
-            const viewDescriptor = tex.isCube ? { dimension: 'cube' } : {};
-            entries.push({ binding: binding++, resource: tex.gpuTexture.createView(viewDescriptor) });
+            entries.push({ binding: binding++, resource: tex.gpuTexture.createView(texEntry.isCube ? CUBE_VIEW_DESC : DEFAULT_VIEW_DESC) });
             entries.push({ binding: binding++, resource: tex.gpuSampler });
         }
 
@@ -284,14 +344,16 @@ export class Program {
     }
 
     getPipeline(vertexLayouts, colorFormats, depthFormat, objectBindGroupLayout, layoutKey, indexFormat) {
-        const isStrip = this.topology === 'line-strip' || this.topology === 'triangle-strip';
-        const key = (layoutKey || JSON.stringify(vertexLayouts)) + '|' + colorFormats.join(',') + '|' + (depthFormat || '') + '|' + (objectBindGroupLayout ? '1' : '0')
-            + (isStrip && indexFormat ? '|' + indexFormat : '')
-            + (this.blendSrc ? '|b:' + this.blendSrc + ',' + this.blendDst + ',' + this.blendSrcAlpha + ',' + this.blendDstAlpha + ',' + this.blendEquation + ',' + this.blendEquationAlpha : '')
-            + (this.stencilFront ? '|sf:' + JSON.stringify(this.stencilFront) : '')
-            + (this.stencilBack ? '|sb:' + JSON.stringify(this.stencilBack) : '');
+        // Build cache key. The layoutKey is pre-computed by Geometry.getLayoutKey().
+        // colorFormatsKey is pre-computed per render pass on the renderer.
+        const colorFormatsKey = this.renderer._currentColorFormatsKey;
 
-        if (this.pipelineCache.has(key)) return this.pipelineCache.get(key);
+        const key = (layoutKey || JSON.stringify(vertexLayouts)) + '|' + colorFormatsKey + '|' + (depthFormat || '') + '|' + (objectBindGroupLayout ? '1' : '0')
+            + (this._isStrip && indexFormat ? '|' + indexFormat : '')
+            + this._immutablePipelineKey;
+
+        const cached = this.pipelineCache.get(key);
+        if (cached) return cached;
 
         // Build pipeline layout with both bind groups
         const bindGroupLayouts = [this.bindGroupLayout];
@@ -308,31 +370,28 @@ export class Program {
                 depthCompare: this.depthTest ? this.depthFunc : 'always',
             };
             if ((this.stencilFront || this.stencilBack) && depthFormat.includes('stencil')) {
-                const defaultStencil = { compare: 'always', failOp: 'keep', depthFailOp: 'keep', passOp: 'keep' };
-                depthStencil.stencilFront = { ...defaultStencil, ...this.stencilFront };
-                depthStencil.stencilBack = { ...defaultStencil, ...this.stencilBack };
+                depthStencil.stencilFront = this._mergedStencilFront;
+                depthStencil.stencilBack = this._mergedStencilBack;
                 depthStencil.stencilReadMask = this.stencilReadMask;
                 depthStencil.stencilWriteMask = this.stencilWriteMask;
             }
         }
 
         // Color targets with optional blending
-        const targets = colorFormats.map((format) => {
-            const target = { format };
-            if (this.blendSrc) {
-                target.blend = {
-                    color: { srcFactor: this.blendSrc, dstFactor: this.blendDst, operation: this.blendEquation },
-                    alpha: { srcFactor: this.blendSrcAlpha, dstFactor: this.blendDstAlpha, operation: this.blendEquationAlpha },
-                };
-            }
-            return target;
-        });
+        const blendState = this._blendState;
+        const targets = new Array(colorFormats.length);
+        for (let i = 0, l = colorFormats.length; i < l; i++) {
+            const target = { format: colorFormats[i] };
+            if (blendState) target.blend = blendState;
+            targets[i] = target;
+        }
 
-        // Cull mode mapping
-        let cullMode = 'none';
-        if (this.cullFace === 'back' || this.cullFace === true) cullMode = 'back';
-        else if (this.cullFace === 'front') cullMode = 'front';
-        else if (this.cullFace === false) cullMode = 'none';
+        const primitive = {
+            topology: this.topology,
+            frontFace: this.frontFace,
+            cullMode: this._cullMode,
+        };
+        if (this._isStrip && indexFormat) primitive.stripIndexFormat = indexFormat;
 
         const descriptor = {
             layout: this.pipelineLayout,
@@ -346,12 +405,7 @@ export class Program {
                 entryPoint: 'main',
                 targets,
             },
-            primitive: {
-                topology: this.topology,
-                frontFace: this.frontFace,
-                cullMode,
-                ...(isStrip && indexFormat ? { stripIndexFormat: indexFormat } : {}),
-            },
+            primitive,
         };
 
         if (depthStencil) descriptor.depthStencil = depthStencil;
@@ -367,7 +421,9 @@ export class Program {
 
         // Update textures and check if bind group needs rebuilding
         let needsRebuild = !this.bindGroup;
-        for (const texEntry of this.textureEntries) {
+        const texEntries = this.textureEntries;
+        for (let i = 0, l = texEntries.length; i < l; i++) {
+            const texEntry = texEntries[i];
             const tex = this.uniforms[texEntry.name].value;
             if (tex.needsUpdate) {
                 tex.update();

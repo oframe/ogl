@@ -45,6 +45,10 @@ export class RenderTarget {
 
         this.texture = this.textures[0];
 
+        // Pre-compute color formats array and key (avoids per-frame .map() and .join() allocations)
+        this.colorFormats = this.textures.map((t) => t.format);
+        this.colorFormatsKey = this.colorFormats.join(',');
+
         // Depth texture
         if (depth || stencil) {
             if (depthTexture) {
@@ -65,35 +69,55 @@ export class RenderTarget {
                 });
             }
         }
-    }
 
-    getPassDescriptor({ clear = true, clearColor = { r: 0, g: 0, b: 0, a: 1 } } = {}) {
-        const colorAttachments = this.textures.map((tex) => ({
-            view: tex.gpuTexture.createView(),
-            clearValue: clearColor,
-            loadOp: clear ? 'clear' : 'load',
+        // Pre-allocate pass descriptor objects (reused each getPassDescriptor call)
+        this._colorAttachments = this.textures.map(() => ({
+            view: null,
+            clearValue: null,
+            loadOp: 'clear',
             storeOp: 'store',
         }));
 
-        let depthStencilAttachment;
-        if (this.depth || this.stencil) {
-            const depthView = this.depthTexture ? this.depthTexture.gpuTexture.createView() : this._depthGPUTexture.createView();
-
-            depthStencilAttachment = {
-                view: depthView,
+        if (depth || stencil) {
+            this._depthStencilAttachment = {
+                view: null,
                 depthClearValue: 1.0,
-                depthLoadOp: clear ? 'clear' : 'load',
+                depthLoadOp: 'clear',
                 depthStoreOp: 'store',
             };
-
-            if (this.stencil) {
-                depthStencilAttachment.stencilClearValue = 0;
-                depthStencilAttachment.stencilLoadOp = clear ? 'clear' : 'load';
-                depthStencilAttachment.stencilStoreOp = 'store';
+            if (stencil) {
+                this._depthStencilAttachment.stencilClearValue = 0;
+                this._depthStencilAttachment.stencilLoadOp = 'clear';
+                this._depthStencilAttachment.stencilStoreOp = 'store';
             }
         }
 
-        return { colorAttachments, depthStencilAttachment };
+        this._passDescriptor = {
+            colorAttachments: this._colorAttachments,
+            depthStencilAttachment: this._depthStencilAttachment,
+        };
+    }
+
+    getPassDescriptor({ clear = true, clearColor = { r: 0, g: 0, b: 0, a: 1 } } = {}) {
+        const loadOp = clear ? 'clear' : 'load';
+        const cas = this._colorAttachments;
+        for (let i = 0, l = cas.length; i < l; i++) {
+            const ca = cas[i];
+            ca.view = this.textures[i].gpuTexture.createView();
+            ca.clearValue = clearColor;
+            ca.loadOp = loadOp;
+        }
+
+        if (this.depth || this.stencil) {
+            const da = this._depthStencilAttachment;
+            da.view = this.depthTexture ? this.depthTexture.gpuTexture.createView() : this._depthGPUTexture.createView();
+            da.depthLoadOp = loadOp;
+            if (this.stencil) {
+                da.stencilLoadOp = loadOp;
+            }
+        }
+
+        return this._passDescriptor;
     }
 
     async readPixel(x, y, textureIndex = 0) {

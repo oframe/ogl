@@ -28,6 +28,10 @@ export class Renderer {
             alphaMode: alpha ? 'premultiplied' : 'opaque',
         });
 
+        // Pre-compute canvas color formats array and key (reused every frame for non-RT renders)
+        this._canvasColorFormats = [this.presentationFormat];
+        this._canvasColorFormatsKey = this.presentationFormat;
+
         // Depth texture (recreated on resize)
         this.depthTexture = null;
         this.depthFormat = 'depth24plus';
@@ -39,6 +43,42 @@ export class Renderer {
         // Render state tracking (reset per render call) to skip redundant GPU calls
         this._renderState = { pipeline: null, geometry: null, program: null };
         this._renderPassId = 0;
+
+        // Pre-allocate reusable render list arrays to avoid per-frame allocation
+        this._renderList = [];
+        this._opaque = [];
+        this._transparent = [];
+        this._ui = [];
+
+        // Pre-allocate pass descriptor objects (reused each frame for canvas rendering)
+        this._canvasColorAttachment = {
+            view: null,
+            clearValue: this.clearColor,
+            loadOp: 'clear',
+            storeOp: 'store',
+        };
+        this._canvasColorAttachments = [this._canvasColorAttachment];
+        this._canvasDepthAttachment = {
+            view: null,
+            depthClearValue: 1.0,
+            depthLoadOp: 'clear',
+            depthStoreOp: 'store',
+        };
+        if (stencil) {
+            this._canvasDepthAttachment.stencilClearValue = 0;
+            this._canvasDepthAttachment.stencilLoadOp = 'clear';
+            this._canvasDepthAttachment.stencilStoreOp = 'store';
+        }
+        this._passDescriptor = {
+            colorAttachments: null,
+            depthStencilAttachment: undefined,
+        };
+
+        // Pre-allocate submit array
+        this._submitArray = [null];
+
+        // Reusable draw args object
+        this._drawArgs = { camera: null, passEncoder: null };
 
         this.setSize(width, height);
     }
@@ -161,8 +201,9 @@ export class Renderer {
         return b.id - a.id;
     }
 
-    getRenderList({ scene, camera, frustumCull, sort }) {
-        let renderList = [];
+    getRenderList(scene, camera, frustumCull, sort) {
+        const renderList = this._renderList;
+        renderList.length = 0;
 
         if (camera && frustumCull) camera.updateFrustum();
 
@@ -178,11 +219,15 @@ export class Renderer {
         });
 
         if (sort) {
-            const opaque = [];
-            const transparent = [];
-            const ui = [];
+            const opaque = this._opaque;
+            const transparent = this._transparent;
+            const ui = this._ui;
+            opaque.length = 0;
+            transparent.length = 0;
+            ui.length = 0;
 
-            renderList.forEach((node) => {
+            for (let i = 0, l = renderList.length; i < l; i++) {
+                const node = renderList[i];
                 if (!node.program.transparent) {
                     opaque.push(node);
                 } else if (node.program.depthTest) {
@@ -193,18 +238,22 @@ export class Renderer {
 
                 node.zDepth = 0;
 
-                if (node.renderOrder !== 0 || !node.program.depthTest || !camera) return;
+                if (node.renderOrder !== 0 || !node.program.depthTest || !camera) continue;
 
                 node.worldMatrix.getTranslation(tempVec3);
                 tempVec3.applyMatrix4(camera.projectionViewMatrix);
                 node.zDepth = tempVec3.z;
-            });
+            }
 
             opaque.sort(this.sortOpaque);
             transparent.sort(this.sortTransparent);
             ui.sort(this.sortUI);
 
-            renderList = opaque.concat(transparent, ui);
+            // Rebuild renderList in-place: opaque, then transparent, then ui
+            renderList.length = 0;
+            for (let i = 0, l = opaque.length; i < l; i++) renderList.push(opaque[i]);
+            for (let i = 0, l = transparent.length; i < l; i++) renderList.push(transparent[i]);
+            for (let i = 0, l = ui.length; i < l; i++) renderList.push(ui[i]);
         }
 
         return renderList;
@@ -221,32 +270,24 @@ export class Renderer {
         this.currentTarget = target;
 
         if (target === null) {
-            // Render to canvas
+            // Render to canvas — reuse pre-allocated descriptor objects
             const colorTexture = this.context.getCurrentTexture();
             width = colorTexture.width;
             height = colorTexture.height;
 
-            colorAttachments = [
-                {
-                    view: colorTexture.createView(),
-                    clearValue: this.clearColor,
-                    loadOp: shouldClear ? 'clear' : 'load',
-                    storeOp: 'store',
-                },
-            ];
+            const ca = this._canvasColorAttachment;
+            ca.view = colorTexture.createView();
+            ca.loadOp = shouldClear ? 'clear' : 'load';
+            colorAttachments = this._canvasColorAttachments;
 
             if (this.depthTexture) {
-                depthStencilAttachment = {
-                    view: this.depthTexture.createView(),
-                    depthClearValue: 1.0,
-                    depthLoadOp: shouldClear ? 'clear' : 'load',
-                    depthStoreOp: 'store',
-                };
+                const da = this._canvasDepthAttachment;
+                da.view = this.depthTexture.createView();
+                da.depthLoadOp = shouldClear ? 'clear' : 'load';
                 if (this.stencil) {
-                    depthStencilAttachment.stencilClearValue = 0;
-                    depthStencilAttachment.stencilLoadOp = shouldClear ? 'clear' : 'load';
-                    depthStencilAttachment.stencilStoreOp = 'store';
+                    da.stencilLoadOp = shouldClear ? 'clear' : 'load';
                 }
+                depthStencilAttachment = da;
             }
         } else {
             // Render to target
@@ -261,8 +302,8 @@ export class Renderer {
         if (update) scene.updateMatrixWorld();
         if (camera) camera.updateMatrixWorld();
 
-        // Get render list
-        const renderList = this.getRenderList({ scene, camera, frustumCull, sort });
+        // Get render list (uses pre-allocated arrays internally)
+        const renderList = this.getRenderList(scene, camera, frustumCull, sort);
 
         // Prepare dynamic UBO for per-object uniforms
         this._ensureDynamicUBO(renderList.length);
@@ -273,10 +314,22 @@ export class Renderer {
         this._renderState.program = null;
         this._renderPassId++;
 
+        // Pre-compute per-pass format info for Mesh.draw to use
+        if (target) {
+            this._currentColorFormats = target.colorFormats;
+            this._currentColorFormatsKey = target.colorFormatsKey;
+            this._currentDepthFormat = (target.depth || target.stencil) ? target.depthFormat : null;
+        } else {
+            this._currentColorFormats = this._canvasColorFormats;
+            this._currentColorFormatsKey = this._canvasColorFormatsKey;
+            this._currentDepthFormat = this.depthTexture ? this.depthFormat : null;
+        }
+
         // Create command encoder and render pass
         const commandEncoder = this.device.createCommandEncoder();
-        const passDescriptor = { colorAttachments };
-        if (depthStencilAttachment) passDescriptor.depthStencilAttachment = depthStencilAttachment;
+        const passDescriptor = this._passDescriptor;
+        passDescriptor.colorAttachments = colorAttachments;
+        passDescriptor.depthStencilAttachment = depthStencilAttachment;
 
         const passEncoder = commandEncoder.beginRenderPass(passDescriptor);
         passEncoder.setViewport(0, 0, width, height, 0, 1);
@@ -284,9 +337,12 @@ export class Renderer {
             passEncoder.setScissorRect(this.scissor.x, this.scissor.y, this.scissor.width, this.scissor.height);
         }
 
-        renderList.forEach((node) => {
-            node.draw({ camera, passEncoder });
-        });
+        const drawArgs = this._drawArgs;
+        drawArgs.camera = camera;
+        drawArgs.passEncoder = passEncoder;
+        for (let i = 0, l = renderList.length; i < l; i++) {
+            renderList[i].draw(drawArgs);
+        }
 
         passEncoder.end();
 
@@ -295,6 +351,7 @@ export class Renderer {
             this.device.queue.writeBuffer(this._dynamicUBO, 0, this._dynamicUBOData, 0, this._dynamicUBOOffset / 4);
         }
 
-        this.device.queue.submit([commandEncoder.finish()]);
+        this._submitArray[0] = commandEncoder.finish();
+        this.device.queue.submit(this._submitArray);
     }
 }

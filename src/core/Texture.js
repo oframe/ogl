@@ -248,16 +248,22 @@ export class Texture {
             Texture._mipmapSampler = this.device.createSampler({ minFilter: 'linear', magFilter: 'linear' });
         }
 
-        const pipeline = this.device.createRenderPipeline({
-            layout: 'auto',
-            vertex: { module: Texture._mipmapShaderModule, entryPoint: 'vert' },
-            fragment: {
-                module: Texture._mipmapShaderModule,
-                entryPoint: 'frag',
-                targets: [{ format: this.format }],
-            },
-            primitive: { topology: 'triangle-list' },
-        });
+        // Cache mipmap pipeline per format to avoid redundant pipeline creation
+        if (!Texture._mipmapPipelines) Texture._mipmapPipelines = {};
+        let pipeline = Texture._mipmapPipelines[this.format];
+        if (!pipeline) {
+            pipeline = this.device.createRenderPipeline({
+                layout: 'auto',
+                vertex: { module: Texture._mipmapShaderModule, entryPoint: 'vert' },
+                fragment: {
+                    module: Texture._mipmapShaderModule,
+                    entryPoint: 'frag',
+                    targets: [{ format: this.format }],
+                },
+                primitive: { topology: 'triangle-list' },
+            });
+            Texture._mipmapPipelines[this.format] = pipeline;
+        }
 
         const commandEncoder = this.device.createCommandEncoder();
         const mipLevelCount = Math.floor(Math.log2(Math.max(this.width, this.height))) + 1;

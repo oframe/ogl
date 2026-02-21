@@ -53,6 +53,9 @@ export class Geometry {
         this._cachedLayouts = null;
         this._layoutKey = null;
 
+        // Cached attribute arrays for fast draw-time iteration (avoids for..in + string checks)
+        this._vertexAttrs = null;
+
         for (let key in attributes) {
             this.addAttribute(key, attributes[key]);
         }
@@ -61,9 +64,10 @@ export class Geometry {
     addAttribute(key, attr) {
         this.attributes[key] = attr;
 
-        // Invalidate cached layouts
+        // Invalidate cached layouts and attribute arrays
         this._cachedLayouts = null;
         this._layoutKey = null;
+        this._vertexAttrs = null;
 
         attr.id = ATTR_ID++;
         attr.size = attr.size || 1;
@@ -132,6 +136,7 @@ export class Geometry {
         if (this._cachedLayouts) return this._cachedLayouts;
 
         const layouts = [];
+        const vertexAttrs = [];
         let slot = 0;
 
         for (let key in this.attributes) {
@@ -155,10 +160,12 @@ export class Geometry {
 
             // Store slot mapping for draw time
             attr.slot = slot;
+            vertexAttrs.push(attr);
             slot++;
         }
 
         this._cachedLayouts = layouts;
+        this._vertexAttrs = vertexAttrs;
         return layouts;
     }
 
@@ -168,33 +175,31 @@ export class Geometry {
         return this._layoutKey;
     }
 
+    getIndexFormat() {
+        const index = this.attributes.index;
+        return index ? index.indexFormat : undefined;
+    }
+
     draw({ passEncoder, renderState }) {
         // Skip redundant vertex/index buffer binds when same geometry is already bound
         const needsBind = !renderState || renderState.geometry !== this;
 
-        for (let key in this.attributes) {
-            if (key === 'index') continue;
-            const attr = this.attributes[key];
+        // Use cached vertex attribute array (built by getVertexBufferLayouts, avoids for..in)
+        const vertexAttrs = this._vertexAttrs;
+        for (let i = 0, l = vertexAttrs.length; i < l; i++) {
+            const attr = vertexAttrs[i];
             if (attr.needsUpdate) this.updateAttribute(attr);
             if (needsBind) passEncoder.setVertexBuffer(attr.slot, attr.buffer);
         }
 
-        if (this.attributes.index) {
-            const index = this.attributes.index;
+        const index = this.attributes.index;
+        if (index) {
             if (index.needsUpdate) this.updateAttribute(index);
             if (needsBind) passEncoder.setIndexBuffer(index.buffer, index.indexFormat);
 
-            if (this.isInstanced) {
-                passEncoder.drawIndexed(this.drawRange.count, this.instancedCount, this.drawRange.start);
-            } else {
-                passEncoder.drawIndexed(this.drawRange.count, 1, this.drawRange.start);
-            }
+            passEncoder.drawIndexed(this.drawRange.count, this.isInstanced ? this.instancedCount : 1, this.drawRange.start);
         } else {
-            if (this.isInstanced) {
-                passEncoder.draw(this.drawRange.count, this.instancedCount, this.drawRange.start);
-            } else {
-                passEncoder.draw(this.drawRange.count, 1, this.drawRange.start);
-            }
+            passEncoder.draw(this.drawRange.count, this.isInstanced ? this.instancedCount : 1, this.drawRange.start);
         }
 
         if (renderState) renderState.geometry = this;

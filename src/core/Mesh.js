@@ -33,6 +33,7 @@ export class Mesh extends Transform {
     }
 
     draw({ camera, passEncoder } = {}) {
+        const renderer = this.renderer;
         let dynamicOffset = 0;
 
         if (camera) {
@@ -40,7 +41,6 @@ export class Mesh extends Transform {
             this.normalMatrix.getNormalMatrix(this.worldMatrix);
 
             // Pack per-object data directly into the renderer's shared dynamic UBO
-            const renderer = this.renderer;
             dynamicOffset = renderer._dynamicUBOOffset;
             const floatOffset = dynamicOffset / 4;
             const data = renderer._dynamicUBOData;
@@ -70,30 +70,26 @@ export class Mesh extends Transform {
             renderer._dynamicUBOOffset += renderer._objectUBOAlignedSize;
         }
 
-        this.beforeRenderCallbacks.forEach((f) => f && f({ mesh: this, camera }));
+        const cbs = this.beforeRenderCallbacks;
+        for (let i = 0, l = cbs.length; i < l; i++) {
+            if (cbs[i]) cbs[i]({ mesh: this, camera });
+        }
 
-        // Get pipeline (requires vertex layouts and render target formats)
-        const target = this.renderer.currentTarget;
-        const colorFormats = target ? target.textures.map((t) => t.format) : [this.renderer.presentationFormat];
-        const depthFormat = target
-            ? target.depth || target.stencil
-                ? target.depthFormat
-                : null
-            : this.renderer.depthTexture
-              ? this.renderer.depthFormat
-              : null;
+        // Use renderer's pre-computed format info (set once per render pass, not per draw)
+        const colorFormats = renderer._currentColorFormats;
+        const depthFormat = renderer._currentDepthFormat;
 
         const pipeline = this.program.getPipeline(
             this.geometry.getVertexBufferLayouts(),
             colorFormats,
             depthFormat,
-            camera ? this.renderer._objectBindGroupLayout : null,
+            camera ? renderer._objectBindGroupLayout : null,
             this.geometry.getLayoutKey(),
-            this.geometry.attributes.index?.indexFormat
+            this.geometry.getIndexFormat()
         );
 
         // Render state tracking — skip redundant setPipeline
-        const renderState = this.renderer._renderState;
+        const renderState = renderer._renderState;
         if (renderState.pipeline !== pipeline) {
             passEncoder.setPipeline(pipeline);
             renderState.pipeline = pipeline;
@@ -104,11 +100,14 @@ export class Mesh extends Transform {
 
         // Per-object bind group 1 with dynamic offset
         if (camera) {
-            passEncoder.setBindGroup(1, this.renderer._objectBindGroup, [dynamicOffset]);
+            passEncoder.setBindGroup(1, renderer._objectBindGroup, [dynamicOffset]);
         }
 
         this.geometry.draw({ passEncoder, renderState });
 
-        this.afterRenderCallbacks.forEach((f) => f && f({ mesh: this, camera }));
+        const acbs = this.afterRenderCallbacks;
+        for (let i = 0, l = acbs.length; i < l; i++) {
+            if (acbs[i]) acbs[i]({ mesh: this, camera });
+        }
     }
 }
