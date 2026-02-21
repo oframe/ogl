@@ -215,6 +215,8 @@ export class Renderer {
         let depthStencilAttachment;
         let width, height;
 
+        const shouldClear = clear || (this.autoClear && clear !== false);
+
         // Expose current render target so Mesh.draw can determine formats
         this.currentTarget = target;
 
@@ -228,7 +230,7 @@ export class Renderer {
                 {
                     view: colorTexture.createView(),
                     clearValue: this.clearColor,
-                    loadOp: clear || (this.autoClear && clear !== false) ? 'clear' : 'load',
+                    loadOp: shouldClear ? 'clear' : 'load',
                     storeOp: 'store',
                 },
             ];
@@ -237,18 +239,18 @@ export class Renderer {
                 depthStencilAttachment = {
                     view: this.depthTexture.createView(),
                     depthClearValue: 1.0,
-                    depthLoadOp: clear || (this.autoClear && clear !== false) ? 'clear' : 'load',
+                    depthLoadOp: shouldClear ? 'clear' : 'load',
                     depthStoreOp: 'store',
                 };
                 if (this.stencil) {
                     depthStencilAttachment.stencilClearValue = 0;
-                    depthStencilAttachment.stencilLoadOp = 'clear';
+                    depthStencilAttachment.stencilLoadOp = shouldClear ? 'clear' : 'load';
                     depthStencilAttachment.stencilStoreOp = 'store';
                 }
             }
         } else {
             // Render to target
-            const passDesc = target.getPassDescriptor({ clear: clear || (this.autoClear && clear !== false), clearColor: this.clearColor });
+            const passDesc = target.getPassDescriptor({ clear: shouldClear, clearColor: this.clearColor });
             colorAttachments = passDesc.colorAttachments;
             depthStencilAttachment = passDesc.depthStencilAttachment;
             width = target.width;

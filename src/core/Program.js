@@ -70,8 +70,8 @@ export class Program {
         this.blendEquationAlpha = blendEquationAlpha || blendEquation;
 
         // Stencil state — `stencil` shorthand applies to both faces
-        this.stencilFront = stencilFront || stencil || undefined;
-        this.stencilBack = stencilBack || stencil || undefined;
+        this.stencilFront = stencilFront || stencil;
+        this.stencilBack = stencilBack || stencil;
         this.stencilReadMask = stencilReadMask;
         this.stencilWriteMask = stencilWriteMask;
         this.stencilRef = stencilRef;
@@ -285,10 +285,11 @@ export class Program {
 
     getPipeline(vertexLayouts, colorFormats, depthFormat, objectBindGroupLayout, layoutKey, indexFormat) {
         const isStrip = this.topology === 'line-strip' || this.topology === 'triangle-strip';
-        const key = (layoutKey || JSON.stringify(vertexLayouts)) + '|' + colorFormats.join(',') + '|' + (depthFormat || '') + '|' + (objectBindGroupLayout ? '1' : '0') + (isStrip && indexFormat ? '|' + indexFormat : '')
-            + (this.blendSrc ? '|' + this.blendSrc + this.blendDst + this.blendSrcAlpha + this.blendDstAlpha + this.blendEquation + this.blendEquationAlpha : '')
-            + (this.stencilFront ? '|sf' + JSON.stringify(this.stencilFront) : '')
-            + (this.stencilBack ? '|sb' + JSON.stringify(this.stencilBack) : '');
+        const key = (layoutKey || JSON.stringify(vertexLayouts)) + '|' + colorFormats.join(',') + '|' + (depthFormat || '') + '|' + (objectBindGroupLayout ? '1' : '0')
+            + (isStrip && indexFormat ? '|' + indexFormat : '')
+            + (this.blendSrc ? '|b:' + this.blendSrc + ',' + this.blendDst + ',' + this.blendSrcAlpha + ',' + this.blendDstAlpha + ',' + this.blendEquation + ',' + this.blendEquationAlpha : '')
+            + (this.stencilFront ? '|sf:' + JSON.stringify(this.stencilFront) : '')
+            + (this.stencilBack ? '|sb:' + JSON.stringify(this.stencilBack) : '');
 
         if (this.pipelineCache.has(key)) return this.pipelineCache.get(key);
 
@@ -306,7 +307,7 @@ export class Program {
                 depthWriteEnabled: this.depthWrite,
                 depthCompare: this.depthTest ? this.depthFunc : 'always',
             };
-            if (this.stencilFront || this.stencilBack) {
+            if ((this.stencilFront || this.stencilBack) && depthFormat.includes('stencil')) {
                 const defaultStencil = { compare: 'always', failOp: 'keep', depthFailOp: 'keep', passOp: 'keep' };
                 depthStencil.stencilFront = { ...defaultStencil, ...this.stencilFront };
                 depthStencil.stencilBack = { ...defaultStencil, ...this.stencilBack };
