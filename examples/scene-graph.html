@@ -69,6 +69,7 @@
             {
                 const renderer = await Renderer.create({ dpr: 2 });
                 document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
                 const camera = new Camera(renderer, { fov: 35 });
                 camera.position.set(0, 1, 7);

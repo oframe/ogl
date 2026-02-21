@@ -277,6 +277,7 @@ export class Renderer {
 
             const ca = this._canvasColorAttachment;
             ca.view = colorTexture.createView();
+            ca.clearValue = this.clearColor;
             ca.loadOp = shouldClear ? 'clear' : 'load';
             colorAttachments = this._canvasColorAttachments;
 
