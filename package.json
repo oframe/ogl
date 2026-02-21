@@ -42,5 +42,8 @@
         "tabWidth": 4,
         "trailingComma": "es5",
         "useTabs": false
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.58.2"
     }
 }

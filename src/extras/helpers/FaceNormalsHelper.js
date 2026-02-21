@@ -12,7 +12,7 @@ const vNormal = /* @__PURE__ */ new Vec3();
 
 export class FaceNormalsHelper extends Mesh {
     constructor(object, { size = 0.1, color = new Vec3(0.15, 0.86, 0.86), ...meshProps } = {}) {
-        const gl = object.gl;
+        const gpu = object.renderer;
 
         const positionData = object.geometry.attributes.position.data;
         const sizeData = new Float32Array([0, size]);
@@ -50,13 +50,13 @@ export class FaceNormalsHelper extends Mesh {
             sizeArray.set(sizeData, (i / 3) * 2);
         }
 
-        const geometry = new Geometry(gl, {
+        const geometry = new Geometry(gpu, {
             position: { size: 3, data: positionsArray },
             normal: { size: 3, data: normalsArray },
             size: { size: 1, data: sizeArray },
         });
 
-        const program = new Program(gl, {
+        const program = new Program(gpu, {
             vertex,
             fragment,
             uniforms: {
@@ -64,9 +64,11 @@ export class FaceNormalsHelper extends Mesh {
                 worldNormalMatrix: { value: new Mat3() },
                 objectWorldMatrix: { value: object.worldMatrix },
             },
+            topology: 'line-list',
+            cullFace: false,
         });
 
-        super(gl, { ...meshProps, mode: gl.LINES, geometry, program });
+        super(gpu, { ...meshProps, geometry, program });
 
         this.object = object;
     }
@@ -77,28 +79,55 @@ export class FaceNormalsHelper extends Mesh {
     }
 }
 
-const vertex = /* glsl */ `
-attribute vec3 position;
-attribute vec3 normal;
-attribute float size;
+const vertex = /* wgsl */ `
+struct MaterialUniforms {
+    color : vec3f,
+    worldNormalMatrix : mat3x3f,
+    objectWorldMatrix : mat4x4f,
+};
 
-uniform mat4 viewMatrix;
-uniform mat4 projectionMatrix;
-uniform mat4 objectWorldMatrix;
-uniform mat3 worldNormalMatrix;
+@group(0) @binding(0) var<uniform> material : MaterialUniforms;
 
-void main() {
-    vec3 n = normalize(worldNormalMatrix * normal) * size;
-    vec3 p = (objectWorldMatrix * vec4(position, 1.0)).xyz;
-    gl_Position = projectionMatrix * viewMatrix * vec4(p + n, 1.0);
+struct ObjectUniforms {
+    modelMatrix : mat4x4f,
+    viewMatrix : mat4x4f,
+    modelViewMatrix : mat4x4f,
+    projectionMatrix : mat4x4f,
+    normalMatrix : mat3x3f,
+    cameraPosition : vec3f,
+};
+
+@group(1) @binding(0) var<uniform> object : ObjectUniforms;
+
+struct VertexInput {
+    @location(0) position : vec3f,
+    @location(1) normal : vec3f,
+    @location(2) size : f32,
+};
+
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+};
+
+@vertex fn main(input : VertexInput) -> VertexOutput {
+    var output : VertexOutput;
+    let n = normalize(material.worldNormalMatrix * input.normal) * input.size;
+    let p = (material.objectWorldMatrix * vec4f(input.position, 1.0)).xyz;
+    output.position = object.projectionMatrix * object.viewMatrix * vec4f(p + n, 1.0);
+    return output;
 }
 `;
 
-const fragment = /* glsl */ `
-precision highp float;
-uniform vec3 color;
+const fragment = /* wgsl */ `
+struct MaterialUniforms {
+    color : vec3f,
+    worldNormalMatrix : mat3x3f,
+    objectWorldMatrix : mat4x4f,
+};
 
-void main() {    
-    gl_FragColor = vec4(color, 1.0);
+@group(0) @binding(0) var<uniform> material : MaterialUniforms;
+
+@fragment fn main() -> @location(0) vec4f {
+    return vec4f(material.color, 1.0);
 }
 `;

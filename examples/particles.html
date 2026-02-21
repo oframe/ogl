@@ -14,90 +14,143 @@
         <script type="module">
             import { Renderer, Camera, Geometry, Program, Mesh } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec3 position;
-                attribute vec4 random;
+            const vertex = /* wgsl */ `
+                struct MaterialUniforms {
+                    uTime : f32,
+                };
 
-                uniform mat4 modelMatrix;
-                uniform mat4 viewMatrix;
-                uniform mat4 projectionMatrix;
-                uniform float uTime;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
 
-                varying vec4 vRandom;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                void main() {
-                    vRandom = random;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
+
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) uv : vec2f,
+                    @location(2) offset : vec3f,
+                    @location(3) random : vec4f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                    @location(1) vRandom : vec4f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.vRandom = input.random;
 
                     // positions are 0->1, so make -1->1
-                    vec3 pos = position * 2.0 - 1.0;
+                    var pos = input.offset * 2.0 - 1.0;
 
                     // Scale towards camera to be more interesting
                     pos.z *= 10.0;
 
-                    // modelMatrix is one of the automatically attached uniforms when using the Mesh class
-                    vec4 mPos = modelMatrix * vec4(pos, 1.0);
+                    // modelMatrix is one of the automatically attached uniforms
+                    var mPos = object.modelMatrix * vec4f(pos, 1.0);
 
                     // add some movement in world space
-                    float t = uTime * 0.6;
-                    mPos.x += sin(t * random.z + 6.28 * random.w) * mix(0.1, 1.5, random.x);
-                    mPos.y += sin(t * random.y + 6.28 * random.x) * mix(0.1, 1.5, random.w);
-                    mPos.z += sin(t * random.w + 6.28 * random.y) * mix(0.1, 1.5, random.z);
+                    let t = material.uTime * 0.6;
+                    mPos.x += sin(t * input.random.z + 6.28 * input.random.w) * mix(0.1, 1.5, input.random.x);
+                    mPos.y += sin(t * input.random.y + 6.28 * input.random.x) * mix(0.1, 1.5, input.random.w);
+                    mPos.z += sin(t * input.random.w + 6.28 * input.random.y) * mix(0.1, 1.5, input.random.z);
 
                     // get the model view position so that we can scale the points off into the distance
-                    vec4 mvPos = viewMatrix * mPos;
-                    gl_PointSize = 300.0 / length(mvPos.xyz) * (random.x + 0.1);
-                    gl_Position = projectionMatrix * mvPos;
+                    var mvPos = object.viewMatrix * mPos;
+
+                    // Calculate point size equivalent
+                    let pointSize = 300.0 / length(mvPos.xyz) * (input.random.x + 0.1);
+
+                    // Expand quad in view space (billboard)
+                    mvPos += vec4f(input.position.xy * pointSize * 0.005, 0.0, 0.0);
+
+                    output.position = object.projectionMatrix * mvPos;
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    uTime : f32,
+                };
 
-                uniform float uTime;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
 
-                varying vec4 vRandom;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vRandom : vec4f,
+                };
 
-                void main() {
-                    vec2 uv = gl_PointCoord.xy;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let uv = input.vUv;
 
-                    float circle = smoothstep(0.5, 0.4, length(uv - 0.5)) * 0.8;
+                    let circle = smoothstep(0.5, 0.4, length(uv - 0.5)) * 0.8;
 
-                    gl_FragColor.rgb = 0.8 + 0.2 * sin(uv.yxx + uTime + vRandom.y * 6.28) + vec3(0.1, 0.0, 0.3);
-                    gl_FragColor.a = circle;
+                    var color = 0.8 + 0.2 * sin(vec3f(uv.y, uv.x, uv.x) + material.uTime + input.vRandom.y * 6.28) + vec3f(0.1, 0.0, 0.3);
+
+                    return vec4f(color, circle);
                 }
             `;
 
             {
-                const renderer = new Renderer({ depth: false });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ depth: false });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 15 });
+                const camera = new Camera(renderer, { fov: 15 });
                 camera.position.z = 15;
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
+                // Quad vertices (2 triangles making a square from -0.5 to 0.5)
+                const quadPosition = new Float32Array([
+                    -0.5, -0.5, 0,
+                     0.5, -0.5, 0,
+                     0.5,  0.5, 0,
+                    -0.5,  0.5, 0,
+                ]);
+                const quadUv = new Float32Array([
+                    0, 0,
+                    1, 0,
+                    1, 1,
+                    0, 1,
+                ]);
+                const quadIndex = new Uint16Array([0, 1, 2, 0, 2, 3]);
+
+                // Instance data
                 const num = 100;
-                const position = new Float32Array(num * 3);
+                const offset = new Float32Array(num * 3);
                 const random = new Float32Array(num * 4);
 
                 for (let i = 0; i < num; i++) {
-                    position.set([Math.random(), Math.random(), Math.random()], i * 3);
+                    offset.set([Math.random(), Math.random(), Math.random()], i * 3);
                     random.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4);
                 }
 
-                const geometry = new Geometry(gl, {
-                    position: { size: 3, data: position },
-                    random: { size: 4, data: random },
+                const geometry = new Geometry(renderer, {
+                    position: { size: 3, data: quadPosition },
+                    uv: { size: 2, data: quadUv },
+                    index: { data: quadIndex },
+                    offset: { instanced: 1, size: 3, data: offset },
+                    random: { instanced: 1, size: 4, data: random },
                 });
 
-                const program = new Program(gl, {
+                const program = new Program(renderer, {
                     vertex,
                     fragment,
                     uniforms: {
@@ -107,8 +160,7 @@
                     depthTest: false,
                 });
 
-                // Make sure mode is gl.POINTS
-                const particles = new Mesh(gl, { mode: gl.POINTS, geometry, program });
+                const particles = new Mesh(renderer, { geometry, program });
 
                 requestAnimationFrame(update);
                 function update(t) {

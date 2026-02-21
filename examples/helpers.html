@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, minimal-ui, viewport-fit=cover, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
         <link rel="icon" type="image/png" href="assets/favicon.png" />
 
-        <title>OGL • Helpers</title>
+        <title>OGL &bull; Helpers</title>
         <link href="assets/main.css" rel="stylesheet" />
     </head>
     <body>
@@ -14,61 +14,74 @@
         <script type="module">
             import { Renderer, Camera, Transform, Program, Mesh, Sphere, Box, Orbit, AxesHelper, VertexNormalsHelper, FaceNormalsHelper, GridHelper } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec3 position;
-                attribute vec3 normal;
+            const vertex = /* wgsl */ `
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-                uniform mat3 normalMatrix;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                varying vec3 vNormal;
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) normal : vec3f,
+                };
 
-                void main() {
-                    vNormal = normalize(normalMatrix * normal);
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vNormal : vec3f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vNormal = normalize(object.normalMatrix * input.normal);
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                struct FragInput {
+                    @location(0) vNormal : vec3f,
+                };
 
-                varying vec3 vNormal;
-
-                void main() {
-                    vec3 normal = normalize(vNormal);
-                    float lighting = dot(normal, normalize(vec3(1.0, 1.0, 1.0)));
-                    gl_FragColor.rgb = vec3(0.75) + lighting * 0.25;
-                    gl_FragColor.a = 1.0;
+                @fragment fn main(input : FragInput) -> @location(0) vec4f {
+                    let normal = normalize(input.vNormal);
+                    let lighting = dot(normal, normalize(vec3f(1.0, 1.0, 1.0)));
+                    let color = vec3f(0.75) + lighting * 0.25;
+                    return vec4f(color, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 35 });
+                const camera = new Camera(renderer, { fov: 35 });
                 camera.position.set(1, 1, 7);
                 camera.lookAt([0, 0, 0]);
                 const controls = new Orbit(camera);
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
                 const scene = new Transform();
 
-                const sphereGeometry = new Sphere(gl);
-                const cubeGeometry = new Box(gl);
+                const sphereGeometry = new Sphere(renderer);
+                const cubeGeometry = new Box(renderer);
 
-                const program = new Program(gl, { vertex, fragment });
+                const program = new Program(renderer, { vertex, fragment });
 
-                const sphere = new Mesh(gl, { geometry: sphereGeometry, program });
+                const sphere = new Mesh(renderer, { geometry: sphereGeometry, program });
                 sphere.position.set(-0.75, 0.5, 0);
                 sphere.setParent(scene);
 
@@ -78,7 +91,7 @@
                 const sphereFaceNorms = new FaceNormalsHelper(sphere);
                 sphereFaceNorms.setParent(scene);
 
-                const cube = new Mesh(gl, { geometry: cubeGeometry, program });
+                const cube = new Mesh(renderer, { geometry: cubeGeometry, program });
                 cube.position.set(0.75, 0.5, 0);
                 cube.setParent(scene);
 
@@ -88,11 +101,11 @@
                 const cubeFaceNorms = new FaceNormalsHelper(cube);
                 cubeFaceNorms.setParent(scene);
 
-                const grid = new GridHelper(gl, { size: 10, divisions: 10 });
+                const grid = new GridHelper(renderer, { size: 10, divisions: 10 });
                 grid.position.y = -0.001; // shift down a little to avoid z-fighting with axes helper
                 grid.setParent(scene);
 
-                const axes = new AxesHelper(gl, { size: 6, symmetric: true });
+                const axes = new AxesHelper(renderer, { size: 6, symmetric: true });
                 axes.setParent(scene);
 
                 requestAnimationFrame(update);

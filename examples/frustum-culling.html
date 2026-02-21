@@ -14,73 +14,90 @@
         <script type="module">
             import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Vec3, Orbit, Cylinder, NormalProgram } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec2 uv;
-                attribute vec3 position;
+            const vertex = /* wgsl */ `
+                @group(0) @binding(0) var tMap : texture_2d<f32>;
+                @group(0) @binding(1) var tMapSampler : sampler;
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                varying vec2 vUv;
-                varying vec4 vMVPos;
-                varying vec3 vPos;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                void main() {
-                    vUv = uv;
-                    vPos = position;
-                    vMVPos = modelViewMatrix * vec4(position, 1.0);
-                    gl_Position = projectionMatrix * vMVPos;
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) uv : vec2f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                    @location(1) vMVPos : vec4f,
+                    @location(2) vPos : vec3f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.vPos = input.position;
+                    output.vMVPos = object.modelViewMatrix * vec4f(input.position, 1.0);
+                    output.position = object.projectionMatrix * output.vMVPos;
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                @group(0) @binding(0) var tMap : texture_2d<f32>;
+                @group(0) @binding(1) var tMapSampler : sampler;
 
-                uniform sampler2D tMap;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vMVPos : vec4f,
+                    @location(2) vPos : vec3f,
+                };
 
-                varying vec2 vUv;
-                varying vec4 vMVPos;
-                varying vec3 vPos;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    var tex = textureSample(tMap, tMapSampler, input.vUv).rgb;
 
-                void main() {
-                    vec3 tex = texture2D(tMap, vUv).rgb;
+                    let dist = length(input.vMVPos.xyz);
+                    let fog = smoothstep(2.0, 15.0, dist);
+                    tex = mix(tex, vec3f(1.0), fog * 0.8);
+                    tex = mix(tex, vec3f(1.0), smoothstep(1.0, 0.0, input.vPos.y));
 
-                    float dist = length(vMVPos);
-                    float fog = smoothstep(2.0, 15.0, dist);
-                    tex = mix(tex, vec3(1), fog * 0.8);
-                    tex = mix(tex, vec3(1), smoothstep(1.0, 0.0, vPos.y));
-
-                    gl_FragColor.rgb = tex;
-                    gl_FragColor.a = 1.0;
+                    return vec4f(tex, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 45 });
+                const camera = new Camera(renderer, { fov: 45 });
                 camera.position.set(6, 6, 12);
 
                 const controls = new Orbit(camera);
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
                 const scene = new Transform();
 
-                const texture = new Texture(gl);
+                const texture = new Texture(renderer);
                 const img = new Image();
                 img.onload = () => (texture.image = img);
                 img.src = 'assets/forest.jpg';
 
-                const program = new Program(gl, {
+                const program = new Program(renderer, {
                     vertex: vertex,
                     fragment: fragment,
                     uniforms: {
@@ -89,7 +106,7 @@
                 });
 
                 // Add camera used for demonstrating frustum culling
-                const frustumCamera = new Camera(gl, {
+                const frustumCamera = new Camera(renderer, {
                     fov: 65,
                     far: 10,
                 });
@@ -106,13 +123,13 @@
                     const size = 20;
                     const num = size * size;
 
-                    const geometry = new Geometry(gl, {
+                    const geometry = new Geometry(renderer, {
                         position: { size: 3, data: new Float32Array(data.position) },
                         uv: { size: 2, data: new Float32Array(data.uv) },
                     });
 
                     for (let i = 0; i < num; i++) {
-                        const mesh = new Mesh(gl, { geometry, program });
+                        const mesh = new Mesh(renderer, { geometry, program });
                         mesh.setParent(scene);
 
                         mesh.position.set(((i % size) - size * 0.5) * 2, 0, (Math.floor(i / size) - size * 0.5) * 2);
@@ -123,14 +140,14 @@
                 }
 
                 function addCameraShape() {
-                    const mesh = new Mesh(gl, {
-                        geometry: new Cylinder(gl, {
+                    const mesh = new Mesh(renderer, {
+                        geometry: new Cylinder(renderer, {
                             radiusBottom: 0.2,
                             height: 0.7,
                             radialSegments: 4,
                             openEnded: true,
                         }),
-                        program: new NormalProgram(gl),
+                        program: new NormalProgram(renderer),
                     });
                     mesh.program.cullFace = false;
 

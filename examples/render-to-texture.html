@@ -14,53 +14,69 @@
         <script type="module">
             import { Renderer, Camera, Texture, RenderTarget, Program, Mesh, Box } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec3 position;
-                attribute vec3 normal;
-                attribute vec2 uv;
+            const vertex = /* wgsl */ `
+                @group(0) @binding(0) var tMap : texture_2d<f32>;
+                @group(0) @binding(1) var tMapSampler : sampler;
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-                uniform mat3 normalMatrix;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                varying vec2 vUv;
-                varying vec3 vNormal;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                void main() {
-                    vUv = uv;
-                    vNormal = normalize(normalMatrix * normal);
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) normal : vec3f,
+                    @location(2) uv : vec2f,
+                };
 
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                    @location(1) vNormal : vec3f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.vNormal = normalize(object.normalMatrix * input.normal);
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                @group(0) @binding(0) var tMap : texture_2d<f32>;
+                @group(0) @binding(1) var tMapSampler : sampler;
 
-                uniform sampler2D tMap;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vNormal : vec3f,
+                };
 
-                varying vec2 vUv;
-                varying vec3 vNormal;
-
-                void main() {
-                    vec3 normal = normalize(vNormal);
-                    float lighting = 0.2 * dot(normal, normalize(vec3(-0.3, 0.8, 0.6)));
-                    vec3 tex = texture2D(tMap, vUv).rgb;
-                    gl_FragColor.rgb = tex + lighting + vec3(vUv - 0.5, 0.0) * 0.1;
-                    gl_FragColor.a = 1.0;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let normal = normalize(input.vNormal);
+                    let lighting = 0.2 * dot(normal, normalize(vec3f(-0.3, 0.8, 0.6)));
+                    let tex = textureSample(tMap, tMapSampler, input.vUv).rgb;
+                    let color = tex + lighting + vec3f(input.vUv - 0.5, 0.0) * 0.1;
+                    return vec4f(color, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
 
-                const camera = new Camera(gl, { fov: 35 });
+                const camera = new Camera(renderer, { fov: 35 });
                 camera.position.set(0, 1, 5);
                 camera.lookAt([0, 0, 0]);
 
-                const targetCamera = new Camera(gl, { fov: 35 });
+                const targetCamera = new Camera(renderer, { fov: 35 });
                 targetCamera.position.set(0, 1, 5);
                 targetCamera.lookAt([0, 0, 0]);
 
@@ -68,22 +84,22 @@
                     renderer.setSize(window.innerWidth, window.innerHeight);
 
                     // Only update aspect of target camera, as first scene will be drawn to a square render target
-                    targetCamera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    targetCamera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
-                const geometry = new Box(gl);
+                const geometry = new Box(renderer);
 
                 // A little data texture with 4 colors just to keep things interesting
-                const texture = new Texture(gl, {
+                const texture = new Texture(renderer, {
                     image: new Uint8Array([191, 25, 54, 255, 96, 18, 54, 255, 96, 18, 54, 255, 37, 13, 53, 255]),
                     width: 2,
                     height: 2,
-                    magFilter: gl.NEAREST,
+                    magFilter: 'nearest',
                 });
 
-                const program = new Program(gl, {
+                const program = new Program(renderer, {
                     vertex,
                     fragment,
                     uniforms: {
@@ -92,14 +108,12 @@
                 });
 
                 // Create render target framebuffer.
-                // Uses canvas size by default and doesn't automatically resize.
-                // To resize, re-create target
-                const target = new RenderTarget(gl, {
+                const target = new RenderTarget(renderer, {
                     width: 512,
                     height: 512,
                 });
 
-                const targetProgram = new Program(gl, {
+                const targetProgram = new Program(renderer, {
                     vertex,
                     fragment,
                     uniforms: {
@@ -107,8 +121,8 @@
                     },
                 });
 
-                const mesh = new Mesh(gl, { geometry, program });
-                const targetMesh = new Mesh(gl, { geometry, program: targetProgram });
+                const mesh = new Mesh(renderer, { geometry, program });
+                const targetMesh = new Mesh(renderer, { geometry, program: targetProgram });
 
                 requestAnimationFrame(update);
                 function update() {
@@ -119,13 +133,13 @@
                     targetMesh.rotation.x -= 0.01;
 
                     // Set background for first render to target
-                    gl.clearColor(0.15, 0.05, 0.2, 1);
+                    renderer.clearColor = { r: 0.15, g: 0.05, b: 0.2, a: 1 };
 
                     // Add target property to render call
                     renderer.render({ scene: mesh, camera, target });
 
                     // Change to final background
-                    gl.clearColor(1, 1, 1, 1);
+                    renderer.clearColor = { r: 0, g: 0, b: 0, a: 1 };
 
                     // Omit target to render to canvas
                     renderer.render({ scene: targetMesh, camera: targetCamera });

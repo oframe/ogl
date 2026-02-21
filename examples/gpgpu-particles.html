@@ -12,202 +12,245 @@
     <body>
         <div class="Info">GPGPU Particles (General-Purpose computing on Graphics Processing Units)</div>
         <script type="module">
-            import { Renderer, Camera, Geometry, Program, Mesh, Vec2, GPGPU } from '../src/index.js';
+            import { Renderer, Camera, Geometry, Program, Mesh, Vec2, Compute } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec2 coords;
-                attribute vec4 random;
+            // ---------------------------------------------------------------
+            // Compute shader: updates velocity and position storage buffers
+            // ---------------------------------------------------------------
+            const computeShader = /* wgsl */ `
+                struct Params {
+                    uTime : f32,
+                    mouseX : f32,
+                    mouseY : f32,
+                    _pad : f32,
+                };
 
-                uniform float uTime;
-                uniform sampler2D tPosition;
-                uniform sampler2D tVelocity;
+                @group(0) @binding(0) var<storage, read_write> positions : array<vec4f>;
+                @group(0) @binding(1) var<storage, read_write> velocities : array<vec4f>;
+                @group(0) @binding(2) var<uniform> params : Params;
 
-                varying vec4 vRandom;
-                varying vec4 vVelocity;
+                @compute @workgroup_size(64)
+                fn main(@builtin(global_invocation_id) id : vec3u) {
+                    let i = id.x;
+                    if (i >= arrayLength(&positions)) {
+                        return;
+                    }
 
-                void main() {
-                    vRandom = random;
+                    var pos = positions[i];
+                    var vel = velocities[i];
 
-                    // Get position from texture, rather than attribute
-                    vec4 position = texture2D(tPosition, coords);
-                    vVelocity = texture2D(tVelocity, coords);
-
-                    // Add some subtle random oscillating so it never fully stops
-                    position.xy += sin(vec2(uTime) * vRandom.wy + vRandom.xz * 6.28) * vRandom.zy * 0.1;
-
-                    gl_Position = vec4(position.xy, 0, 1);
-                    gl_PointSize = mix(2.0, 15.0, vRandom.x);
-
-                    // Make bigger while moving
-                    gl_PointSize *= 1.0 + min(1.0, length(vVelocity.xy));
-                }
-            `;
-
-            const fragment = /* glsl */ `
-                precision highp float;
-
-                varying vec4 vRandom;
-                varying vec4 vVelocity;
-
-                void main() {
-
-                    // Circle shape
-                    if (step(0.5, length(gl_PointCoord.xy - 0.5)) > 0.0) discard;
-
-                    // Random colour
-                    vec3 color = vec3(vRandom.zy, 1.0) * mix(0.7, 2.0, vRandom.w);
-
-                    // Fade to white when not moving, with an ease off curve
-                    gl_FragColor.rgb = mix(vec3(1), color, 1.0 - pow(1.0 - smoothstep(0.0, 0.7, length(vVelocity.xy)), 2.0));
-
-                    gl_FragColor.a = 1.0;
-                }
-            `;
-
-            const positionFragment = /* glsl */ `
-                precision highp float;
-
-                uniform float uTime;
-                uniform sampler2D tVelocity;
-
-                // Default texture uniform for GPGPU pass is 'tMap'.
-                // Can use the textureUniform parameter to update.
-                uniform sampler2D tMap;
-
-                varying vec2 vUv;
-
-                void main() {
-                    vec4 position = texture2D(tMap, vUv);
-                    vec4 velocity = texture2D(tVelocity, vUv);
-
-                    position.xy += velocity.xy * 0.01;
-
-                    // Keep in bounds
-                    vec2 limits = vec2(1);
-                    position.xy += (1.0 - step(-limits.xy, position.xy)) * limits.xy * 2.0;
-                    position.xy -= step(limits.xy, position.xy) * limits.xy * 2.0;
-
-                    gl_FragColor = position;
-                }
-            `;
-
-            const velocityFragment = /* glsl */ `
-                precision highp float;
-
-                uniform float uTime;
-                uniform sampler2D tPosition;
-                uniform sampler2D tMap;
-                uniform vec2 uMouse;
-
-                varying vec2 vUv;
-
-                void main() {
-                    vec4 position = texture2D(tPosition, vUv);
-                    vec4 velocity = texture2D(tMap, vUv);
-
-                    // Repulsion from mouse
-                    vec2 toMouse = position.xy - uMouse;
-                    float strength = smoothstep(0.3, 0.0, length(toMouse));
-                    velocity.xy += strength * normalize(toMouse) * 0.5;
+                    // Mouse repulsion
+                    let mouse = vec2f(params.mouseX, params.mouseY);
+                    let toMouse = pos.xy - mouse;
+                    let dist = length(toMouse);
+                    let strength = smoothstep(0.3, 0.0, dist);
+                    let dir = select(vec2f(0.0), normalize(toMouse), dist > 0.0001);
+                    vel = vec4f(vel.xy + strength * dir * 0.5, 0.0, 1.0);
 
                     // Friction
-                    velocity.xy *= 0.98;
+                    vel = vec4f(vel.xy * 0.98, 0.0, 1.0);
 
-                    gl_FragColor = velocity;
+                    // Integrate position
+                    pos = vec4f(pos.xy + vel.xy * 0.01, 0.0, 1.0);
+
+                    // Wrap around bounds [-1, 1]
+                    let limits = vec2f(1.0);
+                    var p = pos.xy;
+                    p += (1.0 - step(-limits, p)) * limits * 2.0;
+                    p -= step(limits, p) * limits * 2.0;
+                    pos = vec4f(p, 0.0, 1.0);
+
+                    positions[i] = pos;
+                    velocities[i] = vel;
+                }
+            `;
+
+            // ---------------------------------------------------------------
+            // Render shaders: instanced quads (WebGPU has no gl_PointSize)
+            // Each particle is a small billboard quad sized in clip space.
+            // ---------------------------------------------------------------
+            const vertex = /* wgsl */ `
+                struct MaterialUniforms {
+                    uTime : f32,
+                    uResolution : vec2f,
+                };
+
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+
+                struct VertexInput {
+                    @location(0) quadPos : vec2f,
+                    @location(1) quadUv : vec2f,
+                    @location(2) random : vec4f,
+                    @location(3) position : vec4f,
+                    @location(4) velocity : vec4f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vRandom : vec4f,
+                    @location(1) vVelocity : vec4f,
+                    @location(2) vPointCoord : vec2f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vRandom = input.random;
+                    output.vVelocity = input.velocity;
+                    output.vPointCoord = input.quadUv;
+
+                    var pos = input.position.xy;
+
+                    // Add some subtle random oscillating so it never fully stops
+                    pos += sin(vec2f(material.uTime) * input.random.wy + input.random.xz * 6.28) * input.random.zy * 0.1;
+
+                    // Point size in pixels (matching original WebGL gl_PointSize)
+                    var pointSize = mix(2.0, 15.0, input.random.x);
+                    pointSize *= 1.0 + min(1.0, length(input.velocity.xy));
+
+                    // Convert pixel size to clip space and offset quad vertex
+                    let pixelToClip = 2.0 / material.uResolution;
+                    pos += input.quadPos * pointSize * pixelToClip;
+
+                    output.position = vec4f(pos, 0.0, 1.0);
+
+                    return output;
+                }
+            `;
+
+            const fragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    uTime : f32,
+                    uResolution : vec2f,
+                };
+
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+
+                struct FragmentInput {
+                    @location(0) vRandom : vec4f,
+                    @location(1) vVelocity : vec4f,
+                    @location(2) vPointCoord : vec2f,
+                };
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    // Circle shape (replaces gl_PointCoord discard)
+                    if (length(input.vPointCoord - vec2f(0.5)) > 0.5) {
+                        discard;
+                    }
+
+                    // Random colour
+                    let color = vec3f(input.vRandom.zy, 1.0) * mix(0.7, 2.0, input.vRandom.w);
+
+                    // Fade to white when not moving, with an ease off curve
+                    let speed = length(input.vVelocity.xy);
+                    let blend = 1.0 - pow(1.0 - smoothstep(0.0, 0.7, speed), 2.0);
+                    let finalColor = mix(vec3f(1.0), color, blend);
+
+                    return vec4f(finalColor, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 45 });
+                // Camera is not strictly used for projection here (we output clip coords directly),
+                // but we keep it for the Mesh pipeline to work correctly.
+                const camera = new Camera(renderer, { fov: 45 });
                 camera.position.set(0, 0, 5);
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
-                // Common uniforms
-                const time = { value: 0 };
-                const mouse = { value: new Vec2() };
-
-                // The number of particles will determine how large the GPGPU textures are,
-                // and therefore how expensive the GPU calculations will be.
-                // Below I'm using 65536 to use every pixel of a 256x256 texture. If I used one more (65537),
-                // it would need to use a 512x512 texture - the GPU would then perform calculations for each pixel,
-                // meaning that nearly 3/4 of the texture (196607 pixels) would be redundant.
+                // The number of particles
                 const numParticles = 65536;
 
-                // Create the initial data arrays for position and velocity. 4 values for RGBA channels in texture.
+                // Create the initial data arrays for position and velocity (vec4 per particle)
                 const initialPositionData = new Float32Array(numParticles * 4);
                 const initialVelocityData = new Float32Array(numParticles * 4);
 
-                // Random to be used as regular static attribute
-                const random = new Float32Array(numParticles * 4);
+                // Random attribute (static, per-particle)
+                const randomData = new Float32Array(numParticles * 4);
+
                 for (let i = 0; i < numParticles; i++) {
                     initialPositionData.set(
                         [
-                            (Math.random() - 0.5) * 2,
-                            (Math.random() - 0.5) * 2,
-                            0, // the Green and Alpha channels go unused in this example, however I set
-                            1, // unused Alpha to 1 so that texture is visible in WebGL debuggers
+                            (Math.random() - 0.5) * 2.0,
+                            (Math.random() - 0.5) * 2.0,
+                            0.0,
+                            1.0,
                         ],
                         i * 4
                     );
-                    initialVelocityData.set([0, 0, 0, 1], i * 4);
-                    random.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4);
+                    initialVelocityData.set([0.0, 0.0, 0.0, 1.0], i * 4);
+                    randomData.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4);
                 }
 
-                // Initialise the GPGPU classes, creating the FBOs and corresponding texture coordinates
-                const position = new GPGPU(gl, { data: initialPositionData });
-                const velocity = new GPGPU(gl, { data: initialVelocityData });
-
-                // Add the simulation shaders as passes to each GPGPU class
-                position.addPass({
-                    fragment: positionFragment,
+                // ---------------------------------------------------------------
+                // Set up compute shader for particle simulation
+                // ---------------------------------------------------------------
+                const compute = new Compute(renderer, {
+                    shader: computeShader,
                     uniforms: {
-                        uTime: time,
-                        tVelocity: velocity.uniform,
+                        positions: { storage: true, data: initialPositionData },
+                        velocities: { storage: true, data: initialVelocityData },
+                        params: { value: new Float32Array([0, 0, 0, 0]) },
                     },
-                });
-                velocity.addPass({
-                    fragment: velocityFragment,
-                    uniforms: {
-                        uTime: time,
-                        uMouse: mouse,
-                        tPosition: position.uniform,
-                    },
+                    dataLength: numParticles,
+                    workgroupSize: [64, 1, 1],
                 });
 
-                // Now we can create our geometry, using the coordinates from above.
-                // We don't use the velocity or position data as attributes,
-                // instead we will get this from the FBO textures in the shader.
-                const geometry = new Geometry(gl, {
-                    random: { size: 4, data: random },
+                // ---------------------------------------------------------------
+                // Set up rendering geometry (instanced quads)
+                // ---------------------------------------------------------------
+                // WebGPU has no gl_PointSize, so we render each particle as
+                // a small quad. Per-vertex: quad corners + UVs. Per-instance:
+                // random, position, velocity (position/velocity copied from compute).
+                const quadPositions = new Float32Array([
+                    -0.5, -0.5,
+                     0.5, -0.5,
+                     0.5,  0.5,
+                    -0.5,  0.5,
+                ]);
+                const quadUvs = new Float32Array([
+                    0, 0,
+                    1, 0,
+                    1, 1,
+                    0, 1,
+                ]);
+                const quadIndex = new Uint16Array([0, 1, 2, 0, 2, 3]);
 
-                    // Could use either position or velocity coords, as they are the same
-                    coords: { size: 2, data: position.coords },
+                const geometry = new Geometry(renderer, {
+                    quadPos: { size: 2, data: quadPositions },
+                    quadUv: { size: 2, data: quadUvs },
+                    index: { data: quadIndex },
+                    random: { instanced: 1, size: 4, data: randomData },
+                    position: { instanced: 1, size: 4, data: new Float32Array(numParticles * 4) },
+                    velocity: { instanced: 1, size: 4, data: new Float32Array(numParticles * 4) },
                 });
 
-                const program = new Program(gl, {
+                const program = new Program(renderer, {
                     vertex,
                     fragment,
                     uniforms: {
-                        uTime: time,
-                        tPosition: position.uniform,
-                        tVelocity: velocity.uniform,
+                        uTime: { value: 0 },
+                        uResolution: { value: new Float32Array([renderer.canvas.width, renderer.canvas.height]) },
                     },
+                    cullFace: false,
+                    depthTest: false,
                 });
 
-                const points = new Mesh(gl, { geometry, program, mode: gl.POINTS });
+                const points = new Mesh(renderer, { geometry, program });
 
-                // Add handlers to get mouse position
+                // ---------------------------------------------------------------
+                // Mouse handling
+                // ---------------------------------------------------------------
+                const mouse = new Vec2();
+
                 const isTouchCapable = 'ontouchstart' in window;
                 if (isTouchCapable) {
                     window.addEventListener('touchstart', updateMouse, false);
@@ -227,19 +270,46 @@
                     }
 
                     // Get mouse value in -1 to 1 range, with y flipped
-                    mouse.value.set((e.x / gl.renderer.width) * 2 - 1, (1 - e.y / gl.renderer.height) * 2 - 1);
+                    mouse.set(
+                        (e.x / renderer.width) * 2 - 1,
+                        (1 - e.y / renderer.height) * 2 - 1
+                    );
                 }
 
+                // ---------------------------------------------------------------
+                // Render loop
+                // ---------------------------------------------------------------
                 requestAnimationFrame(update);
                 function update(t) {
                     requestAnimationFrame(update);
 
-                    time.value = t * 0.001;
+                    const time = t * 0.001;
+                    program.uniforms.uTime.value = time;
+                    program.uniforms.uResolution.value[0] = renderer.canvas.width;
+                    program.uniforms.uResolution.value[1] = renderer.canvas.height;
 
-                    // Update the GPGPU classes
-                    velocity.render();
-                    position.render();
+                    // Update compute uniforms
+                    compute.updateUniform('params', new Float32Array([time, mouse[0], mouse[1], 0]));
 
+                    // Run compute shader to update positions and velocities
+                    compute.run();
+
+                    // Copy computed position and velocity data from storage buffers
+                    // to the geometry vertex buffers (GPU-to-GPU, no readback).
+                    const commandEncoder = renderer.device.createCommandEncoder();
+                    commandEncoder.copyBufferToBuffer(
+                        compute.storageBuffers.positions, 0,
+                        geometry.attributes.position.buffer, 0,
+                        numParticles * 4 * 4
+                    );
+                    commandEncoder.copyBufferToBuffer(
+                        compute.storageBuffers.velocities, 0,
+                        geometry.attributes.velocity.buffer, 0,
+                        numParticles * 4 * 4
+                    );
+                    renderer.device.queue.submit([commandEncoder.finish()]);
+
+                    // Render the particles
                     renderer.render({ scene: points, camera });
                 }
             }

@@ -14,78 +14,68 @@
         <script type="module">
             import { Renderer, Camera, Transform, Geometry, Texture, Program, Mesh, Orbit, Text } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec2 uv;
-                attribute vec3 position;
+            const vertex = /* wgsl */ `
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) uv : vec2f,
+                };
 
-                varying vec2 vUv;
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                };
 
-                void main() {
-                    vUv = uv;
-
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                uniform sampler2D tMap;
+            const fragment = /* wgsl */ `
+                @group(0) @binding(0) var tMapTex : texture_2d<f32>;
+                @group(0) @binding(1) var tMapSampler : sampler;
 
-                varying vec2 vUv;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
 
-                void main() {
-                    vec3 tex = texture2D(tMap, vUv).rgb;
-                    float signedDist = max(min(tex.r, tex.g), min(max(tex.r, tex.g), tex.b)) - 0.5;
-                    float d = fwidth(signedDist);
-                    float alpha = smoothstep(-d, d, signedDist);
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let tex = textureSample(tMapTex, tMapSampler, input.vUv).rgb;
+                    let signedDist = max(min(tex.r, tex.g), min(max(tex.r, tex.g), tex.b)) - 0.5;
+                    let d = fwidth(signedDist);
+                    let alpha = smoothstep(-d, d, signedDist);
 
-                    if (alpha < 0.01) discard;
+                    if (alpha < 0.01) { discard; }
 
-                    gl_FragColor.rgb = vec3(0.0);
-                    gl_FragColor.a = alpha;
+                    return vec4f(0.0, 0.0, 0.0, alpha);
                 }
             `;
-
-            const vertex100 =
-                /* glsl */ `
-            ` + vertex;
-
-            const fragment100 =
-                /* glsl */ `#extension GL_OES_standard_derivatives : enable
-                precision highp float;
-            ` + fragment;
-
-            const vertex300 =
-                /* glsl */ `#version 300 es
-                #define attribute in
-                #define varying out
-            ` + vertex;
-
-            const fragment300 =
-                /* glsl */ `#version 300 es
-                precision highp float;
-                #define varying in
-                #define texture2D texture
-                #define gl_FragColor FragColor
-                out vec4 FragColor;
-            ` + fragment;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 45 });
+                const camera = new Camera(renderer, { fov: 45 });
                 camera.position.set(0, 0, 7);
 
                 const controls = new Orbit(camera);
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
@@ -107,17 +97,16 @@
 
                 */
 
-                const texture = new Texture(gl, {
+                const texture = new Texture(renderer, {
                     generateMipmaps: false,
                 });
                 const img = new Image();
                 img.onload = () => (texture.image = img);
                 img.src = 'assets/fonts/FiraSans-Bold.png';
 
-                const program = new Program(gl, {
-                    // Get fallback shader for WebGL1 - needed for OES_standard_derivatives ext
-                    vertex: renderer.isWebgl2 ? vertex300 : vertex100,
-                    fragment: renderer.isWebgl2 ? fragment300 : fragment100,
+                const program = new Program(renderer, {
+                    vertex,
+                    fragment,
                     uniforms: {
                         tMap: { value: texture },
                     },
@@ -141,7 +130,7 @@
                     });
 
                     // Pass the generated buffers into a geometry
-                    const geometry = new Geometry(gl, {
+                    const geometry = new Geometry(renderer, {
                         position: { size: 3, data: text.buffers.position },
                         uv: { size: 2, data: text.buffers.uv },
                         // id provides a per-character index, for effects that may require it
@@ -149,7 +138,7 @@
                         index: { data: text.buffers.index },
                     });
 
-                    const mesh = new Mesh(gl, { geometry, program });
+                    const mesh = new Mesh(renderer, { geometry, program });
 
                     // Use the height value to position text vertically. Here it is centered.
                     mesh.position.y = text.height * 0.5;

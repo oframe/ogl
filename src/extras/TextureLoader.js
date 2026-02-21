@@ -8,11 +8,10 @@ const supportedExtensions = [];
 
 export class TextureLoader {
     static load(
-        gl,
+        gpu,
         {
             src, // string or object of extension:src key-values
             // {
-            //     pvrtc: '...ktx',
             //     s3tc: '...ktx',
             //     etc: '...ktx',
             //     etc1: '...ktx',
@@ -23,22 +22,18 @@ export class TextureLoader {
             // }
 
             // Only props relevant to KTXTexture
-            wrapS = gl.CLAMP_TO_EDGE,
-            wrapT = gl.CLAMP_TO_EDGE,
+            wrapS = 'clamp-to-edge',
+            wrapT = 'clamp-to-edge',
             anisotropy = 0,
 
             // For regular images
-            format = gl.RGBA,
-            internalFormat = format,
             generateMipmaps = true,
-            minFilter = generateMipmaps ? gl.NEAREST_MIPMAP_LINEAR : gl.LINEAR,
-            magFilter = gl.LINEAR,
-            premultiplyAlpha = false,
-            unpackAlignment = 4,
+            minFilter = 'linear',
+            magFilter = 'linear',
             flipY = true,
         } = {}
     ) {
-        const support = this.getSupportedExtensions(gl);
+        const support = this.getSupportedExtensions(gpu);
         let ext = 'none';
 
         // If src is string, determine which format from the extension
@@ -59,7 +54,7 @@ export class TextureLoader {
         }
 
         // Stringify props
-        const cacheID = src + wrapS + wrapT + anisotropy + format + internalFormat + generateMipmaps + minFilter + magFilter + premultiplyAlpha + unpackAlignment + flipY + gl.renderer.id;
+        const cacheID = src + wrapS + wrapT + anisotropy + generateMipmaps + minFilter + magFilter + flipY + (gpu.renderer || gpu).id;
 
         // Check cache for existing texture
         if (cache[cacheID]) return cache[cacheID];
@@ -67,13 +62,12 @@ export class TextureLoader {
         let texture;
         switch (ext) {
             case 'ktx':
-            case 'pvrtc':
             case 's3tc':
             case 'etc':
             case 'etc1':
             case 'astc':
                 // Load compressed texture using KTX format
-                texture = new KTXTexture(gl, {
+                texture = new KTXTexture(gpu, {
                     src,
                     wrapS,
                     wrapT,
@@ -87,24 +81,20 @@ export class TextureLoader {
             case 'jpg':
             case 'jpeg':
             case 'png':
-                texture = new Texture(gl, {
+                texture = new Texture(gpu, {
                     wrapS,
                     wrapT,
                     anisotropy,
-                    format,
-                    internalFormat,
                     generateMipmaps,
                     minFilter,
                     magFilter,
-                    premultiplyAlpha,
-                    unpackAlignment,
                     flipY,
                 });
-                texture.loaded = this.loadImage(gl, src, texture, flipY);
+                texture.loaded = this.loadImage(gpu, src, texture, flipY);
                 break;
             default:
                 console.warn('No supported format supplied');
-                texture = new Texture(gl);
+                texture = new Texture(gpu);
         }
 
         texture.ext = ext;
@@ -112,19 +102,22 @@ export class TextureLoader {
         return texture;
     }
 
-    static getSupportedExtensions(gl) {
+    static getSupportedExtensions(gpu) {
         if (supportedExtensions.length) return supportedExtensions;
 
-        const extensions = {
-            pvrtc: gl.renderer.getExtension('WEBGL_compressed_texture_pvrtc') || gl.renderer.getExtension('WEBKIT_WEBGL_compressed_texture_pvrtc'),
-            s3tc: gl.renderer.getExtension('WEBGL_compressed_texture_s3tc'),
-            // etc: gl.renderer.getExtension('WEBGL_compressed_texture_etc'),
-            etc1: gl.renderer.getExtension('WEBGL_compressed_texture_etc1'),
-            astc: gl.renderer.getExtension('WEBGL_compressed_texture_astc'),
-            bc7: gl.renderer.getExtension('EXT_texture_compression_bptc'),
-        };
+        const device = (gpu.renderer || gpu).device;
+        const features = device.features;
 
-        for (const ext in extensions) if (extensions[ext]) supportedExtensions.push(ext);
+        // Check WebGPU compressed texture features
+        if (features.has('texture-compression-bc')) {
+            supportedExtensions.push('s3tc', 'bc7');
+        }
+        if (features.has('texture-compression-etc2')) {
+            supportedExtensions.push('etc', 'etc1');
+        }
+        if (features.has('texture-compression-astc')) {
+            supportedExtensions.push('astc');
+        }
 
         // Formats supported by all
         supportedExtensions.push('png', 'jpg', 'webp');
@@ -138,15 +131,8 @@ export class TextureLoader {
             .then((buffer) => texture.parseBuffer(buffer));
     }
 
-    static loadImage(gl, src, texture, flipY) {
+    static loadImage(gpu, src, texture, flipY) {
         return decodeImage(src, flipY).then((imgBmp) => {
-            // Catch non POT textures for WebGL1 and update params to avoid errors
-            if (!gl.renderer.isWebgl2 && (!powerOfTwo(imgBmp.width) || !powerOfTwo(imgBmp.height))) {
-                if (texture.generateMipmaps) texture.generateMipmaps = false;
-                if (texture.minFilter === gl.NEAREST_MIPMAP_LINEAR) texture.minFilter = gl.LINEAR;
-                if (texture.wrapS === gl.REPEAT) texture.wrapS = texture.wrapT = gl.CLAMP_TO_EDGE;
-            }
-
             texture.image = imgBmp;
 
             // For createImageBitmap, close once uploaded
@@ -164,17 +150,12 @@ export class TextureLoader {
     }
 }
 
-function powerOfTwo(value) {
-    // (width & (width - 1)) !== 0
-    return Math.log2(value) % 1 === 0;
-}
-
 function decodeImage(src, flipY) {
     return new Promise((resolve, reject) => {
         if (isCreateImageBitmap()) {
             fetch(src, { mode: 'cors' })
                 .then((r) => r.blob())
-                .then((b) => createImageBitmap(b, { imageOrientation: flipY ? 'flipY' : 'none', premultiplyAlpha: 'none' }))
+                .then((b) => createImageBitmap(b, { imageOrientation: flipY ? 'flipY' : 'none', premultiplyAlpha: 'none', colorSpaceConversion: 'none' }))
                 .then(resolve)
                 .catch((err) => reject(err));
         } else {

@@ -14,94 +14,97 @@
         <script type="module">
             import { Renderer, Camera, Program, Transform, Mesh, Sphere, Box } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec3 position;
-                attribute vec3 normal;
+            const vertex = /* wgsl */ `
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-                uniform mat3 normalMatrix;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                varying vec3 vNormal;
-                varying vec4 vMVPos;
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) normal : vec3f,
+                    @location(2) uv : vec2f,
+                };
 
-                void main() {
-                    vNormal = normalize(normalMatrix * normal);
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vNormal : vec3f,
+                    @location(1) vMVPos : vec4f,
+                };
 
-                    vMVPos = modelViewMatrix * vec4(position, 1.0);
-                    gl_Position = projectionMatrix * vMVPos;
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vNormal = normalize(object.normalMatrix * input.normal);
+                    output.vMVPos = object.modelViewMatrix * vec4f(input.position, 1.0);
+                    output.position = object.projectionMatrix * output.vMVPos;
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                struct FragmentInput {
+                    @location(0) vNormal : vec3f,
+                    @location(1) vMVPos : vec4f,
+                };
 
-                varying vec3 vNormal;
-                varying vec4 vMVPos;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let normal = normalize(input.vNormal);
+                    let lighting = dot(normal, normalize(vec3f(-0.3, 0.8, 0.6)));
+                    var color = vec3f(1.0, 0.5, 0.2) * (1.0 - 0.5 * lighting) + input.vMVPos.xzy * 0.1;
 
-                void main() {
-                    vec3 normal = normalize(vNormal);
-                    float lighting = dot(normal, normalize(vec3(-0.3, 0.8, 0.6)));
-                    vec3 color = vec3(1.0, 0.5, 0.2) * (1.0 - 0.5 * lighting) + vMVPos.xzy * 0.1;
+                    let dist = length(input.vMVPos.xyz);
+                    let fog = smoothstep(4.0, 10.0, dist);
+                    color = mix(color, vec3f(1.0), fog);
 
-                    float dist = length(vMVPos);
-                    float fog = smoothstep(4.0, 10.0, dist);
-                    color = mix(color, vec3(1.0), fog);
-
-                    gl_FragColor.rgb = color;
-                    gl_FragColor.a = 1.0;
+                    return vec4f(color, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                // The Camera class extends Transform. See Below for more on Transform.
-                const camera = new Camera(gl, { fov: 35 });
+                const camera = new Camera(renderer, { fov: 35 });
                 camera.position.set(0, 1, 7);
                 camera.lookAt([0, 0, 0]);
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
-                const sphereGeometry = new Sphere(gl, { radius: 0.15 });
-                const cubeGeometry = new Box(gl, { width: 0.3, height: 0.3, depth: 0.3 });
+                const sphereGeometry = new Sphere(renderer, { radius: 0.15 });
+                const cubeGeometry = new Box(renderer, { width: 0.3, height: 0.3, depth: 0.3 });
 
-                const program = new Program(gl, {
+                const program = new Program(renderer, {
                     vertex,
                     fragment,
                 });
 
-                // The scene hierarchy is controlled by the Transform class
-                // To create scenes, groups, null pointers etc, use Transform
                 const scene = new Transform();
 
-                // The Mesh class extends the Transform class, and so shares the scene graph functionality
-                const sphere = new Mesh(gl, { geometry: sphereGeometry, program });
+                const sphere = new Mesh(renderer, { geometry: sphereGeometry, program });
                 sphere.speed = -0.5;
-
-                // Use .setParent to add transform as a child of another transform
                 sphere.setParent(scene);
-                // scene.addChild(sphere); // also works
 
                 const shapes = [sphere];
 
-                // Create random array of shapes
                 for (let i = 0; i < 50; i++) {
                     const geometry = Math.random() > 0.5 ? cubeGeometry : sphereGeometry;
-                    const shape = new Mesh(gl, { geometry, program });
+                    const shape = new Mesh(renderer, { geometry, program });
                     shape.scale.set(Math.random() * 0.3 + 0.7);
                     shape.position.set((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3);
                     shape.speed = (Math.random() - 0.5) * 0.7;
 
-                    // Attach them to a random, previously created shape
                     shape.setParent(shapes[Math.floor(Math.random() * shapes.length)]);
                     shapes.push(shape);
                 }
@@ -116,8 +119,6 @@
                         shape.rotation.z += 0.01 * shape.speed;
                     });
 
-                    // The 'scene' property in the render call expects any Transform.
-                    // Therefore can be a Mesh instance as well.
                     renderer.render({ scene, camera });
                 }
             }

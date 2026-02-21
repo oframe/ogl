@@ -1,209 +1,309 @@
-// TODO: delete texture
-// TODO: use texSubImage2D for updates (video or when loaded)
-// TODO: need? encoding = linearEncoding
-// TODO: support non-compressed mipmaps uploads
-
-const emptyPixel = new Uint8Array(4);
-
-function isPowerOf2(value) {
-    return (value & (value - 1)) === 0;
-}
-
 let ID = 1;
+
+// Map common filter/wrap values
+const FILTER_MAP = {
+    nearest: 'nearest',
+    linear: 'linear',
+};
+
+const ADDRESS_MAP = {
+    repeat: 'repeat',
+    'mirror-repeat': 'mirror-repeat',
+    'clamp-to-edge': 'clamp-to-edge',
+};
 
 export class Texture {
     constructor(
-        gl,
+        gpu,
         {
             image,
-            target = gl.TEXTURE_2D,
-            type = gl.UNSIGNED_BYTE,
-            format = gl.RGBA,
-            internalFormat = format,
-            wrapS = gl.CLAMP_TO_EDGE,
-            wrapT = gl.CLAMP_TO_EDGE,
-            wrapR = gl.CLAMP_TO_EDGE,
-            generateMipmaps = target === (gl.TEXTURE_2D || gl.TEXTURE_CUBE_MAP),
-            minFilter = generateMipmaps ? gl.NEAREST_MIPMAP_LINEAR : gl.LINEAR,
-            magFilter = gl.LINEAR,
-            premultiplyAlpha = false,
-            unpackAlignment = 4,
-            flipY = target == (gl.TEXTURE_2D || gl.TEXTURE_3D) ? true : false,
+            width = 1,
+            height = 1,
+            format = 'rgba8unorm',
+            dimension = '2d',
+            target,
+            generateMipmaps = false,
+            flipY = true,
+            minFilter = 'linear',
+            magFilter = 'linear',
+            mipmapFilter = 'linear',
+            wrapS = 'clamp-to-edge',
+            wrapT = 'clamp-to-edge',
+            wrapR = 'clamp-to-edge',
             anisotropy = 0,
-            level = 0,
-            width, // used for RenderTargets or Data Textures
-            height = width,
-            length = 1,
+            usage,
         } = {}
     ) {
-        this.gl = gl;
+        this.renderer = gpu.renderer || gpu;
+        this.device = this.renderer.device;
         this.id = ID++;
+        this._isTexture = true;
 
-        this.image = image;
-        this.target = target;
-        this.type = type;
         this.format = format;
-        this.internalFormat = internalFormat;
+        this.dimension = dimension;
+        this.isCube = target === 'cube';
+        this.generateMipmaps = generateMipmaps;
+        this.flipY = this.isCube ? false : flipY;
+        this.width = width;
+        this.height = height;
+
+        // Sampler parameters
         this.minFilter = minFilter;
         this.magFilter = magFilter;
+        this.mipmapFilter = mipmapFilter;
         this.wrapS = wrapS;
         this.wrapT = wrapT;
         this.wrapR = wrapR;
-        this.generateMipmaps = generateMipmaps;
-        this.premultiplyAlpha = premultiplyAlpha;
-        this.unpackAlignment = unpackAlignment;
-        this.flipY = flipY;
-        this.anisotropy = Math.min(anisotropy, this.gl.renderer.parameters.maxAnisotropy);
-        this.level = level;
-        this.width = width;
-        this.height = height;
-        this.length = length;
-        this.texture = this.gl.createTexture();
+        this.anisotropy = anisotropy;
 
-        this.store = {
-            image: null,
-        };
-
-        // Alias for state store to avoid redundant calls for global state
-        this.glState = this.gl.renderer.state;
-
-        // State store to avoid redundant calls for per-texture state
-        this.state = {};
-        this.state.minFilter = this.gl.NEAREST_MIPMAP_LINEAR;
-        this.state.magFilter = this.gl.LINEAR;
-        this.state.wrapS = this.gl.REPEAT;
-        this.state.wrapT = this.gl.REPEAT;
-        this.state.anisotropy = 0;
-    }
-
-    bind() {
-        // Already bound to active texture unit
-        if (this.glState.textureUnits[this.glState.activeTextureUnit] === this.id) return;
-        this.gl.bindTexture(this.target, this.texture);
-        this.glState.textureUnits[this.glState.activeTextureUnit] = this.id;
-    }
-
-    update(textureUnit = 0) {
-        const needsUpdate = !(this.image === this.store.image && !this.needsUpdate);
-
-        // Make sure that texture is bound to its texture unit
-        if (needsUpdate || this.glState.textureUnits[textureUnit] !== this.id) {
-            // set active texture unit to perform texture functions
-            this.gl.renderer.activeTexture(textureUnit);
-            this.bind();
-        }
-
-        if (!needsUpdate) return;
+        // GPU resources
+        this.gpuTexture = null;
+        this.gpuSampler = null;
         this.needsUpdate = false;
 
-        if (this.flipY !== this.glState.flipY) {
-            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, this.flipY);
-            this.glState.flipY = this.flipY;
-        }
+        // Compressed formats cannot use RENDER_ATTACHMENT
+        const isCompressed = format.startsWith('bc') || format.startsWith('etc2') || format.startsWith('astc');
+        this._usage = usage || (isCompressed
+            ? GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+            : GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT);
 
-        if (this.premultiplyAlpha !== this.glState.premultiplyAlpha) {
-            this.gl.pixelStorei(this.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this.premultiplyAlpha);
-            this.glState.premultiplyAlpha = this.premultiplyAlpha;
-        }
+        // Create sampler
+        this._createSampler();
 
-        if (this.unpackAlignment !== this.glState.unpackAlignment) {
-            this.gl.pixelStorei(this.gl.UNPACK_ALIGNMENT, this.unpackAlignment);
-            this.glState.unpackAlignment = this.unpackAlignment;
-        }
-
-        if (this.minFilter !== this.state.minFilter) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_MIN_FILTER, this.minFilter);
-            this.state.minFilter = this.minFilter;
-        }
-
-        if (this.magFilter !== this.state.magFilter) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_MAG_FILTER, this.magFilter);
-            this.state.magFilter = this.magFilter;
-        }
-
-        if (this.wrapS !== this.state.wrapS) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_S, this.wrapS);
-            this.state.wrapS = this.wrapS;
-        }
-
-        if (this.wrapT !== this.state.wrapT) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_T, this.wrapT);
-            this.state.wrapT = this.wrapT;
-        }
-
-        if (this.wrapR !== this.state.wrapR) {
-            this.gl.texParameteri(this.target, this.gl.TEXTURE_WRAP_R, this.wrapR);
-            this.state.wrapR = this.wrapR;
-        }
-
-        if (this.anisotropy && this.anisotropy !== this.state.anisotropy) {
-            this.gl.texParameterf(this.target, this.gl.renderer.getExtension('EXT_texture_filter_anisotropic').TEXTURE_MAX_ANISOTROPY_EXT, this.anisotropy);
-            this.state.anisotropy = this.anisotropy;
-        }
-
-        if (this.image) {
-            if (this.image.width) {
-                this.width = this.image.width;
-                this.height = this.image.height;
-            }
-
-            if (this.target === this.gl.TEXTURE_CUBE_MAP) {
-                // For cube maps
-                for (let i = 0; i < 6; i++) {
-                    this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, this.level, this.internalFormat, this.format, this.type, this.image[i]);
-                }
-            } else if (ArrayBuffer.isView(this.image)) {
-                // Data texture
-                if (this.target === this.gl.TEXTURE_2D) {
-                    this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, this.image);
-                } else if (this.target === this.gl.TEXTURE_2D_ARRAY || this.target === this.gl.TEXTURE_3D) {
-                    this.gl.texImage3D(this.target, this.level, this.internalFormat, this.width, this.height, this.length, 0, this.format, this.type, this.image);
-                }
-            } else if (this.image.isCompressedTexture) {
-                // Compressed texture
-                for (let level = 0; level < this.image.length; level++) {
-                    this.gl.compressedTexImage2D(this.target, level, this.internalFormat, this.image[level].width, this.image[level].height, 0, this.image[level].data);
-                }
-            } else {
-                // Regular texture
-                if (this.target === this.gl.TEXTURE_2D) {
-                    this.gl.texImage2D(this.target, this.level, this.internalFormat, this.format, this.type, this.image);
-                } else {
-                    this.gl.texImage3D(this.target, this.level, this.internalFormat, this.width, this.height, this.length, 0, this.format, this.type, this.image);
-                }
-            }
-
-            if (this.generateMipmaps) {
-                // For WebGL1, if not a power of 2, turn off mips, set wrapping to clamp to edge and minFilter to linear
-                if (!this.gl.renderer.isWebgl2 && (!isPowerOf2(this.image.width) || !isPowerOf2(this.image.height))) {
-                    this.generateMipmaps = false;
-                    this.wrapS = this.wrapT = this.gl.CLAMP_TO_EDGE;
-                    this.minFilter = this.gl.LINEAR;
-                } else {
-                    this.gl.generateMipmap(this.target);
-                }
-            }
-
-            // Callback for when data is pushed to GPU
-            this.onUpdate && this.onUpdate();
+        // Create initial texture (empty 1x1 or sized)
+        if (image) {
+            this.image = image;
         } else {
-            if (this.target === this.gl.TEXTURE_CUBE_MAP) {
-                // Upload empty pixel for each side while no image to avoid errors while image or video loading
-                for (let i = 0; i < 6; i++) {
-                    this.gl.texImage2D(this.gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
-                }
-            } else if (this.width) {
-                // image intentionally left null for RenderTarget
-                if (this.target === this.gl.TEXTURE_2D) {
-                    this.gl.texImage2D(this.target, this.level, this.internalFormat, this.width, this.height, 0, this.format, this.type, null);
-                } else {
-                    this.gl.texImage3D(this.target, this.level, this.internalFormat, this.width, this.height, this.length, 0, this.format, this.type, null);
-                }
-            } else {
-                // Upload empty pixel if no image to avoid errors while image or video loading
-                this.gl.texImage2D(this.target, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, emptyPixel);
-            }
+            this._createTexture(width, height);
         }
-        this.store.image = this.image;
+    }
+
+    _createSampler() {
+        const desc = {
+            minFilter: FILTER_MAP[this.minFilter] || 'linear',
+            magFilter: FILTER_MAP[this.magFilter] || 'linear',
+            mipmapFilter: FILTER_MAP[this.mipmapFilter] || 'linear',
+            addressModeU: ADDRESS_MAP[this.wrapS] || 'clamp-to-edge',
+            addressModeV: ADDRESS_MAP[this.wrapT] || 'clamp-to-edge',
+            addressModeW: ADDRESS_MAP[this.wrapR] || 'clamp-to-edge',
+        };
+        if (this.anisotropy > 0) desc.maxAnisotropy = this.anisotropy;
+        this.gpuSampler = this.device.createSampler(desc);
+    }
+
+    _createTexture(width, height) {
+        if (this.gpuTexture) this.gpuTexture.destroy();
+
+        this.width = width;
+        this.height = height;
+
+        const mipLevelCount = this.generateMipmaps ? Math.floor(Math.log2(Math.max(width, height))) + 1 : 1;
+
+        this.gpuTexture = this.device.createTexture({
+            size: this.isCube ? [width, height, 6] : [width, height],
+            format: this.format,
+            dimension: this.dimension,
+            mipLevelCount,
+            usage: this._usage,
+        });
+    }
+
+    set image(value) {
+        this._image = value;
+
+        if (!value) return;
+
+        // Cube map: array of 6 images
+        if (this.isCube && Array.isArray(value)) {
+            const w = value[0].width || value[0].videoWidth;
+            const h = value[0].height || value[0].videoHeight;
+            if (w && h) {
+                this._createTexture(w, h);
+                for (let i = 0; i < 6; i++) {
+                    this.device.queue.copyExternalImageToTexture(
+                        { source: value[i], flipY: this.flipY },
+                        { texture: this.gpuTexture, origin: [0, 0, i] },
+                        [w, h]
+                    );
+                }
+                this.onUpdate && this.onUpdate();
+            }
+            return;
+        }
+
+        // Compressed texture: array of {data, width, height} mip levels with isCompressedTexture flag
+        if (Array.isArray(value) && value.isCompressedTexture) {
+            const w = value[0].width;
+            const h = value[0].height;
+            this.width = w;
+            this.height = h;
+
+            // Recalculate usage to exclude RENDER_ATTACHMENT for compressed formats
+            const compressedUsage = GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST;
+
+            if (this.gpuTexture) this.gpuTexture.destroy();
+            this.gpuTexture = this.device.createTexture({
+                size: [w, h],
+                format: this.format,
+                mipLevelCount: value.length,
+                usage: compressedUsage,
+            });
+
+            const blockInfo = this._getCompressedBlockInfo();
+            for (let i = 0; i < value.length; i++) {
+                const mip = value[i];
+                const bytesPerRow = Math.ceil(mip.width / blockInfo.blockWidth) * blockInfo.bytesPerBlock;
+                this.device.queue.writeTexture(
+                    { texture: this.gpuTexture, mipLevel: i },
+                    mip.data,
+                    { bytesPerRow },
+                    [mip.width, mip.height]
+                );
+            }
+            this.onUpdate && this.onUpdate();
+            return;
+        }
+
+        if (value instanceof HTMLImageElement || value instanceof HTMLVideoElement || value instanceof HTMLCanvasElement || value instanceof ImageBitmap || value instanceof OffscreenCanvas) {
+            const w = value.width || value.videoWidth;
+            const h = value.height || value.videoHeight;
+
+            if (w && h) {
+                this._createTexture(w, h);
+                this.device.queue.copyExternalImageToTexture({ source: value, flipY: this.flipY }, { texture: this.gpuTexture }, [w, h]);
+                if (this.generateMipmaps) this._generateMipmaps();
+                this.onUpdate && this.onUpdate();
+            }
+        } else if (ArrayBuffer.isView(value)) {
+            // TypedArray data — check for .width/.height properties (e.g. from BasisWorker uncompressed fallback)
+            const w = value.width || this.width;
+            const h = value.height || this.height;
+            this._createTexture(w, h);
+            const bytesPerRow = this._getBytesPerRow(w);
+            this.device.queue.writeTexture({ texture: this.gpuTexture }, value, { bytesPerRow, rowsPerImage: h }, [w, h]);
+            if (this.generateMipmaps) this._generateMipmaps();
+            this.onUpdate && this.onUpdate();
+        }
+    }
+
+    get image() {
+        return this._image;
+    }
+
+    _getBytesPerRow(width) {
+        // Compute bytes per row based on format (no 256 alignment needed for writeTexture)
+        const blockSize = this.format.includes('rgba') ? 4 : this.format.includes('rg') ? 2 : 1;
+        const bytesPerPixel = this.format.includes('32float') ? blockSize * 4 : this.format.includes('16float') ? blockSize * 2 : blockSize;
+        return width * bytesPerPixel;
+    }
+
+    _getCompressedBlockInfo() {
+        const f = this.format;
+        // BC1 and ETC2 RGB variants: 8 bytes per 4x4 block
+        if (f.startsWith('bc1') || f === 'etc2-rgb8unorm' || f === 'etc2-rgb8unorm-srgb') {
+            return { blockWidth: 4, blockHeight: 4, bytesPerBlock: 8 };
+        }
+        // BC2, BC3, BC7, ETC2 RGBA, ASTC 4x4: 16 bytes per 4x4 block
+        if (f.startsWith('bc') || f.startsWith('etc2') || f === 'astc-4x4-unorm' || f === 'astc-4x4-unorm-srgb') {
+            return { blockWidth: 4, blockHeight: 4, bytesPerBlock: 16 };
+        }
+        // Other ASTC block sizes (all 16 bytes per block)
+        const astcMatch = f.match(/astc-(\d+)x(\d+)/);
+        if (astcMatch) return { blockWidth: parseInt(astcMatch[1]), blockHeight: parseInt(astcMatch[2]), bytesPerBlock: 16 };
+        return { blockWidth: 1, blockHeight: 1, bytesPerBlock: 4 };
+    }
+
+    _generateMipmaps() {
+        // Mipmap generation via render passes
+        if (!Texture._mipmapShaderModule) {
+            Texture._mipmapShaderModule = this.device.createShaderModule({
+                code: `
+                    var<private> pos : array<vec2f, 3> = array<vec2f, 3>(
+                        vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
+
+                    struct VertexOutput {
+                        @builtin(position) position : vec4f,
+                        @location(0) uv : vec2f,
+                    }
+
+                    @vertex fn vert(@builtin(vertex_index) vertexIndex : u32) -> VertexOutput {
+                        var output : VertexOutput;
+                        let p = pos[vertexIndex];
+                        output.position = vec4f(p, 0.0, 1.0);
+                        output.uv = p * vec2f(0.5, -0.5) + vec2f(0.5);
+                        return output;
+                    }
+
+                    @group(0) @binding(0) var imgSampler : sampler;
+                    @group(0) @binding(1) var img : texture_2d<f32>;
+
+                    @fragment fn frag(@location(0) uv : vec2f) -> @location(0) vec4f {
+                        return textureSample(img, imgSampler, uv);
+                    }
+                `,
+            });
+        }
+
+        if (!Texture._mipmapSampler) {
+            Texture._mipmapSampler = this.device.createSampler({ minFilter: 'linear', magFilter: 'linear' });
+        }
+
+        // Cache mipmap pipeline per format to avoid redundant pipeline creation
+        if (!Texture._mipmapPipelines) Texture._mipmapPipelines = {};
+        let pipeline = Texture._mipmapPipelines[this.format];
+        if (!pipeline) {
+            pipeline = this.device.createRenderPipeline({
+                layout: 'auto',
+                vertex: { module: Texture._mipmapShaderModule, entryPoint: 'vert' },
+                fragment: {
+                    module: Texture._mipmapShaderModule,
+                    entryPoint: 'frag',
+                    targets: [{ format: this.format }],
+                },
+                primitive: { topology: 'triangle-list' },
+            });
+            Texture._mipmapPipelines[this.format] = pipeline;
+        }
+
+        const commandEncoder = this.device.createCommandEncoder();
+        const mipLevelCount = Math.floor(Math.log2(Math.max(this.width, this.height))) + 1;
+
+        for (let i = 1; i < mipLevelCount; i++) {
+            const bindGroup = this.device.createBindGroup({
+                layout: pipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: Texture._mipmapSampler },
+                    { binding: 1, resource: this.gpuTexture.createView({ baseMipLevel: i - 1, mipLevelCount: 1 }) },
+                ],
+            });
+
+            const pass = commandEncoder.beginRenderPass({
+                colorAttachments: [
+                    {
+                        view: this.gpuTexture.createView({ baseMipLevel: i, mipLevelCount: 1 }),
+                        loadOp: 'clear',
+                        storeOp: 'store',
+                    },
+                ],
+            });
+
+            pass.setPipeline(pipeline);
+            pass.setBindGroup(0, bindGroup);
+            pass.draw(3);
+            pass.end();
+        }
+
+        this.device.queue.submit([commandEncoder.finish()]);
+    }
+
+    update() {
+        if (this.needsUpdate) {
+            if (this._image) this.image = this._image;
+            this.needsUpdate = false;
+        }
+    }
+
+    remove() {
+        if (this.gpuTexture) this.gpuTexture.destroy();
     }
 }

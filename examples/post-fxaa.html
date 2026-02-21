@@ -14,97 +14,94 @@
         <script type="module">
             import { Renderer, Camera, Mesh, Vec2, Post, Box, NormalProgram } from '../src/index.js';
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            // FXAA fragment shader (WGSL)
+            // Uniform layout: binding 0 = uniform buffer (uResolution), binding 1 = texture (tMap), binding 2 = sampler
+            const fragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    uResolution : vec2f,
+                };
 
-                // Default uniform for previous pass is 'tMap'.
-                // Can change this using the 'textureUniform' property
-                // when adding a pass.
-                uniform sampler2D tMap;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tMapTex : texture_2d<f32>;
+                @group(0) @binding(2) var tMapSampler : sampler;
 
-                uniform vec2 uResolution;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
 
-                varying vec2 vUv;
+                fn fxaa(tex : texture_2d<f32>, smp : sampler, uv : vec2f, resolution : vec2f) -> vec4f {
+                    let pixel = vec2f(1.0) / resolution;
 
-                vec4 fxaa(sampler2D tex, vec2 uv, vec2 resolution) {
-                    vec2 pixel = vec2(1) / resolution;
+                    let l = vec3f(0.299, 0.587, 0.114);
+                    let lNW = dot(textureSample(tex, smp, uv + vec2f(-1.0, -1.0) * pixel).rgb, l);
+                    let lNE = dot(textureSample(tex, smp, uv + vec2f(1.0, -1.0) * pixel).rgb, l);
+                    let lSW = dot(textureSample(tex, smp, uv + vec2f(-1.0, 1.0) * pixel).rgb, l);
+                    let lSE = dot(textureSample(tex, smp, uv + vec2f(1.0, 1.0) * pixel).rgb, l);
+                    let lM = dot(textureSample(tex, smp, uv).rgb, l);
+                    let lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
+                    let lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
 
-                    vec3 l = vec3(0.299, 0.587, 0.114);
-                    float lNW = dot(texture2D(tex, uv + vec2(-1, -1) * pixel).rgb, l);
-                    float lNE = dot(texture2D(tex, uv + vec2( 1, -1) * pixel).rgb, l);
-                    float lSW = dot(texture2D(tex, uv + vec2(-1,  1) * pixel).rgb, l);
-                    float lSE = dot(texture2D(tex, uv + vec2( 1,  1) * pixel).rgb, l);
-                    float lM  = dot(texture2D(tex, uv).rgb, l);
-                    float lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
-                    float lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
-
-                    vec2 dir = vec2(
+                    var dir = vec2f(
                         -((lNW + lNE) - (lSW + lSE)),
                         ((lNW + lSW) - (lNE + lSE))
                     );
+                    let dirReduce = max((lNW + lNE + lSW + lSE) * 0.03125, 0.0078125);
+                    let rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
+                    dir = min(vec2f(8.0), max(vec2f(-8.0), dir * rcpDirMin)) * pixel;
 
-                    float dirReduce = max((lNW + lNE + lSW + lSE) * 0.03125, 0.0078125);
-                    float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
-                    dir = min(vec2(8, 8), max(vec2(-8, -8), dir * rcpDirMin)) * pixel;
+                    let rgbA = 0.5 * (
+                        textureSample(tex, smp, uv + dir * (1.0 / 3.0 - 0.5)).rgb +
+                        textureSample(tex, smp, uv + dir * (2.0 / 3.0 - 0.5)).rgb);
+                    let rgbB = rgbA * 0.5 + 0.25 * (
+                        textureSample(tex, smp, uv + dir * -0.5).rgb +
+                        textureSample(tex, smp, uv + dir * 0.5).rgb);
+                    let lB = dot(rgbB, l);
 
-                    vec3 rgbA = 0.5 * (
-                        texture2D(tex, uv + dir * (1.0 / 3.0 - 0.5)).rgb +
-                        texture2D(tex, uv + dir * (2.0 / 3.0 - 0.5)).rgb);
-
-                    vec3 rgbB = rgbA * 0.5 + 0.25 * (
-                        texture2D(tex, uv + dir * -0.5).rgb +
-                        texture2D(tex, uv + dir * 0.5).rgb);
-
-                    float lB = dot(rgbB, l);
-
-                    return mix(
-                        vec4(rgbB, 1),
-                        vec4(rgbA, 1),
-                        max(sign(lB - lMin), 0.0) * max(sign(lB - lMax), 0.0)
-                    );
+                    return mix(vec4f(rgbB, 1.0), vec4f(rgbA, 1.0),
+                        max(sign(lB - lMin), 0.0) * max(sign(lB - lMax), 0.0));
                 }
 
-                void main() {
-                    vec4 raw = texture2D(tMap, vUv);
-                    vec4 aa = fxaa(tMap, vUv, uResolution);
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let raw = textureSample(tMapTex, tMapSampler, input.vUv);
+                    let aa = fxaa(tMapTex, tMapSampler, input.vUv, material.uResolution);
 
                     // Split screen in half to show side-by-side comparison
-                    gl_FragColor = mix(raw, aa, step(0.5, vUv.x));
+                    var color = mix(raw, aa, step(0.5, input.vUv.x));
 
                     // Darken left side a tad for clarity
-                    gl_FragColor -= step(vUv.x, 0.5) * 0.1;
+                    color -= vec4f(vec3f(step(input.vUv.x, 0.5) * 0.1), 0.0);
+                    return color;
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 1 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 1 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 35 });
+                const camera = new Camera(renderer, { fov: 35 });
                 camera.position.set(0, 1, 5);
                 camera.lookAt([0, 0, 0]);
 
                 // Post copies the current renderer values (width, height, dpr) if none are passed in
-                const post = new Post(gl);
+                const post = new Post(renderer);
 
                 // Create uniform for pass
                 const resolution = { value: new Vec2() };
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
 
                     // Need to resize post as render targets need to be re-created
                     post.resize();
-                    resolution.value.set(gl.canvas.width, gl.canvas.height);
+                    resolution.value.set(renderer.canvas.width, renderer.canvas.height);
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
-                const geometry = new Box(gl);
-                const mesh = new Mesh(gl, { geometry, program: new NormalProgram(gl) });
+                const geometry = new Box(renderer);
+                const mesh = new Mesh(renderer, { geometry, program: new NormalProgram(renderer) });
 
                 // Add pass like you're creating a Program. Then use the 'enabled'
                 // property to toggle the pass.

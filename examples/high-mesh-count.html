@@ -18,46 +18,60 @@
         <script type="module">
             import { Renderer, Camera, Transform, Program, Mesh, Box } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec3 position;
-                attribute vec3 normal;
+            const vertex = /* wgsl */ `
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-                uniform mat3 normalMatrix;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                varying vec3 vNormal;
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) normal : vec3f,
+                    @location(2) uv : vec2f,
+                };
 
-                void main() {
-                    vNormal = normalize(normalMatrix * normal);
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vNormal : vec3f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vNormal = normalize(object.normalMatrix * input.normal);
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                struct FragmentInput {
+                    @location(0) vNormal : vec3f,
+                };
 
-                varying vec3 vNormal;
-
-                void main() {
-                    vec3 normal = normalize(vNormal);
-                    float lighting = dot(normal, normalize(vec3(-0.3, 0.8, 0.6)));
-                    gl_FragColor.rgb = vec3(0.2, 0.8, 1.0) + lighting * 0.1;
-                    gl_FragColor.a = 1.0;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let normal = normalize(input.vNormal);
+                    let lighting = dot(normal, normalize(vec3f(-0.3, 0.8, 0.6)));
+                    let color = vec3f(0.2, 0.8, 1.0) + lighting * 0.1;
+                    return vec4f(color, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer();
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create();
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 35, far: 3000 });
+                const camera = new Camera(renderer, { fov: 35, far: 3000 });
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
@@ -65,10 +79,9 @@
                 const scene = new Transform();
 
                 // Create base geometry
-                const cubeGeometry = new Box(gl);
+                const cubeGeometry = new Box(renderer);
 
-                // Using the shader from the base primitive example
-                const program = new Program(gl, {
+                const program = new Program(renderer, {
                     vertex,
                     fragment,
                 });
@@ -86,7 +99,7 @@
 
                     // create our meshes according to input
                     for (let i = 0; i < count; ++i) {
-                        let mesh = new Mesh(gl, { geometry: cubeGeometry, program });
+                        let mesh = new Mesh(renderer, { geometry: cubeGeometry, program });
 
                         // position meshes in a random position between -100 / +100 in each dimension
                         mesh.position.set(

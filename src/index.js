@@ -18,38 +18,51 @@ export { Vec2 } from './math/Vec2.js';
 export { Vec3 } from './math/Vec3.js';
 export { Vec4 } from './math/Vec4.js';
 
-// Extras
+// Extras — Geometry Primitives
 export { Plane } from './extras/Plane.js';
 export { Box } from './extras/Box.js';
 export { Sphere } from './extras/Sphere.js';
 export { Cylinder } from './extras/Cylinder.js';
 export { Triangle } from './extras/Triangle.js';
 export { Torus } from './extras/Torus.js';
+export { Tube } from './extras/Tube.js';
+
+// Extras — Pure Math
 export { Orbit } from './extras/Orbit.js';
 export { Raycast } from './extras/Raycast.js';
 export { Curve } from './extras/Curve.js';
 export { Path } from './extras/path/Path.js';
-export { Tube } from './extras/Tube.js';
+export { Animation } from './extras/Animation.js';
+
+// Extras — Compute (replaces GPGPU)
+export { Compute } from './extras/Compute.js';
+
+// Extras — Optional GLSL→WGSL Transpilation
+export { NagaTranspiler } from './extras/NagaTranspiler.js';
+
+// Extras — GL-touching (require WGSL shader rewrites — stubs for now)
 export { Post } from './extras/Post.js';
 export { Skin } from './extras/Skin.js';
-export { Animation } from './extras/Animation.js';
 export { Text } from './extras/Text.js';
 export { NormalProgram } from './extras/NormalProgram.js';
 export { Flowmap } from './extras/Flowmap.js';
-export { GPGPU } from './extras/GPGPU.js';
 export { Polyline } from './extras/Polyline.js';
 export { Shadow } from './extras/Shadow.js';
-export { KTXTexture } from './extras/KTXTexture.js';
-export { TextureLoader } from './extras/TextureLoader.js';
-export { GLTFLoader } from './extras/GLTFLoader.js';
-export { GLTFSkin } from './extras/GLTFSkin.js';
-export { GLTFAnimation } from './extras/GLTFAnimation.js';
-export { DracoManager } from './extras/DracoManager.js';
-export { BasisManager } from './extras/BasisManager.js';
 export { WireMesh } from './extras/WireMesh.js';
 export { AxesHelper } from './extras/helpers/AxesHelper.js';
 export { GridHelper } from './extras/helpers/GridHelper.js';
 export { VertexNormalsHelper } from './extras/helpers/VertexNormalsHelper.js';
 export { FaceNormalsHelper } from './extras/helpers/FaceNormalsHelper.js';
+
+// Extras — Loaders
+export { GLTFLoader } from './extras/GLTFLoader.js';
+export { GLTFSkin } from './extras/GLTFSkin.js';
+export { GLTFAnimation } from './extras/GLTFAnimation.js';
+export { TextureLoader } from './extras/TextureLoader.js';
+export { KTXTexture } from './extras/KTXTexture.js';
+export { DracoManager } from './extras/DracoManager.js';
+export { BasisManager } from './extras/BasisManager.js';
+
+// Extras — Other
 export { InstancedMesh } from './extras/InstancedMesh.js';
 export { Texture3D } from './extras/Texture3D.js';

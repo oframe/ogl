@@ -1,307 +1,212 @@
 import { Vec3 } from '../math/Vec3.js';
 
-// TODO: Handle context loss https://www.khronos.org/webgl/wiki/HandlingContextLost
-
-// Not automatic - devs to use these methods manually
-// gl.colorMask( colorMask, colorMask, colorMask, colorMask );
-// gl.clearColor( r, g, b, a );
-// gl.stencilMask( stencilMask );
-// gl.stencilFunc( stencilFunc, stencilRef, stencilMask );
-// gl.stencilOp( stencilFail, stencilZFail, stencilZPass );
-// gl.clearStencil( stencil );
-
 const tempVec3 = /* @__PURE__ */ new Vec3();
 let ID = 1;
 
+const OBJECT_UBO_SIZE = 320;
+
 export class Renderer {
-    constructor({
-        canvas = document.createElement('canvas'),
-        width = 300,
-        height = 150,
-        dpr = 1,
-        alpha = false,
-        depth = true,
-        stencil = false,
-        antialias = false,
-        premultipliedAlpha = false,
-        preserveDrawingBuffer = false,
-        powerPreference = 'default',
-        autoClear = true,
-        webgl = 2,
-    } = {}) {
-        const attributes = { alpha, depth, stencil, antialias, premultipliedAlpha, preserveDrawingBuffer, powerPreference };
+    constructor(device, { canvas, width = 300, height = 150, dpr = 1, alpha = false, autoClear = true, depth = true, stencil = false } = {}) {
+        this.device = device;
+        this.canvas = canvas;
         this.dpr = dpr;
         this.alpha = alpha;
         this.color = true;
         this.depth = depth;
         this.stencil = stencil;
-        this.premultipliedAlpha = premultipliedAlpha;
         this.autoClear = autoClear;
+        this.clearColor = { r: 0, g: 0, b: 0, a: 1 };
+        this.scissor = null;
         this.id = ID++;
 
-        // Attempt WebGL2 unless forced to 1, if not supported fallback to WebGL1
-        if (webgl === 2) this.gl = canvas.getContext('webgl2', attributes);
-        this.isWebgl2 = !!this.gl;
-        if (!this.gl) this.gl = canvas.getContext('webgl', attributes);
-        if (!this.gl) console.error('unable to create webgl context');
+        // Configure canvas context
+        this.context = canvas.getContext('webgpu');
+        this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+        this.context.configure({
+            device,
+            format: this.presentationFormat,
+            alphaMode: alpha ? 'premultiplied' : 'opaque',
+        });
 
-        // Attach renderer to gl so that all classes have access to internal state functions
-        this.gl.renderer = this;
+        // Pre-compute canvas color formats array and key (reused every frame for non-RT renders)
+        this._canvasColorFormats = [this.presentationFormat];
+        this._canvasColorFormatsKey = this.presentationFormat;
 
-        // initialise size values
-        this.setSize(width, height);
+        // Depth texture (recreated on resize)
+        this.depthTexture = null;
+        this.depthFormat = 'depth24plus';
+        if (stencil) this.depthFormat = 'depth24plus-stencil8';
 
-        // gl state stores to avoid redundant calls on methods used internally
-        this.state = {};
-        this.state.blendFunc = { src: this.gl.ONE, dst: this.gl.ZERO };
-        this.state.blendEquation = { modeRGB: this.gl.FUNC_ADD };
-        this.state.cullFace = false;
-        this.state.frontFace = this.gl.CCW;
-        this.state.depthMask = true;
-        this.state.depthFunc = this.gl.LEQUAL;
-        this.state.premultiplyAlpha = false;
-        this.state.flipY = false;
-        this.state.unpackAlignment = 4;
-        this.state.framebuffer = null;
-        this.state.viewport = { x: 0, y: 0, width: null, height: null };
-        this.state.textureUnits = [];
-        this.state.activeTextureUnit = 0;
-        this.state.boundBuffer = null;
-        this.state.uniformLocations = new Map();
-        this.state.currentProgram = null;
+        // Dynamic per-object uniform buffer (shared across all meshes)
+        this._initDynamicUBO();
 
-        // store requested extensions
-        this.extensions = {};
+        // Render state tracking (reset per render call) to skip redundant GPU calls
+        this._renderState = { pipeline: null, geometry: null, program: null };
+        this._renderPassId = 0;
 
-        // Initialise extra format types
-        if (this.isWebgl2) {
-            this.getExtension('EXT_color_buffer_float');
-            this.getExtension('OES_texture_float_linear');
-        } else {
-            this.getExtension('OES_texture_float');
-            this.getExtension('OES_texture_float_linear');
-            this.getExtension('OES_texture_half_float');
-            this.getExtension('OES_texture_half_float_linear');
-            this.getExtension('OES_element_index_uint');
-            this.getExtension('OES_standard_derivatives');
-            this.getExtension('EXT_sRGB');
-            this.getExtension('WEBGL_depth_texture');
-            this.getExtension('WEBGL_draw_buffers');
+        // Pre-allocate reusable render list arrays to avoid per-frame allocation
+        this._renderList = [];
+        this._opaque = [];
+        this._transparent = [];
+        this._ui = [];
+
+        // Pre-allocate pass descriptor objects (reused each frame for canvas rendering)
+        this._canvasColorAttachment = {
+            view: null,
+            clearValue: this.clearColor,
+            loadOp: 'clear',
+            storeOp: 'store',
+        };
+        this._canvasColorAttachments = [this._canvasColorAttachment];
+        this._canvasDepthAttachment = {
+            view: null,
+            depthClearValue: 1.0,
+            depthLoadOp: 'clear',
+            depthStoreOp: 'store',
+        };
+        if (stencil) {
+            this._canvasDepthAttachment.stencilClearValue = 0;
+            this._canvasDepthAttachment.stencilLoadOp = 'clear';
+            this._canvasDepthAttachment.stencilStoreOp = 'store';
         }
-        this.getExtension('WEBGL_compressed_texture_astc');
-        this.getExtension('EXT_texture_compression_bptc');
-        this.getExtension('WEBGL_compressed_texture_s3tc');
-        this.getExtension('WEBGL_compressed_texture_etc1');
-        this.getExtension('WEBGL_compressed_texture_pvrtc');
-        this.getExtension('WEBKIT_WEBGL_compressed_texture_pvrtc');
+        this._passDescriptor = {
+            colorAttachments: null,
+            depthStencilAttachment: undefined,
+        };
 
-        // Create method aliases using extension (WebGL1) or native if available (WebGL2)
-        this.vertexAttribDivisor = this.getExtension('ANGLE_instanced_arrays', 'vertexAttribDivisor', 'vertexAttribDivisorANGLE');
-        this.drawArraysInstanced = this.getExtension('ANGLE_instanced_arrays', 'drawArraysInstanced', 'drawArraysInstancedANGLE');
-        this.drawElementsInstanced = this.getExtension('ANGLE_instanced_arrays', 'drawElementsInstanced', 'drawElementsInstancedANGLE');
-        this.createVertexArray = this.getExtension('OES_vertex_array_object', 'createVertexArray', 'createVertexArrayOES');
-        this.bindVertexArray = this.getExtension('OES_vertex_array_object', 'bindVertexArray', 'bindVertexArrayOES');
-        this.deleteVertexArray = this.getExtension('OES_vertex_array_object', 'deleteVertexArray', 'deleteVertexArrayOES');
-        this.drawBuffers = this.getExtension('WEBGL_draw_buffers', 'drawBuffers', 'drawBuffersWEBGL');
+        // Pre-allocate submit array
+        this._submitArray = [null];
 
-        // Store device parameters
-        this.parameters = {};
-        this.parameters.maxTextureUnits = this.gl.getParameter(this.gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
-        this.parameters.maxAnisotropy = this.getExtension('EXT_texture_filter_anisotropic')
-            ? this.gl.getParameter(this.getExtension('EXT_texture_filter_anisotropic').MAX_TEXTURE_MAX_ANISOTROPY_EXT)
-            : 0;
+        // Reusable draw args object
+        this._drawArgs = { camera: null, passEncoder: null };
+
+        this.setSize(width, height);
+    }
+
+    _initDynamicUBO() {
+        const minAlign = this.device.limits.minUniformBufferOffsetAlignment || 256;
+        this._objectUBOAlignedSize = Math.ceil(OBJECT_UBO_SIZE / minAlign) * minAlign;
+        this._dynamicUBOCapacity = 0;
+        this._dynamicUBO = null;
+        this._dynamicUBOData = null;
+        this._dynamicUBOOffset = 0;
+
+        this._objectBindGroupLayout = this.device.createBindGroupLayout({
+            entries: [{
+                binding: 0,
+                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                buffer: { type: 'uniform', hasDynamicOffset: true, minBindingSize: OBJECT_UBO_SIZE },
+            }],
+        });
+        this._objectBindGroup = null;
+    }
+
+    _ensureDynamicUBO(count) {
+        const needed = count * this._objectUBOAlignedSize;
+        if (this._dynamicUBO && this._dynamicUBOCapacity >= needed) {
+            this._dynamicUBOOffset = 0;
+            return;
+        }
+
+        if (this._dynamicUBO) this._dynamicUBO.destroy();
+        this._dynamicUBOCapacity = Math.max(needed, 256 * this._objectUBOAlignedSize);
+        this._dynamicUBO = this.device.createBuffer({
+            size: this._dynamicUBOCapacity,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+        this._dynamicUBOData = new Float32Array(this._dynamicUBOCapacity / 4);
+        this._dynamicUBOOffset = 0;
+
+        this._objectBindGroup = this.device.createBindGroup({
+            layout: this._objectBindGroupLayout,
+            entries: [{ binding: 0, resource: { buffer: this._dynamicUBO, size: OBJECT_UBO_SIZE } }],
+        });
+    }
+
+    static async create({
+        canvas = document.createElement('canvas'),
+        width = 300,
+        height = 150,
+        dpr = 1,
+        alpha = false,
+        autoClear = true,
+        depth = true,
+        stencil = false,
+        powerPreference = 'high-performance',
+    } = {}) {
+        if (!navigator.gpu) throw new Error('WebGPU not supported');
+
+        const adapter = await navigator.gpu.requestAdapter({ powerPreference });
+        if (!adapter) throw new Error('No GPU adapter found');
+
+        const requiredFeatures = [];
+        if (adapter.features.has('float32-filterable')) requiredFeatures.push('float32-filterable');
+        if (adapter.features.has('texture-compression-bc')) requiredFeatures.push('texture-compression-bc');
+        if (adapter.features.has('texture-compression-etc2')) requiredFeatures.push('texture-compression-etc2');
+        if (adapter.features.has('texture-compression-astc')) requiredFeatures.push('texture-compression-astc');
+        const device = await adapter.requestDevice({ requiredFeatures });
+
+        const renderer = new Renderer(device, { canvas, width, height, dpr, alpha, autoClear, depth, stencil });
+
+        // Attach renderer reference for classes that receive `gpu` (which is the renderer)
+        renderer.renderer = renderer;
+
+        return renderer;
     }
 
     setSize(width, height) {
         this.width = width;
         this.height = height;
 
-        this.gl.canvas.width = width * this.dpr;
-        this.gl.canvas.height = height * this.dpr;
+        const pixelWidth = Math.floor(width * this.dpr);
+        const pixelHeight = Math.floor(height * this.dpr);
 
-        if (!this.gl.canvas.style) return;
-        Object.assign(this.gl.canvas.style, {
-            width: width + 'px',
-            height: height + 'px',
-        });
-    }
+        this.canvas.width = pixelWidth;
+        this.canvas.height = pixelHeight;
 
-    setViewport(width, height, x = 0, y = 0) {
-        if (this.state.viewport.width === width && this.state.viewport.height === height) return;
-        this.state.viewport.width = width;
-        this.state.viewport.height = height;
-        this.state.viewport.x = x;
-        this.state.viewport.y = y;
-        this.gl.viewport(x, y, width, height);
-    }
-
-    setScissor(width, height, x = 0, y = 0) {
-        this.gl.scissor(x, y, width, height);
-    }
-
-    enable(id) {
-        if (this.state[id] === true) return;
-        this.gl.enable(id);
-        this.state[id] = true;
-    }
-
-    disable(id) {
-        if (this.state[id] === false) return;
-        this.gl.disable(id);
-        this.state[id] = false;
-    }
-
-    setBlendFunc(src, dst, srcAlpha, dstAlpha) {
-        if (
-            this.state.blendFunc.src === src &&
-            this.state.blendFunc.dst === dst &&
-            this.state.blendFunc.srcAlpha === srcAlpha &&
-            this.state.blendFunc.dstAlpha === dstAlpha
-        )
-            return;
-        this.state.blendFunc.src = src;
-        this.state.blendFunc.dst = dst;
-        this.state.blendFunc.srcAlpha = srcAlpha;
-        this.state.blendFunc.dstAlpha = dstAlpha;
-        if (srcAlpha !== undefined) this.gl.blendFuncSeparate(src, dst, srcAlpha, dstAlpha);
-        else this.gl.blendFunc(src, dst);
-    }
-
-    setBlendEquation(modeRGB, modeAlpha) {
-        modeRGB = modeRGB || this.gl.FUNC_ADD;
-        if (this.state.blendEquation.modeRGB === modeRGB && this.state.blendEquation.modeAlpha === modeAlpha) return;
-        this.state.blendEquation.modeRGB = modeRGB;
-        this.state.blendEquation.modeAlpha = modeAlpha;
-        if (modeAlpha !== undefined) this.gl.blendEquationSeparate(modeRGB, modeAlpha);
-        else this.gl.blendEquation(modeRGB);
-    }
-
-    setCullFace(value) {
-        if (this.state.cullFace === value) return;
-        this.state.cullFace = value;
-        this.gl.cullFace(value);
-    }
-
-    setFrontFace(value) {
-        if (this.state.frontFace === value) return;
-        this.state.frontFace = value;
-        this.gl.frontFace(value);
-    }
-
-    setDepthMask(value) {
-        if (this.state.depthMask === value) return;
-        this.state.depthMask = value;
-        this.gl.depthMask(value);
-    }
-
-    setDepthFunc(value) {
-        if (this.state.depthFunc === value) return;
-        this.state.depthFunc = value;
-        this.gl.depthFunc(value);
-    }
-
-    setStencilMask(value) {
-        if (this.state.stencilMask === value) return;
-        this.state.stencilMask = value;
-        this.gl.stencilMask(value);
-    }
-
-    setStencilFunc(func, ref, mask) {
-        if (
-            this.state.stencilFunc === func &&
-            this.state.stencilRef === ref &&
-            this.state.stencilFuncMask === mask
-        )
-            return;
-        this.state.stencilFunc = func || this.gl.ALWAYS;
-        this.state.stencilRef = ref || 0;
-        this.state.stencilFuncMask = mask || 0;
-        this.gl.stencilFunc(func || this.gl.ALWAYS, ref || 0, mask || 0);
-    }
-
-    setStencilOp(stencilFail, depthFail, depthPass) {
-        if (
-            this.state.stencilFail === stencilFail &&
-            this.state.stencilDepthFail === depthFail &&
-            this.state.stencilDepthPass === depthPass
-        )
-            return;
-        this.state.stencilFail = stencilFail;
-        this.state.stencilDepthFail = depthFail;
-        this.state.stencilDepthPass = depthPass;
-        this.gl.stencilOp(stencilFail, depthFail, depthPass);
-    }
-
-    activeTexture(value) {
-        if (this.state.activeTextureUnit === value) return;
-        this.state.activeTextureUnit = value;
-        this.gl.activeTexture(this.gl.TEXTURE0 + value);
-    }
-
-    bindFramebuffer({ target = this.gl.FRAMEBUFFER, buffer = null } = {}) {
-        if (this.state.framebuffer === buffer) return;
-        this.state.framebuffer = buffer;
-        this.gl.bindFramebuffer(target, buffer);
-    }
-
-    getExtension(extension, webgl2Func, extFunc) {
-        // if webgl2 function supported, return func bound to gl context
-        if (webgl2Func && this.gl[webgl2Func]) return this.gl[webgl2Func].bind(this.gl);
-
-        // fetch extension once only
-        if (!this.extensions[extension]) {
-            this.extensions[extension] = this.gl.getExtension(extension);
+        if (this.canvas.style) {
+            Object.assign(this.canvas.style, {
+                width: width + 'px',
+                height: height + 'px',
+            });
         }
 
-        // return extension if no function requested
-        if (!webgl2Func) return this.extensions[extension];
-
-        // Return null if extension not supported
-        if (!this.extensions[extension]) return null;
-
-        // return extension function, bound to extension
-        return this.extensions[extension][extFunc].bind(this.extensions[extension]);
+        // Recreate depth texture at new size
+        if (this.depth || this.stencil) {
+            if (this.depthTexture) this.depthTexture.destroy();
+            this.depthTexture = this.device.createTexture({
+                size: [pixelWidth, pixelHeight],
+                format: this.depthFormat,
+                usage: GPUTextureUsage.RENDER_ATTACHMENT,
+            });
+        }
     }
 
     sortOpaque(a, b) {
-        if (a.renderOrder !== b.renderOrder) {
-            return a.renderOrder - b.renderOrder;
-        } else if (a.program.id !== b.program.id) {
-            return a.program.id - b.program.id;
-        } else if (a.zDepth !== b.zDepth) {
-            return a.zDepth - b.zDepth;
-        } else {
-            return b.id - a.id;
-        }
+        if (a.renderOrder !== b.renderOrder) return a.renderOrder - b.renderOrder;
+        if (a.program.id !== b.program.id) return a.program.id - b.program.id;
+        if (a.zDepth !== b.zDepth) return a.zDepth - b.zDepth;
+        return b.id - a.id;
     }
 
     sortTransparent(a, b) {
-        if (a.renderOrder !== b.renderOrder) {
-            return a.renderOrder - b.renderOrder;
-        }
-        if (a.zDepth !== b.zDepth) {
-            return b.zDepth - a.zDepth;
-        } else {
-            return b.id - a.id;
-        }
+        if (a.renderOrder !== b.renderOrder) return a.renderOrder - b.renderOrder;
+        if (a.zDepth !== b.zDepth) return b.zDepth - a.zDepth;
+        return b.id - a.id;
     }
 
     sortUI(a, b) {
-        if (a.renderOrder !== b.renderOrder) {
-            return a.renderOrder - b.renderOrder;
-        } else if (a.program.id !== b.program.id) {
-            return a.program.id - b.program.id;
-        } else {
-            return b.id - a.id;
-        }
+        if (a.renderOrder !== b.renderOrder) return a.renderOrder - b.renderOrder;
+        if (a.program.id !== b.program.id) return a.program.id - b.program.id;
+        return b.id - a.id;
     }
 
-    getRenderList({ scene, camera, frustumCull, sort }) {
-        let renderList = [];
+    getRenderList(scene, camera, frustumCull, sort) {
+        const renderList = this._renderList;
+        renderList.length = 0;
 
         if (camera && frustumCull) camera.updateFrustum();
 
-        // Get visible
         scene.traverse((node) => {
             if (!node.visible) return true;
             if (!node.draw) return;
@@ -314,12 +219,15 @@ export class Renderer {
         });
 
         if (sort) {
-            const opaque = [];
-            const transparent = []; // depthTest true
-            const ui = []; // depthTest false
+            const opaque = this._opaque;
+            const transparent = this._transparent;
+            const ui = this._ui;
+            opaque.length = 0;
+            transparent.length = 0;
+            ui.length = 0;
 
-            renderList.forEach((node) => {
-                // Split into the 3 render groups
+            for (let i = 0, l = renderList.length; i < l; i++) {
+                const node = renderList[i];
                 if (!node.program.transparent) {
                     opaque.push(node);
                 } else if (node.program.depthTest) {
@@ -330,67 +238,121 @@ export class Renderer {
 
                 node.zDepth = 0;
 
-                // Only calculate z-depth if renderOrder unset and depthTest is true
-                if (node.renderOrder !== 0 || !node.program.depthTest || !camera) return;
+                if (node.renderOrder !== 0 || !node.program.depthTest || !camera) continue;
 
-                // update z-depth
                 node.worldMatrix.getTranslation(tempVec3);
                 tempVec3.applyMatrix4(camera.projectionViewMatrix);
                 node.zDepth = tempVec3.z;
-            });
+            }
 
             opaque.sort(this.sortOpaque);
             transparent.sort(this.sortTransparent);
             ui.sort(this.sortUI);
 
-            renderList = opaque.concat(transparent, ui);
+            // Rebuild renderList in-place: opaque, then transparent, then ui
+            renderList.length = 0;
+            for (let i = 0, l = opaque.length; i < l; i++) renderList.push(opaque[i]);
+            for (let i = 0, l = transparent.length; i < l; i++) renderList.push(transparent[i]);
+            for (let i = 0, l = ui.length; i < l; i++) renderList.push(ui[i]);
         }
 
         return renderList;
     }
 
     render({ scene, camera, target = null, update = true, sort = true, frustumCull = true, clear }) {
+        let colorAttachments;
+        let depthStencilAttachment;
+        let width, height;
+
+        const shouldClear = clear || (this.autoClear && clear !== false);
+
+        // Expose current render target so Mesh.draw can determine formats
+        this.currentTarget = target;
+
         if (target === null) {
-            // make sure no render target bound so draws to canvas
-            this.bindFramebuffer();
-            this.setViewport(this.width * this.dpr, this.height * this.dpr);
+            // Render to canvas — reuse pre-allocated descriptor objects
+            const colorTexture = this.context.getCurrentTexture();
+            width = colorTexture.width;
+            height = colorTexture.height;
+
+            const ca = this._canvasColorAttachment;
+            ca.view = colorTexture.createView();
+            ca.clearValue = this.clearColor;
+            ca.loadOp = shouldClear ? 'clear' : 'load';
+            colorAttachments = this._canvasColorAttachments;
+
+            if (this.depthTexture) {
+                const da = this._canvasDepthAttachment;
+                da.view = this.depthTexture.createView();
+                da.depthLoadOp = shouldClear ? 'clear' : 'load';
+                if (this.stencil) {
+                    da.stencilLoadOp = shouldClear ? 'clear' : 'load';
+                }
+                depthStencilAttachment = da;
+            }
         } else {
-            // bind supplied render target and update viewport
-            this.bindFramebuffer(target);
-            this.setViewport(target.width, target.height);
+            // Render to target
+            const passDesc = target.getPassDescriptor({ clear: shouldClear, clearColor: this.clearColor });
+            colorAttachments = passDesc.colorAttachments;
+            depthStencilAttachment = passDesc.depthStencilAttachment;
+            width = target.width;
+            height = target.height;
         }
 
-        if (clear || (this.autoClear && clear !== false)) {
-            // Ensure depth buffer writing is enabled so it can be cleared
-            if (this.depth && (!target || target.depth)) {
-                this.enable(this.gl.DEPTH_TEST);
-                this.setDepthMask(true);
-            }
-
-            // Same for stencil
-            if (this.stencil || !target || target.stencil) {
-                this.enable(this.gl.STENCIL_TEST);
-                this.setStencilMask(0xff);
-            }
-
-            this.gl.clear(
-                (this.color ? this.gl.COLOR_BUFFER_BIT : 0) |
-                    (this.depth ? this.gl.DEPTH_BUFFER_BIT : 0) |
-                    (this.stencil ? this.gl.STENCIL_BUFFER_BIT : 0)
-            );
-        }
-
-        // updates all scene graph matrices
+        // Update scene graph matrices
         if (update) scene.updateMatrixWorld();
-
-        // Update camera separately, in case not in scene graph
         if (camera) camera.updateMatrixWorld();
 
-        // Get render list - entails culling and sorting
-        const renderList = this.getRenderList({ scene, camera, frustumCull, sort });
+        // Get render list (uses pre-allocated arrays internally)
+        const renderList = this.getRenderList(scene, camera, frustumCull, sort);
 
-        renderList.forEach((node) => {
-            node.draw({ camera });
-        });
+        // Prepare dynamic UBO for per-object uniforms
+        this._ensureDynamicUBO(renderList.length);
+
+        // Reset render state tracking
+        this._renderState.pipeline = null;
+        this._renderState.geometry = null;
+        this._renderState.program = null;
+        this._renderPassId++;
+
+        // Pre-compute per-pass format info for Mesh.draw to use
+        if (target) {
+            this._currentColorFormats = target.colorFormats;
+            this._currentColorFormatsKey = target.colorFormatsKey;
+            this._currentDepthFormat = (target.depth || target.stencil) ? target.depthFormat : null;
+        } else {
+            this._currentColorFormats = this._canvasColorFormats;
+            this._currentColorFormatsKey = this._canvasColorFormatsKey;
+            this._currentDepthFormat = this.depthTexture ? this.depthFormat : null;
+        }
+
+        // Create command encoder and render pass
+        const commandEncoder = this.device.createCommandEncoder();
+        const passDescriptor = this._passDescriptor;
+        passDescriptor.colorAttachments = colorAttachments;
+        passDescriptor.depthStencilAttachment = depthStencilAttachment;
+
+        const passEncoder = commandEncoder.beginRenderPass(passDescriptor);
+        passEncoder.setViewport(0, 0, width, height, 0, 1);
+        if (this.scissor) {
+            passEncoder.setScissorRect(this.scissor.x, this.scissor.y, this.scissor.width, this.scissor.height);
+        }
+
+        const drawArgs = this._drawArgs;
+        drawArgs.camera = camera;
+        drawArgs.passEncoder = passEncoder;
+        for (let i = 0, l = renderList.length; i < l; i++) {
+            renderList[i].draw(drawArgs);
+        }
+
+        passEncoder.end();
+
+        // Upload all per-object uniform data in one call
+        if (this._dynamicUBOOffset > 0) {
+            this.device.queue.writeBuffer(this._dynamicUBO, 0, this._dynamicUBOData, 0, this._dynamicUBOOffset / 4);
+        }
+
+        this._submitArray[0] = commandEncoder.finish();
+        this.device.queue.submit(this._submitArray);
     }
 }

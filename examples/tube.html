@@ -14,66 +14,110 @@
         <script type="module">
             import { Renderer, Camera, Transform, Program, Mesh, Sphere, Orbit, Vec3, Color, Path, Tube } from '../src/index.js';
 
-            const vertexColor = /* glsl */ `
-                attribute vec3 position;
-                attribute vec3 normal;
+            const vertexColor = /* wgsl */ `
+                struct MaterialUniforms {
+                    uColor : vec3f,
+                };
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-                uniform mat3 normalMatrix;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
 
-                varying vec3 vNormal;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                void main() {
-                    vNormal = normalize(normalMatrix * normal);
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
+
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) normal : vec3f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vNormal : vec3f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vNormal = normalize(object.normalMatrix * input.normal);
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragmentColor = /* glsl */ `
-                precision highp float;
-                uniform vec3 uColor;
-                varying vec3 vNormal;
+            const fragmentColor = /* wgsl */ `
+                struct MaterialUniforms {
+                    uColor : vec3f,
+                };
 
-                void main() {
-                    vec3 normal = normalize(vNormal);
-                    float lighting = dot(normal, normalize(vec3(-0.3, 0.8, 0.6)));
-                    gl_FragColor.rgb = uColor + lighting * 0.1;
-                    gl_FragColor.a = 1.0;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+
+                struct FragmentInput {
+                    @location(0) vNormal : vec3f,
+                };
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let normal = normalize(input.vNormal);
+                    let lighting = dot(normal, normalize(vec3f(-0.3, 0.8, 0.6)));
+                    return vec4f(material.uColor + lighting * 0.1, 1.0);
                 }
             `;
 
-            const vertexUv = /* glsl */ `
-                attribute vec3 position;
-                attribute vec2 uv;
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-                varying vec2 vUv;
+            const vertexUv = /* wgsl */ `
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                void main() {
-                    vUv = uv;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
+
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) uv : vec2f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragmentUv = /* glsl */ `
-                precision highp float;
-                varying vec2 vUv;
+            const fragmentUv = /* wgsl */ `
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
 
-                void main() {
-                    if (cos(vUv.x * 512.0) < 0.0) discard;
-                    gl_FragColor.rgb = vec3(cos(vUv * 6.283185307179586) * 0.5 + 0.5, 1.0);
-                    gl_FragColor.a = 1.0;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    if (cos(input.vUv.x * 512.0) < 0.0) {
+                        discard;
+                    }
+                    let color = vec3f(cos(input.vUv * 6.283185307179586) * 0.5 + 0.5, 1.0);
+                    return vec4f(color, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 35 });
+                const camera = new Camera(renderer, { fov: 35 });
                 camera.position.set(0, 0, 5);
 
                 // Create controls and pass parameters
@@ -83,7 +127,7 @@
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
@@ -131,17 +175,17 @@
                 path.getPoints(pathSubdivisions);
                 path.computeFrenetFrames(pathSubdivisions, true);
 
-                const tubeGeom = new Tube(gl, { path, radius: 0.1, tubularSegments: 256, radialSegments: 16, closed: true });
-                const tubeProg = new Program(gl, {
+                const tubeGeom = new Tube(renderer, { path, radius: 0.1, tubularSegments: 256, radialSegments: 16, closed: true });
+                const tubeProg = new Program(renderer, {
                     vertex: vertexUv,
                     fragment: fragmentUv,
                     cullFace: false,
                 });
-                const tubeMesh = new Mesh(gl, { geometry: tubeGeom, program: tubeProg });
+                const tubeMesh = new Mesh(renderer, { geometry: tubeGeom, program: tubeProg });
                 tubeMesh.setParent(scene);
 
-                const sphereGeom = new Sphere(gl);
-                const sphereProg = new Program(gl, {
+                const sphereGeom = new Sphere(renderer);
+                const sphereProg = new Program(renderer, {
                     vertex: vertexColor,
                     fragment: fragmentColor,
                     uniforms: {
@@ -149,7 +193,7 @@
                     },
                 });
 
-                const sphereMesh = new Mesh(gl, { geometry: sphereGeom, program: sphereProg });
+                const sphereMesh = new Mesh(renderer, { geometry: sphereGeom, program: sphereProg });
                 sphereMesh.scale.set(0.1);
                 sphereMesh.setParent(scene);
 

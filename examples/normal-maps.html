@@ -14,181 +14,145 @@
         <script type="module">
             import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh, Orbit } from '../src/index.js';
 
-            const vertex100 = /* glsl */ `
-                attribute vec3 position;
-                attribute vec2 uv;
-                attribute vec3 normal;
+            const vertex = /* wgsl */ `
+                struct MaterialUniforms {
+                    uNormalScale : f32,
+                    uNormalUVScale : f32,
+                    uTime : f32,
+                };
 
-                uniform mat3 normalMatrix;
-                uniform mat4 modelMatrix;
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tDiffuse : texture_2d<f32>;
+                @group(0) @binding(2) var tDiffuseSampler : sampler;
+                @group(0) @binding(3) var tNormal : texture_2d<f32>;
+                @group(0) @binding(4) var tNormalSampler : sampler;
 
-                varying vec2 vUv;
-                varying vec3 vNormal;
-                varying vec3 vMPos;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                void main() {
-                    vUv = uv;
-                    vNormal = normalize(normalMatrix * normal);
-                    vMPos = (modelMatrix * vec4(position, 1.0)).xyz;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) uv : vec2f,
+                    @location(2) normal : vec3f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                    @location(1) vNormal : vec3f,
+                    @location(2) vMPos : vec3f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.vNormal = normalize(object.normalMatrix * input.normal);
+                    output.vMPos = (object.modelMatrix * vec4f(input.position, 1.0)).xyz;
+
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragment100 = /* glsl */ `
-                #extension GL_OES_standard_derivatives : enable
+            const fragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    uNormalScale : f32,
+                    uNormalUVScale : f32,
+                    uTime : f32,
+                };
 
-                precision highp float;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tDiffuse : texture_2d<f32>;
+                @group(0) @binding(2) var tDiffuseSampler : sampler;
+                @group(0) @binding(3) var tNormal : texture_2d<f32>;
+                @group(0) @binding(4) var tNormalSampler : sampler;
 
-                uniform mat4 viewMatrix;
-                uniform float uTime;
-                uniform sampler2D tDiffuse;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                uniform sampler2D tNormal;
-                uniform float uNormalScale;
-                uniform float uNormalUVScale;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                varying vec2 vUv;
-                varying vec3 vNormal;
-                varying vec3 vMPos;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vNormal : vec3f,
+                    @location(2) vMPos : vec3f,
+                };
 
-                vec3 getNormal() {
-                    vec3 pos_dx = dFdx(vMPos.xyz);
-                    vec3 pos_dy = dFdy(vMPos.xyz);
-                    vec2 tex_dx = dFdx(vUv);
-                    vec2 tex_dy = dFdy(vUv);
+                fn getNormal(vMPos : vec3f, vUv : vec2f, vNormal : vec3f) -> vec3f {
+                    let pos_dx = dpdx(vMPos);
+                    let pos_dy = -dpdy(vMPos);
+                    let tex_dx = dpdx(vUv);
+                    let tex_dy = -dpdy(vUv);
 
-                    vec3 t = normalize(pos_dx * tex_dy.t - pos_dy * tex_dx.t);
-                    vec3 b = normalize(-pos_dx * tex_dy.s + pos_dy * tex_dx.s);
-                    mat3 tbn = mat3(t, b, normalize(vNormal));
+                    let t = normalize(pos_dx * tex_dy.y - pos_dy * tex_dx.y);
+                    let b = normalize(-pos_dx * tex_dy.x + pos_dy * tex_dx.x);
+                    let tbn = mat3x3f(t, b, normalize(vNormal));
 
-                    vec3 n = texture2D(tNormal, vUv * uNormalUVScale).rgb * 2.0 - 1.0;
-                    n.xy *= uNormalScale;
-                    vec3 normal = normalize(tbn * n);
+                    var n = textureSample(tNormal, tNormalSampler, vUv * material.uNormalUVScale).rgb * 2.0 - 1.0;
+                    n = vec3f(n.xy * material.uNormalScale, n.z);
+                    let normal = normalize(tbn * n);
 
                     // Get world normal from view normal
-                    return normalize((vec4(normal, 0.0) * viewMatrix).xyz);
+                    return normalize((vec4f(normal, 0.0) * object.viewMatrix).xyz);
                 }
 
-                void main() {
-                    vec3 tex = texture2D(tDiffuse, vUv).rgb;
-                    vec3 normal = getNormal();
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let tex = textureSample(tDiffuse, tDiffuseSampler, input.vUv).rgb;
+                    let normal = getNormal(input.vMPos, input.vUv, input.vNormal);
 
-                    vec3 light = normalize(vec3(sin(uTime), 1.0, cos(uTime)));
-                    float shading = dot(normal, light) * 0.5;
+                    let light = normalize(vec3f(sin(material.uTime), 1.0, cos(material.uTime)));
+                    let shading = dot(normal, light) * 0.5;
 
-                    gl_FragColor.rgb = tex + shading;
-                    gl_FragColor.a = 1.0;
-                }
-            `;
-
-            const vertex300 = /* glsl */ `#version 300 es
-                in vec3 position;
-                in vec2 uv;
-                in vec3 normal;
-
-                uniform mat3 normalMatrix;
-                uniform mat4 modelMatrix;
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-
-                out vec2 vUv;
-                out vec3 vNormal;
-                out vec3 vMPos;
-
-                void main() {
-                    vUv = uv;
-                    vNormal = normalize(normalMatrix * normal);
-                    vMPos = (modelMatrix * vec4(position, 1.0)).xyz;
-
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `;
-
-            const fragment300 = /* glsl */ `#version 300 es
-                precision highp float;
-
-                uniform mat4 viewMatrix;
-                uniform float uTime;
-                uniform sampler2D tDiffuse;
-
-                uniform sampler2D tNormal;
-                uniform float uNormalScale;
-                uniform float uNormalUVScale;
-
-                in vec2 vUv;
-                in vec3 vNormal;
-                in vec3 vMPos;
-
-                out vec4 FragColor;
-
-                vec3 getNormal() {
-                    vec3 pos_dx = dFdx(vMPos.xyz);
-                    vec3 pos_dy = dFdy(vMPos.xyz);
-                    vec2 tex_dx = dFdx(vUv);
-                    vec2 tex_dy = dFdy(vUv);
-
-                    vec3 t = normalize(pos_dx * tex_dy.t - pos_dy * tex_dx.t);
-                    vec3 b = normalize(-pos_dx * tex_dy.s + pos_dy * tex_dx.s);
-                    mat3 tbn = mat3(t, b, normalize(vNormal));
-
-                    vec3 n = texture(tNormal, vUv * uNormalUVScale).rgb * 2.0 - 1.0;
-                    n.xy *= uNormalScale;
-                    vec3 normal = normalize(tbn * n);
-
-                    // Get world normal from view normal
-                    return normalize((vec4(normal, 0.0) * viewMatrix).xyz);
-                }
-
-                void main() {
-                    vec3 tex = texture(tDiffuse, vUv).rgb;
-
-                    vec3 normal = getNormal();
-
-                    vec3 light = normalize(vec3(sin(uTime), 1.0, cos(uTime)));
-                    float shading = dot(normal, light) * 0.5;
-
-                    FragColor.rgb = tex + shading;
-                    FragColor.a = 1.0;
+                    return vec4f(tex + shading, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 45 });
+                const camera = new Camera(renderer, { fov: 45 });
                 camera.position.set(1.5, 0, 2);
 
                 const controls = new Orbit(camera);
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
                 const scene = new Transform();
 
-                const textureDiffuse = new Texture(gl);
+                const textureDiffuse = new Texture(renderer);
                 const imgDiffuse = new Image();
                 imgDiffuse.onload = () => (textureDiffuse.image = imgDiffuse);
                 imgDiffuse.src = 'assets/granite-diffuse.jpg';
 
-                const textureNormal = new Texture(gl);
+                const textureNormal = new Texture(renderer);
                 const imgNormal = new Image();
                 imgNormal.onload = () => (textureNormal.image = imgNormal);
                 imgNormal.src = 'assets/granite-normal.jpg';
 
-                const program = new Program(gl, {
-                    // Get fallback shader for WebGL1 - needed for OES_standard_derivatives ext
-                    vertex: renderer.isWebgl2 ? vertex300 : vertex100,
-                    fragment: renderer.isWebgl2 ? fragment300 : fragment100,
+                const program = new Program(renderer, {
+                    vertex,
+                    fragment,
                     uniforms: {
                         tDiffuse: { value: textureDiffuse },
                         tNormal: { value: textureNormal },
@@ -202,13 +166,13 @@
                 async function loadModel() {
                     const data = await (await fetch(`assets/rounded-cube.json`)).json();
 
-                    const geometry = new Geometry(gl, {
+                    const geometry = new Geometry(renderer, {
                         position: { size: 3, data: new Float32Array(data.position) },
                         uv: { size: 2, data: new Float32Array(data.uv) },
                         normal: { size: 3, data: new Float32Array(data.normal) },
                     });
 
-                    const mesh = new Mesh(gl, { geometry, program });
+                    const mesh = new Mesh(renderer, { geometry, program });
                     mesh.setParent(scene);
                 }
 

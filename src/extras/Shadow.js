@@ -3,15 +3,15 @@ import { Program } from '../core/Program.js';
 import { RenderTarget } from '../core/RenderTarget.js';
 
 export class Shadow {
-    constructor(gl, { light = new Camera(gl), width = 1024, height = width }) {
-        this.gl = gl;
+    constructor(gpu, { light = new Camera(gpu), width = 1024, height = width } = {}) {
+        this.renderer = gpu.renderer || gpu;
 
         this.light = light;
 
-        this.target = new RenderTarget(gl, { width, height });
+        this.target = new RenderTarget(gpu, { width, height });
         this.targetUniform = { value: this.target.texture };
 
-        this.depthProgram = new Program(gl, {
+        this.depthProgram = new Program(gpu, {
             vertex: defaultVertex,
             fragment: defaultFragment,
             cullFace: false,
@@ -30,11 +30,13 @@ export class Shadow {
         uniformView = 'shadowViewMatrix',
         uniformTexture = 'tShadow',
     }) {
-        // Add uniforms to existing program
+        // In WebGPU, uniforms must be declared at Program construction time.
+        // If the program already has the shadow uniforms, skip injection.
         if (receive && !mesh.program.uniforms[uniformProjection]) {
-            mesh.program.uniforms[uniformProjection] = { value: this.light.projectionMatrix };
-            mesh.program.uniforms[uniformView] = { value: this.light.viewMatrix };
-            mesh.program.uniforms[uniformTexture] = this.targetUniform;
+            console.warn(
+                'Shadow.add: shadow uniforms should be included at Program construction time for WebGPU. ' +
+                'Pass shadowProjectionMatrix, shadowViewMatrix, and tShadow in the Program uniforms.'
+            );
         }
 
         if (!cast) return;
@@ -53,7 +55,7 @@ export class Shadow {
         }
 
         // Create custom override program
-        mesh.depthProgram = new Program(this.gl, {
+        mesh.depthProgram = new Program(this.renderer, {
             vertex,
             fragment,
             cullFace: false,
@@ -61,7 +63,7 @@ export class Shadow {
     }
 
     setSize({ width = 1024, height = width }) {
-        this.target = new RenderTarget(this.gl, { width, height });
+        this.target = new RenderTarget(this.renderer, { width, height });
         this.targetUniform.value = this.target.texture;
     }
 
@@ -79,7 +81,7 @@ export class Shadow {
         });
 
         // Render the depth shadow map using the light as the camera
-        this.gl.renderer.render({
+        this.renderer.render({
             scene,
             camera: this.light,
             target: this.target,
@@ -97,28 +99,37 @@ export class Shadow {
     }
 }
 
-const defaultVertex = /* glsl */ `
-    attribute vec3 position;
-    attribute vec2 uv;
+const defaultVertex = /* wgsl */ `
+    struct ObjectUniforms {
+        modelMatrix : mat4x4f,
+        viewMatrix : mat4x4f,
+        modelViewMatrix : mat4x4f,
+        projectionMatrix : mat4x4f,
+        normalMatrix : mat3x3f,
+        cameraPosition : vec3f,
+    };
 
-    uniform mat4 modelViewMatrix;
-    uniform mat4 projectionMatrix;
+    @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-    void main() {
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    struct VertexInput {
+        @location(0) position : vec3f,
+    };
+
+    struct VertexOutput {
+        @builtin(position) position : vec4f,
+    };
+
+    @vertex fn main(input : VertexInput) -> VertexOutput {
+        var output : VertexOutput;
+        output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+        return output;
     }
 `;
 
-const defaultFragment = /* glsl */ `
-    precision highp float;
-
-    vec4 packRGBA (float v) {
-        vec4 pack = fract(vec4(1.0, 255.0, 65025.0, 16581375.0) * v);
-        pack -= pack.yzww * vec2(1.0 / 255.0, 0.0).xxxy;
-        return pack;
-    }
-
-    void main() {
-        gl_FragColor = packRGBA(gl_FragCoord.z);
+const defaultFragment = /* wgsl */ `
+    @fragment fn main(@builtin(position) fragCoord : vec4f) -> @location(0) vec4f {
+        let v = fragCoord.z;
+        let pack = fract(vec4f(1.0, 255.0, 65025.0, 16581375.0) * v);
+        return pack - pack.yzww * vec4f(1.0 / 255.0, 1.0 / 255.0, 1.0 / 255.0, 0.0);
     }
 `;

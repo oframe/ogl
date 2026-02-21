@@ -2,7 +2,7 @@ import { Geometry } from '../core/Geometry.js';
 import { Plane } from './Plane.js';
 
 export class Box extends Geometry {
-    constructor(gl, { width = 1, height = 1, depth = 1, widthSegments = 1, heightSegments = 1, depthSegments = 1, attributes = {} } = {}) {
+    constructor(gpu, { width = 1, height = 1, depth = 1, widthSegments = 1, heightSegments = 1, depthSegments = 1, attributes = {} } = {}) {
         const wSegs = widthSegments;
         const hSegs = heightSegments;
         const dSegs = depthSegments;
@@ -50,6 +50,6 @@ export class Box extends Geometry {
             index: { data: index },
         });
 
-        super(gl, attributes);
+        super(gpu, attributes);
     }
 }

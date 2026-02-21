@@ -7,17 +7,20 @@ import { Animation } from './Animation.js';
 const tempMat4 = /* @__PURE__ */ new Mat4();
 
 export class Skin extends Mesh {
-    constructor(gl, { rig, geometry, program, mode = gl.TRIANGLES } = {}) {
-        super(gl, { geometry, program, mode });
+    constructor(gpu, { rig, geometry, program } = {}) {
+        super(gpu, { geometry, program });
 
         this.createBones(rig);
         this.createBoneTexture();
         this.animations = [];
 
-        Object.assign(this.program.uniforms, {
-            boneTexture: { value: this.boneTexture },
-            boneTextureSize: { value: this.boneTextureSize },
-        });
+        // Set uniform values (uniforms must be pre-declared in Program)
+        if (this.program.uniforms.boneTexture) {
+            this.program.uniforms.boneTexture.value = this.boneTexture;
+        }
+        if (this.program.uniforms.boneTextureSize) {
+            this.program.uniforms.boneTextureSize.value = this.boneTextureSize;
+        }
     }
 
     createBones(rig) {
@@ -59,15 +62,15 @@ export class Skin extends Mesh {
         const size = Math.max(4, Math.pow(2, Math.ceil(Math.log(Math.sqrt(this.bones.length * 4)) / Math.LN2)));
         this.boneMatrices = new Float32Array(size * size * 4);
         this.boneTextureSize = size;
-        this.boneTexture = new Texture(this.gl, {
+        this.boneTexture = new Texture(this.renderer, {
             image: this.boneMatrices,
             generateMipmaps: false,
-            type: this.gl.FLOAT,
-            internalFormat: this.gl.renderer.isWebgl2 ? this.gl.RGBA32F : this.gl.RGBA,
-            minFilter: this.gl.NEAREST,
-            magFilter: this.gl.NEAREST,
+            format: 'rgba32float',
+            minFilter: 'nearest',
+            magFilter: 'nearest',
             flipY: false,
             width: size,
+            height: size,
         });
     }
 
@@ -88,7 +91,7 @@ export class Skin extends Mesh {
         });
     }
 
-    draw({ camera } = {}) {
+    draw({ camera, passEncoder } = {}) {
         // Update world matrices manually, as not part of scene graph
         this.root.updateMatrixWorld(true);
 
@@ -98,8 +101,18 @@ export class Skin extends Mesh {
             tempMat4.multiply(bone.worldMatrix, bone.bindInverse);
             this.boneMatrices.set(tempMat4, i * 16);
         });
-        if (this.boneTexture) this.boneTexture.needsUpdate = true;
 
-        super.draw({ camera });
+        // Direct upload without recreating texture
+        if (this.boneTexture) {
+            const bytesPerRow = this.boneTextureSize * 4 * 4; // rgba32float = 16 bytes per pixel
+            this.device.queue.writeTexture(
+                { texture: this.boneTexture.gpuTexture },
+                this.boneMatrices,
+                { bytesPerRow, rowsPerImage: this.boneTextureSize },
+                [this.boneTextureSize, this.boneTextureSize]
+            );
+        }
+
+        super.draw({ camera, passEncoder });
     }
 }

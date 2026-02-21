@@ -5,19 +5,16 @@ import { Mat4 } from '../math/Mat4.js';
 let ID = 0;
 
 export class Mesh extends Transform {
-    constructor(gl, { geometry, program, mode = gl.TRIANGLES, frustumCulled = true, renderOrder = 0 } = {}) {
+    constructor(gpu, { geometry, program, mode, frustumCulled = true, renderOrder = 0 } = {}) {
         super();
-        if (!gl.canvas) console.error('gl not passed as first argument to Mesh');
-        this.gl = gl;
+        this.renderer = gpu.renderer || gpu;
+        this.device = this.renderer.device;
         this.id = ID++;
         this.geometry = geometry;
         this.program = program;
         this.mode = mode;
 
-        // Used to skip frustum culling
         this.frustumCulled = frustumCulled;
-
-        // Override sorting to force an order
         this.renderOrder = renderOrder;
         this.modelViewMatrix = new Mat4();
         this.normalMatrix = new Mat3();
@@ -35,36 +32,82 @@ export class Mesh extends Transform {
         return this;
     }
 
-    draw({ camera } = {}) {
+    draw({ camera, passEncoder } = {}) {
+        const renderer = this.renderer;
+        let dynamicOffset = 0;
+
         if (camera) {
-            // Add empty matrix uniforms to program if unset
-            if (!this.program.uniforms.modelMatrix) {
-                Object.assign(this.program.uniforms, {
-                    modelMatrix: { value: null },
-                    viewMatrix: { value: null },
-                    modelViewMatrix: { value: null },
-                    normalMatrix: { value: null },
-                    projectionMatrix: { value: null },
-                    cameraPosition: { value: null },
-                });
-            }
-
-            // Set the matrix uniforms
-            this.program.uniforms.projectionMatrix.value = camera.projectionMatrix;
-            this.program.uniforms.cameraPosition.value = camera.worldPosition;
-            this.program.uniforms.viewMatrix.value = camera.viewMatrix;
             this.modelViewMatrix.multiply(camera.viewMatrix, this.worldMatrix);
-            this.normalMatrix.getNormalMatrix(this.modelViewMatrix);
-            this.program.uniforms.modelMatrix.value = this.worldMatrix;
-            this.program.uniforms.modelViewMatrix.value = this.modelViewMatrix;
-            this.program.uniforms.normalMatrix.value = this.normalMatrix;
-        }
-        this.beforeRenderCallbacks.forEach((f) => f && f({ mesh: this, camera }));
+            this.normalMatrix.getNormalMatrix(this.worldMatrix);
 
-        // determine if faces need to be flipped - when mesh scaled negatively
-        let flipFaces = this.program.cullFace && this.worldMatrix.determinant() < 0;
-        this.program.use({ flipFaces });
-        this.geometry.draw({ mode: this.mode, program: this.program });
-        this.afterRenderCallbacks.forEach((f) => f && f({ mesh: this, camera }));
+            // Pack per-object data directly into the renderer's shared dynamic UBO
+            dynamicOffset = renderer._dynamicUBOOffset;
+            const floatOffset = dynamicOffset / 4;
+            const data = renderer._dynamicUBOData;
+
+            data.set(this.worldMatrix, floatOffset);               // modelMatrix at 0
+            data.set(camera.viewMatrix, floatOffset + 16);         // viewMatrix at 64 bytes
+            data.set(this.modelViewMatrix, floatOffset + 32);      // modelViewMatrix at 128 bytes
+            data.set(camera.projectionMatrix, floatOffset + 48);   // projectionMatrix at 192 bytes
+
+            // normalMatrix (mat3 packed as 3 x vec4-aligned columns) at 256 bytes = 64 floats
+            const nm = this.normalMatrix;
+            data[floatOffset + 64] = nm[0];
+            data[floatOffset + 65] = nm[1];
+            data[floatOffset + 66] = nm[2];
+            data[floatOffset + 68] = nm[3];
+            data[floatOffset + 69] = nm[4];
+            data[floatOffset + 70] = nm[5];
+            data[floatOffset + 72] = nm[6];
+            data[floatOffset + 73] = nm[7];
+            data[floatOffset + 74] = nm[8];
+
+            // cameraPosition (vec3) at 304 bytes = 76 floats
+            data[floatOffset + 76] = camera.worldPosition[0];
+            data[floatOffset + 77] = camera.worldPosition[1];
+            data[floatOffset + 78] = camera.worldPosition[2];
+
+            renderer._dynamicUBOOffset += renderer._objectUBOAlignedSize;
+        }
+
+        const cbs = this.beforeRenderCallbacks;
+        for (let i = 0, l = cbs.length; i < l; i++) {
+            if (cbs[i]) cbs[i]({ mesh: this, camera });
+        }
+
+        // Use renderer's pre-computed format info (set once per render pass, not per draw)
+        const colorFormats = renderer._currentColorFormats;
+        const depthFormat = renderer._currentDepthFormat;
+
+        const pipeline = this.program.getPipeline(
+            this.geometry.getVertexBufferLayouts(),
+            colorFormats,
+            depthFormat,
+            camera ? renderer._objectBindGroupLayout : null,
+            this.geometry.getLayoutKey(),
+            this.geometry.getIndexFormat()
+        );
+
+        // Render state tracking — skip redundant setPipeline
+        const renderState = renderer._renderState;
+        if (renderState.pipeline !== pipeline) {
+            passEncoder.setPipeline(pipeline);
+            renderState.pipeline = pipeline;
+        }
+
+        // Material uniforms and bind group 0
+        this.program.use({ passEncoder, renderState });
+
+        // Per-object bind group 1 with dynamic offset
+        if (camera) {
+            passEncoder.setBindGroup(1, renderer._objectBindGroup, [dynamicOffset]);
+        }
+
+        this.geometry.draw({ passEncoder, renderState });
+
+        const acbs = this.afterRenderCallbacks;
+        for (let i = 0, l = acbs.length; i < l; i++) {
+            if (acbs[i]) acbs[i]({ mesh: this, camera });
+        }
     }
 }

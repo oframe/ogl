@@ -4,11 +4,13 @@ import { Geometry } from '../core/Geometry.js';
 import { Color } from '../math/Color.js';
 
 export class WireMesh extends Mesh {
-    constructor(gl, { geometry, wireColor = new Color(0, 0.75, 0.5), ...meshProps } = {}) {
-        const wireProgram = new Program(gl, {
+    constructor(gpu, { geometry, wireColor = new Color(0, 0.75, 0.5), ...meshProps } = {}) {
+        const wireProgram = new Program(gpu, {
             vertex,
             fragment,
             uniforms: { wireColor: { value: wireColor } },
+            topology: 'line-list',
+            cullFace: false,
         });
 
         const positionArray = geometry.attributes.position.data;
@@ -44,12 +46,12 @@ export class WireMesh extends Mesh {
         }
 
         const indicesTyped = indices.length > 65536 ? new Uint32Array(indices) : new Uint16Array(indices);
-        const wireGeometry = new Geometry(gl, {
+        const wireGeometry = new Geometry(gpu, {
             position: { ...geometry.attributes.position },
             index: { data: indicesTyped },
         });
 
-        super(gl, { ...meshProps, mode: gl.LINES, geometry: wireGeometry, program: wireProgram });
+        super(gpu, { ...meshProps, geometry: wireGeometry, program: wireProgram });
     }
 }
 
@@ -74,21 +76,44 @@ function isUniqueEdgePosition(start, end, pos, hashSet) {
     return hashSet.size - oldSize === 2;
 }
 
-const vertex = /* glsl */ `
-attribute vec3 position;
-uniform mat4 modelViewMatrix;
-uniform mat4 projectionMatrix;
+const vertex = /* wgsl */ `
+struct MaterialUniforms {
+    wireColor : vec3f,
+};
+@group(0) @binding(0) var<uniform> material : MaterialUniforms;
 
-void main() {    
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+struct ObjectUniforms {
+    modelMatrix : mat4x4f,
+    viewMatrix : mat4x4f,
+    modelViewMatrix : mat4x4f,
+    projectionMatrix : mat4x4f,
+    normalMatrix : mat3x3f,
+    cameraPosition : vec3f,
+};
+@group(1) @binding(0) var<uniform> object : ObjectUniforms;
+
+struct VertexInput {
+    @location(0) position : vec3f,
+};
+
+struct VertexOutput {
+    @builtin(position) position : vec4f,
+};
+
+@vertex fn main(input : VertexInput) -> VertexOutput {
+    var output : VertexOutput;
+    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+    return output;
 }
 `;
 
-const fragment = /* glsl */ `
-precision highp float;
-uniform vec3 wireColor;
+const fragment = /* wgsl */ `
+struct MaterialUniforms {
+    wireColor : vec3f,
+};
+@group(0) @binding(0) var<uniform> material : MaterialUniforms;
 
-void main() {    
-    gl_FragColor = vec4(wireColor, 1.0);
+@fragment fn main() -> @location(0) vec4f {
+    return vec4f(material.wireColor, 1.0);
 }
 `;

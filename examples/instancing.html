@@ -14,87 +14,113 @@
         <script type="module">
             import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec2 uv;
-                attribute vec3 position;
+            const vertex = /* wgsl */ `
+                struct MaterialUniforms {
+                    uTime : f32,
+                };
 
-                // Add instanced attributes just like any attribute
-                attribute vec3 offset;
-                attribute vec3 random;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tMap : texture_2d<f32>;
+                @group(0) @binding(2) var tMapSampler : sampler;
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-                uniform float uTime;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                varying vec2 vUv;
-                varying vec3 vNormal;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                void rotate2d(inout vec2 v, float a){
-                    mat2 m = mat2(cos(a), -sin(a), sin(a),  cos(a));
-                    v = m * v;
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) uv : vec2f,
+                    @location(2) normal : vec3f,
+                    @location(3) offset : vec3f,
+                    @location(4) random : vec3f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                };
+
+                fn rotate2d(v : vec2f, a : f32) -> vec2f {
+                    let m = mat2x2f(cos(a), -sin(a), sin(a), cos(a));
+                    return m * v;
                 }
 
-                void main() {
-                    vUv = uv;
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
 
                     // copy position so that we can modify the instances
-                    vec3 pos = position;
+                    var pos = input.position;
 
                     // scale first
-                    pos *= 0.9 + random.y * 0.2;
+                    pos *= 0.9 + input.random.y * 0.2;
 
                     // rotate around y axis
-                    rotate2d(pos.xz, random.x * 6.28 + 4.0 * uTime * (random.y - 0.5));
+                    let xz = rotate2d(pos.xz, input.random.x * 6.28 + 4.0 * material.uTime * (input.random.y - 0.5));
+                    pos.x = xz.x;
+                    pos.z = xz.y;
 
                     // rotate around x axis just to add some extra variation
-                    rotate2d(pos.zy, random.z * 0.5 * sin(uTime * random.x + random.z * 3.14));
+                    let zy = rotate2d(pos.zy, input.random.z * 0.5 * sin(material.uTime * input.random.x + input.random.z * 3.14));
+                    pos.z = zy.x;
+                    pos.y = zy.y;
 
-                    pos += offset;
+                    pos += input.offset;
 
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(pos, 1.0);
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    uTime : f32,
+                };
 
-                uniform float uTime;
-                uniform sampler2D tMap;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tMap : texture_2d<f32>;
+                @group(0) @binding(2) var tMapSampler : sampler;
 
-                varying vec2 vUv;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
 
-                void main() {
-                    vec3 tex = texture2D(tMap, vUv).rgb;
-
-                    gl_FragColor.rgb = tex;
-                    gl_FragColor.a = 1.0;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let tex = textureSample(tMap, tMapSampler, input.vUv).rgb;
+                    return vec4f(tex, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 15 });
+                const camera = new Camera(renderer, { fov: 15 });
                 camera.position.z = 15;
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
                 const scene = new Transform();
 
-                const texture = new Texture(gl);
+                const texture = new Texture(renderer);
                 const img = new Image();
                 img.onload = () => (texture.image = img);
                 img.src = 'assets/acorn.jpg';
 
-                const program = new Program(gl, {
+                const program = new Program(renderer, {
                     vertex,
                     fragment,
                     uniforms: {
@@ -120,7 +146,7 @@
                         random.set([Math.random(), Math.random(), Math.random()], i * 3);
                     }
 
-                    const geometry = new Geometry(gl, {
+                    const geometry = new Geometry(renderer, {
                         position: { size: 3, data: new Float32Array(data.position) },
                         uv: { size: 2, data: new Float32Array(data.uv) },
                         normal: { size: 3, data: new Float32Array(data.normal) },
@@ -131,7 +157,7 @@
                         random: { instanced: 1, size: 3, data: random },
                     });
 
-                    mesh = new Mesh(gl, { geometry, program });
+                    mesh = new Mesh(renderer, { geometry, program });
                     mesh.setParent(scene);
                 }
 

@@ -14,47 +14,66 @@
         <script type="module">
             import { Renderer, Camera, Transform, Program, Mesh, Plane, Orbit, TextureLoader } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec2 uv;
-                attribute vec3 position;
+            const vertex = /* wgsl */ `
+                @group(0) @binding(0) var tMapTex : texture_2d<f32>;
+                @group(0) @binding(1) var tMapSampler : sampler;
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                varying vec2 vUv;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                void main() {
-                    vUv = uv;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) normal : vec3f,
+                    @location(2) uv : vec2f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                @group(0) @binding(0) var tMapTex : texture_2d<f32>;
+                @group(0) @binding(1) var tMapSampler : sampler;
 
-                uniform sampler2D tMap;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                };
 
-                varying vec2 vUv;
-
-                void main() {
-                    gl_FragColor = texture2D(tMap, vUv * 2.0);
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    return textureSample(tMapTex, tMapSampler, input.vUv * 2.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 45 });
+                const camera = new Camera(renderer, { fov: 45 });
                 camera.position.set(-1, 0.5, 2);
 
                 const controls = new Orbit(camera);
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
@@ -66,21 +85,21 @@
 
                 // For a handy method that handles loading for you, use the TextureLoader.load() method.
                 // Either pass a `src` string to load it (regardless of support)
-                // const texture = TextureLoader.load(gl, {
+                // const texture = TextureLoader.load(renderer, {
                 //     src: 'assets/compressed/s3tc-m-y.ktx',
                 // });
 
                 // Or pass in an object of extension:src key-values, and the function will use the first
                 // supported format in the list - so order by preference!
-                const texture = TextureLoader.load(gl, {
+                const texture = TextureLoader.load(renderer, {
                     src: {
                         s3tc: 'assets/compressed/s3tc-m-y.ktx',
                         etc: 'assets/compressed/etc-m-y.ktx',
                         pvrtc: 'assets/compressed/pvrtc-m-y.ktx',
                         jpg: 'assets/compressed/uv.jpg',
                     },
-                    wrapS: gl.REPEAT,
-                    wrapT: gl.REPEAT,
+                    wrapS: 'repeat',
+                    wrapT: 'repeat',
                 });
                 // A console warning will show when no supported format was supplied
 
@@ -90,20 +109,9 @@
                 // You can check which format was applied using the `ext` property
                 document.body.querySelector('.Info').textContent += ` Supported format chosen: '${texture.ext}'.`;
 
-                // For direct use of the KTXTexture class, you first need to activate the extensions
-                // TextureLoader.getSupportedExtensions();
+                const geometry = new Plane(renderer);
 
-                // Then create an empty texture
-                // const texture = new KTXTexture(gl);
-
-                // Then, when the buffer has loaded, parse it using the parseBuffer method
-                // fetch(src)
-                //     .then(res => res.arrayBuffer())
-                //     .then(buffer => texture.parseBuffer(buffer));
-
-                const geometry = new Plane(gl);
-
-                const program = new Program(gl, {
+                const program = new Program(renderer, {
                     vertex,
                     fragment,
                     uniforms: {
@@ -112,7 +120,7 @@
                     cullFace: false,
                 });
 
-                const mesh = new Mesh(gl, { geometry, program });
+                const mesh = new Mesh(renderer, { geometry, program });
                 mesh.setParent(scene);
 
                 requestAnimationFrame(update);

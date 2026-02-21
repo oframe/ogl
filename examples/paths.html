@@ -14,66 +14,97 @@
         <script type="module">
             import { Renderer, Camera, Transform, Program, Mesh, Sphere, Polyline, Vec3, Color, Path } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec3 position;
-                attribute vec3 normal;
+            const vertex = /* wgsl */ `
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-                uniform mat3 normalMatrix;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                varying vec3 vNormal;
+                struct MaterialUniforms {
+                    uColor : vec3f,
+                };
 
-                void main() {
-                    vNormal = normalize(normalMatrix * normal);
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) normal : vec3f,
+                };
+
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vNormal : vec3f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vNormal = normalize(object.normalMatrix * input.normal);
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragmentColor1 = /* glsl */ `
-                precision highp float;
-                varying vec3 vNormal;
+            const fragmentColor1 = /* wgsl */ `
+                struct MaterialUniforms {
+                    uColor : vec3f,
+                };
 
-                void main() {
-                    vec3 normal = normalize(vNormal);
-                    float lighting = dot(normal, normalize(vec3(-0.3, 0.8, 0.6)));
-                    gl_FragColor.rgb = vec3(0.24, 0.84, 1.0) + lighting * 0.1;
-                    gl_FragColor.a = 1.0;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+
+                struct FragmentInput {
+                    @location(0) vNormal : vec3f,
+                };
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let normal = normalize(input.vNormal);
+                    let lighting = dot(normal, normalize(vec3f(-0.3, 0.8, 0.6)));
+                    return vec4f(vec3f(0.24, 0.84, 1.0) + lighting * 0.1, 1.0);
                 }
             `;
 
-            const fragmentColor2 = /* glsl */ `
-                precision highp float;
-                varying vec3 vNormal;
+            const fragmentColor2 = /* wgsl */ `
+                struct MaterialUniforms {
+                    uColor : vec3f,
+                };
 
-                void main() {
-                    vec3 normal = normalize(vNormal);
-                    float lighting = dot(normal, normalize(vec3(-0.3, 0.8, 0.6)));
-                    gl_FragColor.rgb = vec3(0.93, 0.25, 0.41) + lighting * 0.1;
-                    gl_FragColor.a = 1.0;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+
+                struct FragmentInput {
+                    @location(0) vNormal : vec3f,
+                };
+
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let normal = normalize(input.vNormal);
+                    let lighting = dot(normal, normalize(vec3f(-0.3, 0.8, 0.6)));
+                    return vec4f(vec3f(0.93, 0.25, 0.41) + lighting * 0.1, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 35 });
+                const camera = new Camera(renderer, { fov: 35 });
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
                 const scene = new Transform();
 
-                const sphereGeom = new Sphere(gl);
-                const sphereProg1 = new Program(gl, { vertex, fragment: fragmentColor1 });
-                const sphereProg2 = new Program(gl, { vertex, fragment: fragmentColor2 });
+                const sphereGeom = new Sphere(renderer);
+                const sphereProg1 = new Program(renderer, { vertex, fragment: fragmentColor1, uniforms: { uColor: { value: new Color('#3cd5ff') } } });
+                const sphereProg2 = new Program(renderer, { vertex, fragment: fragmentColor2, uniforms: { uColor: { value: new Color('#ed3f69') } } });
 
                 // First three is for moveTo command, rest for bezierCurveTo command
                 const pathCoords = [
@@ -120,8 +151,7 @@
                 const points = path.getPoints(pathSubdivisions);
 
                 // create polyline from points
-                // see example: https://oframe.github.io/ogl/examples/?src=polylines.html
-                const polyline = new Polyline(gl, {
+                const polyline = new Polyline(renderer, {
                     points,
                     uniforms: {
                         uColor: { value: new Color('#ddd') },
@@ -129,7 +159,7 @@
                     },
                 });
 
-                const mesh = new Mesh(gl, { geometry: polyline.geometry, program: polyline.program });
+                const mesh = new Mesh(renderer, { geometry: polyline.geometry, program: polyline.program });
                 mesh.setParent(scene);
 
                 // Generates the Frenet Frames.
@@ -144,12 +174,12 @@
                     const normal = frenetFrames.normals[i];
                     const binormal = frenetFrames.binormals[i];
 
-                    const leftSphere = new Mesh(gl, { geometry: sphereGeom, program: sphereProg1 });
+                    const leftSphere = new Mesh(renderer, { geometry: sphereGeom, program: sphereProg1 });
                     leftSphere.scale.set(0.04);
                     leftSphere.position.add(point, binormal.clone().scale(0.12));
                     leftSphere.setParent(scene);
 
-                    const rightSphere = new Mesh(gl, { geometry: sphereGeom, program: sphereProg2 });
+                    const rightSphere = new Mesh(renderer, { geometry: sphereGeom, program: sphereProg2 });
                     rightSphere.scale.set(0.04);
                     rightSphere.position.add(point, binormal.clone().scale(-0.12));
                     rightSphere.setParent(scene);

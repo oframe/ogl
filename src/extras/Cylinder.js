@@ -3,7 +3,7 @@ import { Vec3 } from '../math/Vec3.js';
 
 export class Cylinder extends Geometry {
     constructor(
-        gl,
+        gpu,
         {
             radiusTop = 0.5,
             radiusBottom = 0.5,
@@ -119,6 +119,6 @@ export class Cylinder extends Geometry {
             index: { data: index },
         });
 
-        super(gl, attributes);
+        super(gpu, attributes);
     }
 }

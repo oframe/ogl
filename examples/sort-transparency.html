@@ -14,47 +14,70 @@
         <script type="module">
             import { Renderer, Camera, Transform, Texture, Program, Mesh, Color, Plane } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec2 uv;
-                attribute vec3 position;
+            const vertex = /* wgsl */ `
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) normal : vec3f,
+                    @location(2) uv : vec2f,
+                };
 
-                varying vec2 vUv;
-                varying vec4 vMVPos;
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                    @location(1) vMVPos : vec4f,
+                };
 
-                void main() {
-                    vUv = uv;
-                    vec3 pos = position;
-                    float dist = pow(length(vUv - 0.5), 2.0) - 0.25;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    var pos = input.position;
+                    let dist = pow(length(output.vUv - 0.5), 2.0) - 0.25;
                     pos.z += dist * 0.5;
-                    vMVPos = modelViewMatrix * vec4(pos, 1.0);
-                    gl_Position = projectionMatrix * vMVPos;
+                    output.vMVPos = object.modelViewMatrix * vec4f(pos, 1.0);
+                    output.position = object.projectionMatrix * output.vMVPos;
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                struct MaterialUniforms {
+                    uColor : vec3f,
+                };
 
-                uniform sampler2D tMap;
-                uniform vec3 uColor;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vMVPos : vec4f,
+                };
 
-                varying vec2 vUv;
-                varying vec4 vMVPos;
+                @group(0) @binding(0) var<uniform> material : MaterialUniforms;
+                @group(0) @binding(1) var tMap : texture_2d<f32>;
+                @group(0) @binding(2) var tMapSampler : sampler;
 
-                void main() {
-                    float alpha = texture2D(tMap, vUv).g;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let alpha = textureSample(tMap, tMapSampler, input.vUv).g;
 
-                    vec3 color = uColor + vMVPos.xzy * 0.05;
+                    var color = material.uColor + input.vMVPos.xzy * 0.05;
 
-                    float dist = length(vMVPos);
-                    float fog = smoothstep(5.0, 10.0, dist);
-                    color = mix(color, vec3(1.0), fog);
+                    let fogDist = length(input.vMVPos);
+                    let fog = smoothstep(5.0, 10.0, fogDist);
+                    color = mix(color, vec3f(1.0), fog);
 
-                    gl_FragColor.rgb = color;
-                    gl_FragColor.a = alpha;
-                    if (alpha < 0.01) discard;
+                    if (alpha < 0.01) {
+                        discard;
+                    }
+
+                    return vec4f(color, alpha);
                 }
             `;
 
@@ -62,35 +85,34 @@
             // It does not include sorting between faces/points within a single geometry.
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 35 });
+                const camera = new Camera(renderer, { fov: 35 });
                 camera.position.set(0, 0, 7);
                 camera.rotation.z = -0.3;
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
                 const scene = new Transform();
 
-                const geometry = new Plane(gl, {
+                const geometry = new Plane(renderer, {
                     widthSegments: 10,
                     heightSegments: 10,
                 });
 
-                const texture = new Texture(gl);
+                const texture = new Texture(renderer);
                 const img = new Image();
                 img.onload = () => (texture.image = img);
                 img.src = 'assets/leaf.jpg';
 
-                const program = new Program(gl, {
+                const program = new Program(renderer, {
                     vertex,
                     fragment,
                     uniforms: {
@@ -104,7 +126,7 @@
                 const meshes = [];
 
                 for (let i = 0; i < 50; i++) {
-                    const mesh = new Mesh(gl, { geometry, program });
+                    const mesh = new Mesh(renderer, { geometry, program });
                     mesh.position.set((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 3);
                     mesh.rotation.set(0, (Math.random() - 0.5) * 6.28, (Math.random() - 0.5) * 6.28);
                     mesh.scale.set(Math.random() * 0.5 + 0.2);

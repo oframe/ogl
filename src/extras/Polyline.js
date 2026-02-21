@@ -9,7 +9,7 @@ const tmp = /* @__PURE__ */ new Vec3();
 
 export class Polyline {
     constructor(
-        gl,
+        gpu,
         {
             points, // Array of Vec3s
             vertex = defaultVertex,
@@ -18,7 +18,7 @@ export class Polyline {
             attributes = {}, // For passing in custom attribs
         }
     ) {
-        this.gl = gl;
+        this.renderer = gpu.renderer || gpu;
         this.points = points;
         this.count = points.length;
 
@@ -43,7 +43,7 @@ export class Polyline {
         }
 
         const geometry = (this.geometry = new Geometry(
-            gl,
+            gpu,
             Object.assign(attributes, {
                 position: { size: 3, data: this.position },
                 prev: { size: 3, data: this.prev },
@@ -57,22 +57,34 @@ export class Polyline {
         // Populate dynamic buffers
         this.updateGeometry();
 
-        if (!uniforms.uResolution) this.resolution = uniforms.uResolution = { value: new Vec2() };
-        if (!uniforms.uDPR) this.dpr = uniforms.uDPR = { value: 1 };
-        if (!uniforms.uThickness) this.thickness = uniforms.uThickness = { value: 1 };
-        if (!uniforms.uColor) this.color = uniforms.uColor = { value: new Color('#000') };
-        if (!uniforms.uMiter) this.miter = uniforms.uMiter = { value: 1 };
+        // Build uniforms in a fixed order so WGSL struct layout is predictable
+        const mergedUniforms = {};
+        mergedUniforms.uResolution = uniforms.uResolution || { value: new Vec2() };
+        mergedUniforms.uDPR = uniforms.uDPR || { value: 1 };
+        mergedUniforms.uThickness = uniforms.uThickness || { value: 1 };
+        mergedUniforms.uColor = uniforms.uColor || { value: new Color('#000') };
+        mergedUniforms.uMiter = uniforms.uMiter || { value: 1 };
+        // Copy any additional user uniforms after the standard ones
+        for (let key in uniforms) {
+            if (!mergedUniforms[key]) mergedUniforms[key] = uniforms[key];
+        }
+
+        this.resolution = mergedUniforms.uResolution;
+        this.dpr = mergedUniforms.uDPR;
+        this.thickness = mergedUniforms.uThickness;
+        this.color = mergedUniforms.uColor;
+        this.miter = mergedUniforms.uMiter;
 
         // Set size uniforms' values
         this.resize();
 
-        const program = (this.program = new Program(gl, {
+        const program = (this.program = new Program(gpu, {
             vertex,
             fragment,
-            uniforms,
+            uniforms: mergedUniforms,
         }));
 
-        this.mesh = new Mesh(gl, { geometry, program });
+        this.mesh = new Mesh(gpu, { geometry, program });
     }
 
     updateGeometry() {
@@ -112,72 +124,96 @@ export class Polyline {
 
     // Only need to call if not handling resolution uniforms manually
     resize() {
-        // Update automatic uniforms if not overridden
-        if (this.resolution) this.resolution.value.set(this.gl.canvas.width, this.gl.canvas.height);
-        if (this.dpr) this.dpr.value = this.gl.renderer.dpr;
+        if (this.resolution) this.resolution.value.set(this.renderer.canvas.width, this.renderer.canvas.height);
+        if (this.dpr) this.dpr.value = this.renderer.dpr;
     }
 }
 
-const defaultVertex = /* glsl */ `
-    precision highp float;
+// Default WGSL shaders (with camera/object UBO support)
+// MaterialUniforms struct order must match the mergedUniforms insertion order above:
+// uResolution(vec2f), uDPR(f32), uThickness(f32), uColor(vec3f), uMiter(f32)
 
-    attribute vec3 position;
-    attribute vec3 next;
-    attribute vec3 prev;
-    attribute vec2 uv;
-    attribute float side;
+const defaultVertex = /* wgsl */ `
+    struct MaterialUniforms {
+        uResolution : vec2f,
+        uDPR : f32,
+        uThickness : f32,
+        uColor : vec3f,
+        uMiter : f32,
+    };
 
-    uniform mat4 modelViewMatrix;
-    uniform mat4 projectionMatrix;
-    uniform vec2 uResolution;
-    uniform float uDPR;
-    uniform float uThickness;
-    uniform float uMiter;
+    @group(0) @binding(0) var<uniform> material : MaterialUniforms;
 
-    varying vec2 vUv;
+    struct ObjectUniforms {
+        modelMatrix : mat4x4f,
+        viewMatrix : mat4x4f,
+        modelViewMatrix : mat4x4f,
+        projectionMatrix : mat4x4f,
+        normalMatrix : mat3x3f,
+        cameraPosition : vec3f,
+    };
 
-    vec4 getPosition() {
-        mat4 mvp = projectionMatrix * modelViewMatrix;
-        vec4 current = mvp * vec4(position, 1);
-        vec4 nextPos = mvp * vec4(next, 1);
-        vec4 prevPos = mvp * vec4(prev, 1);
+    @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-        vec2 aspect = vec2(uResolution.x / uResolution.y, 1);    
-        vec2 currentScreen = current.xy / current.w * aspect;
-        vec2 nextScreen = nextPos.xy / nextPos.w * aspect;
-        vec2 prevScreen = prevPos.xy / prevPos.w * aspect;
-    
-        vec2 dir1 = normalize(currentScreen - prevScreen);
-        vec2 dir2 = normalize(nextScreen - currentScreen);
-        vec2 dir = normalize(dir1 + dir2);
-    
-        vec2 normal = vec2(-dir.y, dir.x);
-        normal /= mix(1.0, max(0.3, dot(normal, vec2(-dir1.y, dir1.x))), uMiter);
+    struct VertexInput {
+        @location(0) position : vec3f,
+        @location(1) prev : vec3f,
+        @location(2) next : vec3f,
+        @location(3) side : f32,
+        @location(4) uv : vec2f,
+    };
+
+    struct VertexOutput {
+        @builtin(position) position : vec4f,
+        @location(0) vUv : vec2f,
+    };
+
+    @vertex fn main(input : VertexInput) -> VertexOutput {
+        let mvp = object.projectionMatrix * object.modelViewMatrix;
+        var current = mvp * vec4f(input.position, 1.0);
+        let nextPos = mvp * vec4f(input.next, 1.0);
+        let prevPos = mvp * vec4f(input.prev, 1.0);
+
+        let aspect = vec2f(material.uResolution.x / material.uResolution.y, 1.0);
+        let currentScreen = current.xy / current.w * aspect;
+        let nextScreen = nextPos.xy / nextPos.w * aspect;
+        let prevScreen = prevPos.xy / prevPos.w * aspect;
+
+        let dir1 = normalize(currentScreen - prevScreen);
+        let dir2 = normalize(nextScreen - currentScreen);
+        let dir = normalize(dir1 + dir2);
+
+        var normal = vec2f(-dir.y, dir.x);
+        normal /= mix(1.0, max(0.3, dot(normal, vec2f(-dir1.y, dir1.x))), material.uMiter);
         normal /= aspect;
 
-        float pixelWidthRatio = 1.0 / (uResolution.y / uDPR);
-        float pixelWidth = current.w * pixelWidthRatio;
-        normal *= pixelWidth * uThickness;
-        current.xy -= normal * side;
-    
-        return current;
-    }
+        let pixelWidthRatio = 1.0 / (material.uResolution.y / material.uDPR);
+        let pixelWidth = current.w * pixelWidthRatio;
+        normal *= pixelWidth * material.uThickness;
 
-    void main() {
-        vUv = uv;
-        gl_Position = getPosition();
+        var output : VertexOutput;
+        output.vUv = input.uv;
+        output.position = vec4f(current.xy - normal * input.side, current.zw);
+        return output;
     }
 `;
 
-const defaultFragment = /* glsl */ `
-    precision highp float;
+const defaultFragment = /* wgsl */ `
+    struct MaterialUniforms {
+        uResolution : vec2f,
+        uDPR : f32,
+        uThickness : f32,
+        uColor : vec3f,
+        uMiter : f32,
+    };
 
-    uniform vec3 uColor;
-    
-    varying vec2 vUv;
+    @group(0) @binding(0) var<uniform> material : MaterialUniforms;
 
-    void main() {
-        gl_FragColor.rgb = uColor;
-        gl_FragColor.a = 1.0;
+    struct FragmentInput {
+        @location(0) vUv : vec2f,
+    };
+
+    @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+        return vec4f(material.uColor, 1.0);
     }
 `;

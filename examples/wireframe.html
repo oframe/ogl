@@ -14,76 +14,107 @@
         <script type="module">
             import { Renderer, Camera, Transform, Texture, Program, Geometry, Mesh } from '../src/index.js';
 
-            const vertex = /* glsl */ `
-                attribute vec2 uv;
-                attribute vec3 position;
-                attribute vec3 normal;
+            const vertex = /* wgsl */ `
+                @group(0) @binding(0) var tMap : texture_2d<f32>;
+                @group(0) @binding(1) var tMapSampler : sampler;
 
-                uniform mat4 modelViewMatrix;
-                uniform mat4 projectionMatrix;
-                uniform mat3 normalMatrix;
+                struct ObjectUniforms {
+                    modelMatrix : mat4x4f,
+                    viewMatrix : mat4x4f,
+                    modelViewMatrix : mat4x4f,
+                    projectionMatrix : mat4x4f,
+                    normalMatrix : mat3x3f,
+                    cameraPosition : vec3f,
+                };
 
-                varying vec2 vUv;
-                varying vec3 vNormal;
+                @group(1) @binding(0) var<uniform> object : ObjectUniforms;
 
-                void main() {
-                    vUv = uv;
-                    vNormal = normalize(normalMatrix * normal);
+                struct VertexInput {
+                    @location(0) position : vec3f,
+                    @location(1) uv : vec2f,
+                    @location(2) normal : vec3f,
+                };
 
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                struct VertexOutput {
+                    @builtin(position) position : vec4f,
+                    @location(0) vUv : vec2f,
+                    @location(1) vNormal : vec3f,
+                };
+
+                @vertex fn main(input : VertexInput) -> VertexOutput {
+                    var output : VertexOutput;
+                    output.vUv = input.uv;
+                    output.vNormal = normalize(object.normalMatrix * input.normal);
+                    output.position = object.projectionMatrix * object.modelViewMatrix * vec4f(input.position, 1.0);
+                    return output;
                 }
             `;
 
-            const fragment = /* glsl */ `
-                precision highp float;
+            const fragment = /* wgsl */ `
+                @group(0) @binding(0) var tMap : texture_2d<f32>;
+                @group(0) @binding(1) var tMapSampler : sampler;
 
-                uniform sampler2D tMap;
+                struct FragmentInput {
+                    @location(0) vUv : vec2f,
+                    @location(1) vNormal : vec3f,
+                };
 
-                varying vec2 vUv;
-                varying vec3 vNormal;
+                @fragment fn main(input : FragmentInput) -> @location(0) vec4f {
+                    let tex = textureSample(tMap, tMapSampler, input.vUv).rgb;
+                    let normal = normalize(input.vNormal);
 
-                void main() {
-                    vec3 tex = texture2D(tMap, vUv).rgb;
-                    vec3 normal = normalize(vNormal);
+                    let light = normalize(vec3f(0.5, 1.0, -0.3));
+                    let shading = dot(normal, light) * 0.15;
 
-                    vec3 light = normalize(vec3(0.5, 1.0, -0.3));
-                    float shading = dot(normal, light) * 0.15;
-
-                    gl_FragColor.rgb = tex + shading;
-                    gl_FragColor.a = 1.0;
+                    let color = tex + shading;
+                    return vec4f(color, 1.0);
                 }
             `;
 
             {
-                const renderer = new Renderer({ dpr: 2 });
-                const gl = renderer.gl;
-                document.body.appendChild(gl.canvas);
-                gl.clearColor(1, 1, 1, 1);
+                const renderer = await Renderer.create({ dpr: 2 });
+                document.body.appendChild(renderer.canvas);
+                renderer.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
-                const camera = new Camera(gl, { fov: 35 });
+                const camera = new Camera(renderer, { fov: 35 });
                 camera.position.set(5, 3, 6);
                 camera.lookAt([0, 0, 0]);
 
                 function resize() {
                     renderer.setSize(window.innerWidth, window.innerHeight);
-                    camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+                    camera.perspective({ aspect: renderer.canvas.width / renderer.canvas.height });
                 }
                 window.addEventListener('resize', resize, false);
                 resize();
 
                 const scene = new Transform();
 
-                const texture = new Texture(gl);
+                const texture = new Texture(renderer);
                 const img = new Image();
                 img.onload = () => (texture.image = img);
                 img.src = 'assets/croissant.jpg';
 
-                const program = new Program(gl, {
+                // In WebGPU, topology (draw mode) is set on the Program, not the Mesh.
+                // We need separate programs for each topology.
+
+                // line-strip is the closest WebGPU equivalent to gl.LINE_LOOP
+                const lineStripProgram = new Program(renderer, {
                     vertex,
                     fragment,
                     uniforms: {
                         tMap: { value: texture },
                     },
+                    topology: 'line-strip',
+                });
+
+                // line-list is the WebGPU equivalent to gl.LINES
+                const lineListProgram = new Program(renderer, {
+                    vertex,
+                    fragment,
+                    uniforms: {
+                        tMap: { value: texture },
+                    },
+                    topology: 'line-list',
                 });
 
                 let lineLoopMesh, wireframeMesh;
@@ -91,16 +122,18 @@
                 async function loadModel() {
                     const data = await (await fetch(`assets/croissant.json`)).json();
 
-                    // Regular geometry with no modifications to be used with gl.LINE_LOOP version
-                    const geometry = new Geometry(gl, {
+                    // Regular geometry with no modifications to be used with line-strip version
+                    const geometry = new Geometry(renderer, {
                         position: { size: 3, data: new Float32Array(data.position) },
                         uv: { size: 2, data: new Float32Array(data.uv) },
                         normal: { size: 3, data: new Float32Array(data.normal) },
                     });
 
-                    // Using gl.LINE_LOOP or gl.LINE_STRIP as the draw mode will give an approximate wireframe.
+                    // Using line-strip topology will give an approximate wireframe.
                     // This is a simpler, lighter option if accuracy is not important (i.e. debugging).
-                    lineLoopMesh = new Mesh(gl, { mode: gl.LINE_LOOP, geometry, program });
+                    // Note: WebGPU does not have LINE_LOOP, so line-strip is the closest equivalent
+                    // (it does not connect the last vertex back to the first).
+                    lineLoopMesh = new Mesh(renderer, { geometry, program: lineStripProgram });
                     lineLoopMesh.setParent(scene);
                     lineLoopMesh.position.y = 1;
 
@@ -112,15 +145,15 @@
                         index.set([i, i + 1, i + 1, i + 2, i + 2, i], i * 2);
                     }
 
-                    const wireframeGeometry = new Geometry(gl, {
+                    const wireframeGeometry = new Geometry(renderer, {
                         position: { size: 3, data: new Float32Array(data.position) },
                         uv: { size: 2, data: new Float32Array(data.uv) },
                         normal: { size: 3, data: new Float32Array(data.normal) },
                         index: { data: index },
                     });
 
-                    // use the gl.LINES draw mode
-                    wireframeMesh = new Mesh(gl, { mode: gl.LINES, geometry: wireframeGeometry, program });
+                    // Use the line-list topology (equivalent to gl.LINES)
+                    wireframeMesh = new Mesh(renderer, { geometry: wireframeGeometry, program: lineListProgram });
                     wireframeMesh.setParent(scene);
                     wireframeMesh.position.y = -1;
                 }
