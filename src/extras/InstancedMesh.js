@@ -70,7 +70,8 @@ export class InstancedMesh extends Mesh {
     }
 
     removeFrustumCull() {
-        this.offBeforeRender(this.frustumCullFunction);
+        const callbackIndex = this.beforeRenderCallbacks.indexOf(this.frustumCullFunction);
+        if (callbackIndex !== -1) this.beforeRenderCallbacks.splice(callbackIndex, 1);
         this.geometry.instancedCount = this.totalInstanceCount;
         this.instanceTransforms.forEach((transform, i) => {
             transform.matrix.toArray(this.geometry.attributes.instanceMatrix.data, i * 16);
