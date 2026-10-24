@@ -32,8 +32,10 @@ export class Mat3 extends Array<number> {
         m22?: number,
     );
 
+    set(m: Mat3 | Mat3Tuple): this;
+
     set(
-        m00: number | Mat3 | Mat3Tuple,
+        m00: number,
         m01: number,
         m02: number,
         m10: number,

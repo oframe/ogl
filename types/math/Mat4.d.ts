@@ -61,8 +61,10 @@ export class Mat4 extends Array<number> {
 
     set w(v: number);
 
+    set(m: Mat4 | Mat4Tuple): this;
+
     set(
-        m00: number | Mat4 | Mat4Tuple,
+        m00: number,
         m01: number,
         m02: number,
         m03: number,
